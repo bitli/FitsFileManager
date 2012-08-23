@@ -614,7 +614,7 @@ function MyDialog()
             }
          }
          // Refresh the generated files
-         parent.buildTargetFiles();
+         this.dialog.buildTargetFiles();
       }
    }
 
