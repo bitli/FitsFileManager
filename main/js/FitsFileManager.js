@@ -1,8 +1,8 @@
 
 // From FITSkey_0.06
 
-#feature-id    Utilities > FITS Tools
-#define VERSION   0.06
+#feature-id    Utilities > FitsFileManager
+#define VERSION   0.10
 
 #include <pjsr/DataType.jsh>
 #include <pjsr/Sizer.jsh>
@@ -10,12 +10,12 @@
 #include <pjsr/TextAlign.jsh>
 
 #define DEBUGGING_MODE_ON false
-#define EXECUTE_COMMANDS true
+#define EXECUTE_COMMANDS false
 
 // TODO
 // Handle undefined
 // Speed up
-// refactoring data
+// refactoring
 // Option for handling of minus and other special characters
 // refactor methods to extract fits data
 // Save parameters, keep list of recent (possibly by type)
@@ -35,6 +35,9 @@
 // Ensure source is refreshed in case of move
 // Request confirmation for move
 // Support group by for mutliple destinations ?
+// Add clear all in file list
+// Add &filedir, &filedirparent and regexp on those
+
 
 
 #define TARGET_PATTERN_TOOLTIP "\
@@ -87,7 +90,6 @@ function debug(str) {
       Console.writeln(s);
       processEvents();
    }
-   null;
 }
 
 
@@ -253,7 +255,64 @@ function convertType(rawTypeName) {
    return unquotedName.toLowerCase();
 }
 
+// Extract the variables to form group names and file names from the file name, FITS keywords and rank
+function extractVariables(inputFile, keys, rank, count) {
 
+   var inputFileName =  File.extractName(inputFile);
+
+   var variables = [];
+
+   //   &binning     Binning from XBINNING and YBINNING as integers, like 2x2.
+   var xBinning =parseInt(findKeyWord(keys,'XBINNING'));
+   var yBinning =parseInt(findKeyWord(keys,'YBINNING'));
+   variables['binning'] = xBinning.toFixed(0)+"x"+yBinning.toFixed(0);
+
+   //   &count;      The number of the file being moved/copied, padded to COUNT_PAD.
+   // (will be updated by the order by and group by)
+   variables['count'] = count.pad(COUNT_PAD);
+   //   &rank;      The rank in the list of files of the file being moved/copied, padded to COUNT_PAD.
+   variables['rank'] = rank.pad(COUNT_PAD);
+
+   //   &exposure;   The exposure from EXPOSURE, as an integer (assume seconds)
+   var exposure = findKeyWord(keys,'EXPOSURE');
+   variables['exposure'] = parseFloat(exposure).toFixed(0);
+
+   //   &extension;   The extension of the source file (with the dot)
+   variables['extension'] = File.extractExtension(inputFile);
+
+            //   &filename;   The file name part of the source file
+   variables['filename'] = inputFileName;
+
+   //   &filter:     The filter name from FILTER as lower case trimmed normalized name.
+   var filter = findKeyWord(keys,'FILTER  ');
+   variables['filter'] = convertFilter(filter);
+
+   //   &temp;       The SET-TEMP temperature in C as an integer
+   var temp = findKeyWord(keys,'SET-TEMP');
+   variables['temp'] = parseFloat(temp).toFixed(0);
+
+   //   &type:       The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'
+   var imageType = findKeyWord(keys,'IMAGETYP');
+   variables['type'] = convertType(imageType);
+
+   //   &FITSKW;     (NOT IMPLEMENTED)
+
+
+   //   &1; &2;, ... The corresponding match from the sourceFileNameRegExp
+   if (sourceFileNameRegExp != null) {
+      var match = sourceFileNameRegExp.exec(inputFileName);
+      debug ("match: " + match);
+      if (match != null) {
+         for (var j = 0; j<match.length; j++) {
+            variables[j.toString()] = match[j]
+         }
+      }
+   }
+
+   return variables;
+
+
+}
 
 //----------------------------------------------------------------------------
 function MyDialog()
@@ -262,6 +321,7 @@ function MyDialog()
    this.__base__();
    this.inputFiles = new Array(); //Array of filename with full path
    this.inputKeys = new Array();  //keys of all files. Big RAW array of all file keys.
+   this.inputVariables = new Array();  //variables of all files (derived from FITS). Big RAW array of all variables map.
    this.keyTable = new Array();   //accumulated names of keywords from all files
    this.keyEnabled = new Array(); //true == selected keywords
    this.defaultKey = new Array("SET-TEMP","EXPOSURE","IMAGETYP","FILTER  ", "XBINNING","YBINNING");
@@ -321,12 +381,15 @@ function MyDialog()
 
       onNodeUpdated = function( node, column ) // Invert CheckMark
       {
+         //Console.writeln("NODE onNodeUpdated  " + node);
          for (var i=0; i < this.selectedNodes.length; i++)
          {
             if ( node == this.selectedNodes[i] ) continue; // skip curent clicked node, because it will inverted automaticaly
             this.selectedNodes[i].checked = !this.selectedNodes[i].checked;
          }
+         this.dialog.buildTargetFiles();
       }
+
    }
 
 
@@ -464,7 +527,7 @@ function MyDialog()
    with ( this.files_close_Button )
    {
       icon = new Bitmap( ":/images/close.png" );
-      toolTip = "<p>Close selected images.</p>";
+      toolTip = "<p>Removed selected images from the list.</p>";
       onClick = function()
       {
          if ( this.dialog.inputFiles.length == 0 ) return;
@@ -479,6 +542,9 @@ function MyDialog()
          }
          this.dialog.QTY.text = "Total files: " + this.dialog.inputFiles.length;
          this.dialog.update();
+         // Refresh the generated files
+         this.dialog.buildTargetFiles();
+
       }
    }
 
@@ -570,12 +636,12 @@ function MyDialog()
       readOnly = true;
    }
 
-
+   // ===================================================================================
    // -- ENGINE
 
    this.buildTargetFiles = function() {
 
-     // Make an array with the root directory for each file
+      // Make an array with the resulting file name for each file
       var targetFiles = new Array(this.inputFiles.length);
 
       debug("** targeFileNamePattern '" + targeFileNamePattern + "'");
@@ -585,8 +651,15 @@ function MyDialog()
       var listOfTransforms = "";
       var skip = 0;
       var count = 0;
+      var rank = 0;
       for ( var i in this.inputFiles) {
+            // Rank of file in all files (checked or not)
+            rank ++;
+
             if ( !this.files_TreeBox.child(parseInt(i)).checked ) { skip++; continue; }
+
+            // Count of checked files
+            count ++;
 
             var inputFile = this.inputFiles[i];
             var inputFileName =  File.extractName(inputFile);
@@ -595,57 +668,10 @@ function MyDialog()
 
 
             // Initialize variables
-            count ++;
-            var variables = [];
+            var variables = extractVariables(inputFile, keys, rank, count);
 
 
-            //   &binning     Binning from XBINNING and YBINNING as integers, like 2x2.
-            var xBinning =parseInt(findKeyWord(keys,'XBINNING'));
-            var yBinning =parseInt(findKeyWord(keys,'YBINNING'));
-            variables['binning'] = xBinning.toFixed(0)+"x"+yBinning.toFixed(0);
-
-            //   &count;      The number of the file being moved/copied, padded to COUNT_PAD.
-            variables['count'] = count.pad(COUNT_PAD);
-
-            //   &exposure;   The exposure from EXPOSURE, but as an integer (assume seconds)
-            var exposure = findKeyWord(keys,'EXPOSURE');
-            variables['exposure'] = parseFloat(exposure).toFixed(0);
-
-            //   &extension;   The extension of the source file (with the dot)
-            variables['extension'] = File.extractExtension(inputFile);
-
-            //   &filename;   The file name part of the source file
-            variables['filename'] = inputFileName;
-
-            //   &filter:     The filter name from FILTER as lower case trimmed normalized name.
-            var filter = findKeyWord(keys,'FILTER  ');
-            variables['filter'] = convertFilter(filter);
-
-            //   &temp;       The SET-TEMP temperature in C as an integer
-            var temp = findKeyWord(keys,'SET-TEMP');
-            variables['temp'] = parseFloat(temp).toFixed(0);
-
-            //   &type:       The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'
-            var imageType = findKeyWord(keys,'IMAGETYP');
-            variables['type'] = convertType(imageType);
-
-            //   &FITSKW;     (NOT IMPLEMENTED)
-
-
-            //   &1; &2;, ... The corresponding match from the sourceFileNameRegExp
-            if (sourceFileNameRegExp != null) {
-               var match = sourceFileNameRegExp.exec(inputFileName);
-               debug ("match: " + match);
-               if (match != null) {
-                  for (var j = 0; j<match.length; j++) {
-                     variables[j.toString()] = match[j]
-                  }
-               }
-            }
-
-
-
-            // Method to handle replacement of variables
+            // Method to handle replacement of variables in target file name pattern
             var replaceVariables = function(matchedSubstring, index, originalString) {
                var varName = matchedSubstring.substring(1,matchedSubstring.length-1);
                debug("replaceVariables: match '" + matchedSubstring + "' '" + index + "' '" +  originalString + "' '" + varName + "' by '" + variables[varName] + "'");
@@ -718,7 +744,7 @@ function MyDialog()
    //Engine buttons --------------------------------------------------------------------------------------
    this.move_Button = new PushButton( this );
    with ( this.move_Button ) {
-      text = "Move";
+      text = "Move files";
       toolTip = "Move Checked files to output directory";
       enabled = false;
       onClick = function()
@@ -731,7 +757,7 @@ function MyDialog()
 
    this.copy_Button = new PushButton( this );
    with ( this.copy_Button ) {
-      text = "Copy";
+      text = "Copy files";
       toolTip = "Copy Checked files to output directory";
       enabled = false;
       onClick = function()
@@ -745,7 +771,7 @@ function MyDialog()
    // Export selected fits keywords for checked files
    this.txt_Button = new PushButton( this );
    with ( this.txt_Button ) {
-      text = "FITS.txt";
+      text = "Export FITS.txt";
       toolTip = "For Checked files write FitKeywords value to file FITS.txt in output directory";
       enabled = false;
       onClick = function()
