@@ -1,7 +1,7 @@
 
 // From FITSkey_0.06
 
-#feature-id    Utilities > FitsFileManager
+#feature-id    Utilities > FITSFileManager
 #define VERSION   0.10
 
 #include <pjsr/DataType.jsh>
@@ -44,10 +44,11 @@
 Define how the target file name will be generated. Text is copied\n\
 as is to the output name. Keywords (between & and semicolon) are\n\
 defined from the file information and FITS keywordsas follows:\n\
-   &binning;     Binning from XBINNING and YBINNING as integers, like 2x2.\n\
+   &binning;    Binning from XBINNING and YBINNING as integers, like 2x2.\n\
    &count;      The number of the file being moved/copied, padded to COUNT_PAD.\n\
+   &rank;       The number of the file in the input file list, padded to COUNT_PAD.\n\
    &exposure;   The exposure from EXPOSURE, but as an integer (assume seconds).\n\
-   &extension;   The extension of the source file (with the dot.)\n\
+   &extension;  The extension of the source file (with the dot.)\n\
    &filename;   The file name part of the source file.\n\
    &filter:     The filter name from FILTER as lower case trimmed normalized name.\n\
    &temp;       The SET-TEMP temperature in C as an integer.\n\
@@ -866,10 +867,51 @@ function MyDialog()
       sizer.add( this.fileButonSizer );
    }
 
+   this.targetFilePattern_Edit_sizer = new HorizontalSizer;
+   with (this.targetFilePattern_Edit_sizer) {
+      margin = 4;
+      spacing = 2;
+      var label = new Label();
+      label.minWidth			= 100;
+		label.text		= "Target file pattern: ";
+		label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
+
+      add( label );
+      add( this.targetFilePattern_Edit );
+   }
+
+   this.sourcePattern_Edit_sizer = new HorizontalSizer;
+   with (this.sourcePattern_Edit_sizer) {
+      margin = 4;
+      spacing = 2;
+      var label = new Label();
+      label.minWidth			= 100;
+		label.text		= "File name RegExp: ";
+		label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
+
+      add( label );
+      add( this.sourcePattern_Edit );
+   }
+
+
+   this.rules_GroupBox = new GroupBox( this );
+   with (this.rules_GroupBox)
+   {
+      title = "Rules";
+
+      sizer = new VerticalSizer;
+      sizer.margin = 6;
+      sizer.spacing = 4;
+
+      sizer.add( this.targetFilePattern_Edit_sizer, 100);
+      sizer.add( this.sourcePattern_Edit_sizer );
+   }
+
+
    this.outputDir_GroupBox = new GroupBox( this );
    with (this.outputDir_GroupBox)
    {
-      title = "Output";
+      title = "Output base directory";
       sizer = new HorizontalSizer;
       sizer.margin = 6;
       sizer.spacing = 4;
@@ -895,9 +937,8 @@ function MyDialog()
       margin = 2;
       spacing = 2;
       add( this.inputFiles_GroupBox );
+      add(this.rules_GroupBox);
       add( this.outputDir_GroupBox );
-      add(this.targetFilePattern_Edit);
-      add(this.sourcePattern_Edit);
       add(this.transform_TextBox);
       add( this.sizer2 );
    }
