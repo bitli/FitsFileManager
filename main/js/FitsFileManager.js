@@ -58,14 +58,17 @@ defined from the file information and FITS keywordsas follows:\n\
    &0; &1;, ... The corresponding match from the source file name pattern field.\n\
 The target file name pattern may contain forward slashes that will be used\n\
 as directory separator. Keywords may appear multiple time and may also be part of directory names.\n\
-Unknown keywords are replaced by their name in upper case\n\
+Unknown keywords are replaced by their name in upper case.\n\
+The default pattern has no directory and use a part of the original file name as a prefix.\n\
 "
 
 #define SOURCE_FILENAME_REGEXP_TOOLTIP "\
 Define  a regular expression (without the surround slashes) that will be applied to all file names\n\
 without the extension. The 'match' array resulting from the regular expression matching can be used\n\
 in the target file name pattern as &0; (whole expression), &1 (first group), ...\n\
-The default extract the part of the file name before the first dash as &1;\n\
+The default extract the part of the name before the first dash (you can replace the\n\
+two dashes by two underlines for example).\n\
+In case of error the field turns red\n\
 "
 
 #define GROUP_PATTERN_TOOLTIP "\
@@ -274,7 +277,7 @@ function convertType(rawTypeName) {
 }
 
 // Extract the variables to form group names and file names from the file name, FITS keywords and rank
-function extractVariables(inputFile, keys, rank, count) {
+function extractVariables(inputFile, keys, rank) {
 
    var inputFileName =  File.extractName(inputFile);
 
@@ -285,9 +288,8 @@ function extractVariables(inputFile, keys, rank, count) {
    var yBinning =parseInt(findKeyWord(keys,'YBINNING'));
    variables['binning'] = xBinning.toFixed(0)+"x"+yBinning.toFixed(0);
 
-   //   &count;      The number of the file being moved/copied, padded to COUNT_PAD.
-   // (will be updated by the order by and group by)
-   variables['count'] = count.pad(COUNT_PAD);
+   // Use a fixed count, will be updated for each file
+   variables['count'] = 0 .pad(COUNT_PAD);
    //   &rank;      The rank in the list of files of the file being moved/copied, padded to COUNT_PAD.
    variables['rank'] = rank.pad(COUNT_PAD);
 
@@ -298,7 +300,7 @@ function extractVariables(inputFile, keys, rank, count) {
    //   &extension;   The extension of the source file (with the dot)
    variables['extension'] = File.extractExtension(inputFile);
 
-            //   &filename;   The file name part of the source file
+   //   &filename;   The file name part of the source file
    variables['filename'] = inputFileName;
 
    //   &filter:     The filter name from FILTER as lower case trimmed normalized name.
@@ -315,17 +317,6 @@ function extractVariables(inputFile, keys, rank, count) {
 
    //   &FITSKW;     (NOT IMPLEMENTED)
 
-
-   //   &1; &2;, ... The corresponding match from the sourceFileNameRegExp
-   if (sourceFileNameRegExp != null) {
-      var match = sourceFileNameRegExp.exec(inputFileName);
-      debug ("match: " + match);
-      if (match != null) {
-         for (var j = 0; j<match.length; j++) {
-            variables[j.toString()] = match[j]
-         }
-      }
-   }
 
    return variables;
 
@@ -470,7 +461,7 @@ function MyDialog()
             this.inputFiles.push(fileNames[i]);
             this.inputKeys.push(keys);
             rank ++;
-            var variables = extractVariables(fileNames[i], keys, rank, rank);
+            var variables = extractVariables(fileNames[i], keys, rank);
 
             this.inputVariables.push(variables);
             qtyNew++;
@@ -728,6 +719,19 @@ function MyDialog()
                   return  varName.toUpperCase();
                }
             };
+
+            // The file name part is calculated at each scan as the regxep may have been changed
+            // TODO Optimize this maybe, clear the numbered variables of a previous scan
+            //   &1; &2;, ... The corresponding match from the sourceFileNameRegExp
+            if (sourceFileNameRegExp != null) {
+               var inputFileNameMatch = sourceFileNameRegExp.exec(inputFileName);
+               debug ("inputFileNameMatch: " + inputFileNameMatch);
+               if (inputFileNameMatch != null) {
+                  for (var j = 0; j<inputFileNameMatch.length; j++) {
+                     variables[j.toString()] = inputFileNameMatch[j]
+                  }
+               }
+            }
 
             // Use only directory part, count should not be used, used to initialie 'targetdir'
             variables['count'] = 'COUNT';
