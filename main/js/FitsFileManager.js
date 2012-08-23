@@ -72,7 +72,13 @@ in the target file name pattern as &0; (whole expression), &1 (first group), ...
 // -- Default patterns
 var targeFileNamePattern = "&1;_&binning;_&temp;C_&type;_&exposure;s_&filter;_&count;&extension;";
 //var targeFileNamePattern = "&filename;_AS_&1;_bin_&binning;_filter_&filter;_temp_&temp;_type_&type;_exp_&exposure;s_count_&count;&extension;";
+
+// Default file name reguler expression
 var sourceFileNameRegExp = /([^-]+)-/;
+
+var orderBy = "&rank;"
+var groupBy = "&targetDir;";
+
 
 #define COUNT_PAD 4
 
@@ -434,11 +440,9 @@ function MyDialog()
    {
 
       debug("Found "+fileNames.length);
-      debug("Checked:.");
 
-         //for ( var b=0; b<fileNames.length.toString().length; b++)
-         //   console.write(".");
-
+      // Rank of file in all files (checked or not)
+      var rank = this.inputFiles.length;
 
       var qtyNew = 0;
       for ( var i in fileNames )
@@ -451,9 +455,13 @@ function MyDialog()
          } */
          if (this.inputFiles.indexOf(fileNames[i]) < 0) //Add file only one times
          {
-            var key = LoadFITSKeywords(fileNames[i]);
+            var keys = LoadFITSKeywords(fileNames[i]);
             this.inputFiles.push(fileNames[i]);
-            this.inputKeys.push(key);
+            this.inputKeys.push(keys);
+            rank ++;
+            var variables = extractVariables(fileNames[i], keys, rank, rank);
+
+            this.inputVariables.push(variables);
             qtyNew++;
          }
       }
@@ -538,6 +546,7 @@ function MyDialog()
             {
                this.dialog.inputFiles.splice(i,1);
                this.dialog.inputKeys.splice(i,1);
+               this.dialog.inputVariables.splice(i,1);
                this.dialog.files_TreeBox.remove( i );
             }
          }
@@ -560,7 +569,7 @@ function MyDialog()
       onTextUpdated = function()
       {
          targeFileNamePattern = text;
-         parent.buildTargetFiles();
+         this.dialog.buildTargetFiles();
       }
    }
 
@@ -645,6 +654,8 @@ function MyDialog()
       // Make an array with the resulting file name for each file
       var targetFiles = new Array(this.inputFiles.length);
 
+      var orderedFiles = new Array(this.inputFiles.length);
+
       debug("** targeFileNamePattern '" + targeFileNamePattern + "'");
       debug("** sourceFileNameRegExp '" + sourceFileNameRegExp + "'");
       debug("** variableRegExp '" + variableRegExp + "'");
@@ -654,8 +665,6 @@ function MyDialog()
       var count = 0;
       var rank = 0;
       for ( var i in this.inputFiles) {
-            // Rank of file in all files (checked or not)
-            rank ++;
 
             if ( !this.files_TreeBox.child(parseInt(i)).checked ) { skip++; continue; }
 
@@ -666,10 +675,8 @@ function MyDialog()
             var inputFileName =  File.extractName(inputFile);
 
             var keys = this.inputKeys[i];
-
-
-            // Initialize variables
-            var variables = extractVariables(inputFile, keys, rank, count);
+            var variables = this.inputVariables[i];
+            variables['count'] = count.pad(COUNT_PAD);
 
 
             // Method to handle replacement of variables in target file name pattern
