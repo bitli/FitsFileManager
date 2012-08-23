@@ -1,5 +1,10 @@
+// FITSFileManager
 
-// From FITSkey_0.06
+// Significantly modified from FITSkey_0.06 of Nikolay (I hope he doesn't mind)
+
+// Author: Jean-Marc Lugrin
+
+// USe at your own risk - this script move and copy files
 
 #feature-id    Utilities > FITSFileManager
 #define VERSION   0.10
@@ -10,42 +15,38 @@
 #include <pjsr/TextAlign.jsh>
 
 #define DEBUGGING_MODE_ON false
-#define EXECUTE_COMMANDS false
+// Set to false when doing hasardous developments...
+#define EXECUTE_COMMANDS true
 
 // TODO
-// Handle undefined
-// Speed up
-// refactoring
-// Option for handling of minus and other special characters
-// refactor methods to extract fits data
-// Save parameters, keep list of recent (possibly by type)
-// Default output directory same as input if none present
-// Move/rename label
+// Global refactoring (better MVC structure)
+// Speed up if large number of files
+// Save parameters, keep list of recent patterns used
+// Option for handling of minus and other special characters for form file name being valid PI ids
+// Default output directory same as input if no putput directory specified
 // Mark in error if duplicate or already exists
-// Add FITS keywords
-// Add formatting for fits values
-// Add optional indicator
-// Add optional sequence ()
-// Use count by order of key word
-// Allow count by folder (using existin files...)
-// Hide common header part of source folders
-// Allow spurce folder in selection criteria
-// Date date and ordering by date
-// Create file for renaming instructions and summary
+// Add FITS keywords as variables, with formatting options
+// Add optional indicator to accept missing values '?'
+// Add sequence of optional text to ignore if missing variable value ()
+// Support specification of an order for 'count'
+// Hide common header part of source folders to make file name more visible
+// Add a way to use directory of source file as variable  &filedir, &filedirparent for pattern matching and group names
+// Support date formatting
+// Create a log file for record the source files
 // Ensure source is refreshed in case of move
 // Request confirmation for move
-// Support group by for mutliple destinations ?
-// Add clear all in file list
-// Add &filedir, &filedirparent and regexp on those
+// Add 'clear all' icon in file list
+// Possibility to add FITS keywords to copied files (for example original file name)
 
 
+// Help texts
 
 #define TARGET_PATTERN_TOOLTIP "\
 Define how the target file name will be generated. Text is copied\n\
 as is to the output name. Keywords (between & and semicolon) are\n\
 defined from the file information and FITS keywordsas follows:\n\
    &binning;    Binning from XBINNING and YBINNING as integers, like 2x2.\n\
-   &count;      The number of the file being moved/copied, padded to COUNT_PAD.\n\
+   &count;      The number of the file being moved/copied int the current group, padded to COUNT_PAD.\n\
    &rank;       The number of the file in the input file list, padded to COUNT_PAD.\n\
    &exposure;   The exposure from EXPOSURE, but as an integer (assume seconds).\n\
    &extension;  The extension of the source file (with the dot.)\n\
@@ -55,21 +56,31 @@ defined from the file information and FITS keywordsas follows:\n\
    &type:       The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'.\n\
    &FITSKW;     (NOT IMPLEMENTED).\n\
    &0; &1;, ... The corresponding match from the source file name pattern field.\n\
-The target file name pattern may contain slashes that will be used\n\
-as directory separator. Keywords may appear multiple time and also as part of directory names.\n\
+The target file name pattern may contain forward slashes that will be used\n\
+as directory separator. Keywords may appear multiple time and may also be part of directory names.\n\
+Unknown keywords are replaced by their name in upper case\n\
 "
 
 #define SOURCE_FILENAME_REGEXP_TOOLTIP "\
 Define  a regular expression (without the surround slashes) that will be applied to all file names\n\
 without the extension. The 'match' array resulting from the regular expression matching can be used\n\
 in the target file name pattern as &0; (whole expression), &1 (first group), ...\n\
+The default extract the part of the file name before the first dash as &1;\n\
 "
 
+#define GROUP_PATTERN_TOOLTIP "\
+Define the pattern to generate a group name used by &count;.\n\
+Each group has its own group number starting at 1. You can use the same variables\n\
+as for the target file name, except &count;. In addition you can use:\n\
+   &targetDir;    The directory part of the target file name (except that &count; is not replaced).\n\
+Leave blank or use a fixed name to have a single counter. The default &targetDir; count in each target\n\
+directory. &filter; would count separetely for each filter.\n\
+"
 
 //----------------------------------------------------------------------------
 
 
-// -- Default patterns
+// -- Default patterns (use part before first slash in teh file name)
 var targeFileNamePattern = "&1;_&binning;_&temp;C_&type;_&exposure;s_&filter;_&count;&extension;";
 //var targeFileNamePattern = "&filename;_AS_&1;_bin_&binning;_filter_&filter;_temp_&temp;_type_&type;_exp_&exposure;s_count_&count;&extension;";
 
@@ -77,7 +88,7 @@ var targeFileNamePattern = "&1;_&binning;_&temp;C_&type;_&exposure;s_&filter;_&c
 var sourceFileNameRegExp = /([^-]+)-/;
 
 var orderBy = "&rank;"
-var groupBy = "&targetDir;";
+var groupByPattern = "&targetDir;";
 
 
 #define COUNT_PAD 4
@@ -607,6 +618,20 @@ function MyDialog()
       }
    }
 
+   // Group pattern --------------------------------------------------------------------------------------
+   this.groupPattern_Edit = new Edit( this );
+   with ( this.groupPattern_Edit )
+   {
+      text = groupByPattern;
+      toolTip = GROUP_PATTERN_TOOLTIP;
+      enabled = true;
+      onTextUpdated = function()
+      {
+         groupByPattern = text;
+         this.dialog.buildTargetFiles();
+      }
+   }
+
 
 
 
@@ -654,37 +679,74 @@ function MyDialog()
       // Make an array with the resulting file name for each file
       var targetFiles = new Array(this.inputFiles.length);
 
-      var orderedFiles = new Array(this.inputFiles.length);
+      //var orderedFiles = new Array(this.inputFiles.length);
+
+      // A map of group count values
+      var groups = {};
+
 
       debug("** targeFileNamePattern '" + targeFileNamePattern + "'");
       debug("** sourceFileNameRegExp '" + sourceFileNameRegExp + "'");
       debug("** variableRegExp '" + variableRegExp + "'");
+      debug("** groupByPattern '" + groupByPattern + "'");
 
+      // Separate directory from file name part
+      var indexOfLastSlash = targeFileNamePattern.lastIndexOf('/');
+      if (indexOfLastSlash>0) {
+         var targetDirectoryPattern= targeFileNamePattern.substring(0,indexOfLastSlash);
+         var targetNamePattern= targeFileNamePattern.substring(indexOfLastSlash+1);
+      } else {
+         var targetDirectoryPattern = targeFileNamePattern;
+         var targetNamePattern= '';
+      }
+      debug("targetDirectoryPattern: '" + targetDirectoryPattern + "' targetNamePattern: '" +  targetNamePattern + "'");
+
+      // Text accumulating the transformation rules for display
+      // TODO Make array and use join at end to avoid coyping
       var listOfTransforms = "";
       var skip = 0;
-      var count = 0;
       var rank = 0;
+      // Initialized inside each loop, declared here for clarity
+      var count = 0;
+      var group = '';
       for ( var i in this.inputFiles) {
 
             if ( !this.files_TreeBox.child(parseInt(i)).checked ) { skip++; continue; }
 
-            // Count of checked files
-            count ++;
-
             var inputFile = this.inputFiles[i];
             var inputFileName =  File.extractName(inputFile);
 
-            var keys = this.inputKeys[i];
             var variables = this.inputVariables[i];
-            variables['count'] = count.pad(COUNT_PAD);
-
-
-            // Method to handle replacement of variables in target file name pattern
+           // Method to handle replacement of variables in target file name pattern
             var replaceVariables = function(matchedSubstring, index, originalString) {
                var varName = matchedSubstring.substring(1,matchedSubstring.length-1);
-               debug("replaceVariables: match '" + matchedSubstring + "' '" + index + "' '" +  originalString + "' '" + varName + "' by '" + variables[varName] + "'");
-               return variables[varName];
+               if (variables.hasOwnProperty(varName)) {
+                  debug("replaceVariables: match '" + matchedSubstring + "' '" + index + "' '" +  originalString + "' '" + varName + "' by '" + variables[varName] + "'");
+                  return variables[varName];
+               } else {
+                  debug("replaceVariables: match '" + matchedSubstring + "' '" + index + "' '" +  originalString + "' '" + varName + "' not found");
+                  return  varName.toUpperCase();
+               }
             };
+
+            // Use only directory part, count should not be used, used to initialie 'targetdir'
+            variables['count'] = 'COUNT';
+            var targetDirectory =  targetDirectoryPattern.replace(variableRegExp,replaceVariables);
+            variables['targetDir'] = targetDirectory;
+
+            // Expand the groupByPattern to form the id of the counter (targetDir may be used)
+            group = groupByPattern.replace(variableRegExp, replaceVariables);
+            count = 0;
+            if (groups.hasOwnProperty(group)) {
+               count = groups[group];
+            }
+            count ++;
+            debug("GROUP " + group + " count " + count);
+            groups[group] = count;
+            variables['count'] = count.pad(COUNT_PAD);
+
+            // We should not use 'targetDir' in the expansion of the file name
+            variables['targetDir'] = 'TARGETDIR';
             // The resulting name may include directories
             var targetString = targeFileNamePattern.replace(variableRegExp,replaceVariables);
             debug("targetString: " + targetString );
@@ -900,6 +962,19 @@ function MyDialog()
       add( this.sourcePattern_Edit );
    }
 
+   this.groupPattern_Edit_sizer = new HorizontalSizer;
+   with (this.groupPattern_Edit_sizer) {
+      margin = 4;
+      spacing = 2;
+      var label = new Label();
+      label.minWidth			= 100;
+		label.text		= "Group pattern: ";
+		label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
+
+      add( label );
+      add( this.groupPattern_Edit );
+   }
+
 
    this.rules_GroupBox = new GroupBox( this );
    with (this.rules_GroupBox)
@@ -912,6 +987,7 @@ function MyDialog()
 
       sizer.add( this.targetFilePattern_Edit_sizer, 100);
       sizer.add( this.sourcePattern_Edit_sizer );
+      sizer.add( this.groupPattern_Edit_sizer );
    }
 
 
