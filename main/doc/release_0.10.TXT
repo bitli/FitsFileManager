@@ -1,0 +1,9 @@
+I have significantly modified the FITS_key that copy files based on FITS keywords, it was written by of Nicolay (I hope he doesn't mind).
+FITS File manager support generating a file path from the FITS keyword in a flexible way (using a pattern). The file path can include commonly used FITS keywords, parts of the original file name and a count which can be based on selected elements (typically the target directory, but could be the filter or other variables).
+
+The script is attached. This scripts move and copy files, it is potentially dangerous, use at your own risk (however I use it on my machine).
+It must scan the files and regenerate the output file names very often, so the UI may be a little slow if you have a lot of files on a slow machine. Avoid selecting all your 'c:' drive as a source . Prefer to use copy over move to be on the safe side until you are confident in the script.
+
+Thanks to Niicolay for the original contribution. All bugs are mine. The documentation fullfill the PI standard  ;)
+
+-- bitli
