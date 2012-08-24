@@ -713,9 +713,8 @@ function MyDialog()
       debug("targetDirectoryPattern: '" + targetDirectoryPattern + "' targetNamePattern: '" +  targetNamePattern + "'");
 #endif
 
-      // Text accumulating the transformation rules for display
-      // TODO Make array and use join at end to avoid coyping
-      var listOfTransforms = "";
+      // List of text accumulating the transformation rules for display
+      var listOfTransforms = [];
       var skip = 0;
       var rank = 0;
       // Initialized inside each loop, declared here for clarity
@@ -789,13 +788,12 @@ function MyDialog()
             // Target file but without the output directory
             targetFiles[i] = targetString;
 
-            listOfTransforms = listOfTransforms.concat("File ",inputFile, "\n  to .../",
-                targetString, "\n");
+            listOfTransforms.push("File ".concat(inputFile, "\n  to .../",targetString, "\n"));
          }
 #ifdef DEBUG
          debug("Total files: ", targetFiles.length,"; Skiped: ",skip,"; Processed: ",targetFiles.length-skip);
 #endif
-         this.transform_TextBox.text = listOfTransforms;
+         this.transform_TextBox.text = listOfTransforms.join("");
 
          return targetFiles;
     }
