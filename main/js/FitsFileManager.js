@@ -7,14 +7,14 @@
 // USe at your own risk - this script move and copy files
 
 #feature-id    Utilities > FITSFileManager
-#define VERSION   0.10
+#define VERSION   0.20
 
 #include <pjsr/DataType.jsh>
 #include <pjsr/Sizer.jsh>
 //#include <pjsr/FrameStyle.jsh>
 #include <pjsr/TextAlign.jsh>
 
-#define DEBUGGING_MODE_ON false
+// #define DEBUG
 // Set to false when doing hasardous developments...
 #define EXECUTE_COMMANDS true
 
@@ -26,12 +26,12 @@
 // Default output directory same as input if no putput directory specified
 // Mark in error if duplicate or already exists
 // Add FITS keywords as variables, with formatting options
-// Add optional indicator to accept missing values '?'
+// Add optional indicator to accept missing values '?' and default value
 // Add sequence of optional text to ignore if missing variable value ()
 // Support specification of an order for 'count'
 // Hide common header part of source folders to make file name more visible
 // Add a way to use directory of source file as variable  &filedir, &filedirparent for pattern matching and group names
-// Support date formatting
+// Support date formatting, number formatting
 // Create a log file for record the source files
 // Ensure source is refreshed in case of move
 // Request confirmation for move
@@ -104,14 +104,13 @@ var variableRegExp = /&[a-zA-Z0-9]+;/g;
 
 // -- Utility methods
 
-
+#ifdef DEBUG
 function debug(str) {
-   if (DEBUGGING_MODE_ON) {
-      var s = replaceAll(str.toString(),'&','&amp;');
-      Console.writeln(s);
-      processEvents();
-   }
+   var s = replaceAll(str.toString(),'&','&amp;');
+   Console.writeln(s);
+   //processEvents();
 }
+#endif
 
 
 function replaceAll (txt, replace, with_this) {
@@ -230,11 +229,15 @@ function LoadFITSKeywords( fitsFilePath )
       //debug("kw: '" + keys[k].name + "' '"+ keys[k].value + "'");
       if (keys[k].name == name)  {
          // keyword found in the file >> extract value
+#ifdef DEBUG
          debug("findKeyWord: '" + keys[k].name + "' found '"+ keys[k].value + "'");
+#endif
          return (keys[k].value)
       }
    }
+#ifdef DEBUG
    debug("findKeyWord: '" +name + "' not found");
+#endif
    return '';
 }
 
@@ -337,7 +340,9 @@ function MyDialog()
    var outputDirectory = "";
    this.engine_mode = 0;       //0=move, 1=copy
 
-   if (DEBUGGING_MODE_ON) var outputDirectory = "C:/temp";
+#ifdef DFEBUG
+   outputDirectory = "C:/temp";
+#endif
 
    //------------------------------------------------------------
    this.onShow = function() {
@@ -441,7 +446,9 @@ function MyDialog()
    this.getFiles = function (fileNames)
    {
 
+#ifdef DEBUG
       debug("Found "+fileNames.length);
+#endif
 
       // Rank of file in all files (checked or not)
       var rank = this.inputFiles.length;
@@ -523,11 +530,15 @@ function MyDialog()
          gdd.caption = "Select Input Directory";
          if ( gdd.execute() )
          {
+#ifdef DEBUG
             debug("Start searching FITS file in SubFolders");
+#endif
             var fileNames = searchDirectory(gdd.directory+"/*.fit" ,true)
             .concat(searchDirectory(gdd.directory+"/*.fits",true))
             .concat(searchDirectory(gdd.directory+"/*.fts",true));
+#ifdef DEBUG
             debug("Finish searching FITS file in SubFolders");
+#endif
             this.dialog.getFiles(fileNames);
          }
       }
@@ -592,16 +603,22 @@ function MyDialog()
          var re = text.trim();
          if (re.length == 0) {
             sourceFileNameRegExp = null;
+#ifdef DEBUG
             debug("sourcePattern_Edit - cancel regexp");
+#endif
          } else {
             try {
                sourceFileNameRegExp = RegExp(text);
                this.textColor = 0;
+#ifdef DEBUG
                debug("sourcePattern_Edit - regexp: " + sourceFileNameRegExp);
+#endif
             } catch (err) {
                sourceFileNameRegExp = null;
                this.textColor = 0xFF0000;
+#ifdef DEBUG
                debug("sourcePattern_Edit - bad regexp - err: " + err);
+#endif
             }
          }
          // Refresh the generated files
@@ -676,10 +693,12 @@ function MyDialog()
       var groups = {};
 
 
+#ifdef DEBUG
       debug("** targeFileNamePattern '" + targeFileNamePattern + "'");
       debug("** sourceFileNameRegExp '" + sourceFileNameRegExp + "'");
       debug("** variableRegExp '" + variableRegExp + "'");
       debug("** groupByPattern '" + groupByPattern + "'");
+#endif
 
       // Separate directory from file name part
       var indexOfLastSlash = targeFileNamePattern.lastIndexOf('/');
@@ -690,7 +709,9 @@ function MyDialog()
          var targetDirectoryPattern = targeFileNamePattern;
          var targetNamePattern= '';
       }
+#ifdef DEBUG
       debug("targetDirectoryPattern: '" + targetDirectoryPattern + "' targetNamePattern: '" +  targetNamePattern + "'");
+#endif
 
       // Text accumulating the transformation rules for display
       // TODO Make array and use join at end to avoid coyping
@@ -712,10 +733,14 @@ function MyDialog()
             var replaceVariables = function(matchedSubstring, index, originalString) {
                var varName = matchedSubstring.substring(1,matchedSubstring.length-1);
                if (variables.hasOwnProperty(varName)) {
+#ifdef DEBUG
                   debug("replaceVariables: match '" + matchedSubstring + "' '" + index + "' '" +  originalString + "' '" + varName + "' by '" + variables[varName] + "'");
+#endif
                   return variables[varName];
                } else {
+#ifdef DEBUG
                   debug("replaceVariables: match '" + matchedSubstring + "' '" + index + "' '" +  originalString + "' '" + varName + "' not found");
+#endif
                   return  varName.toUpperCase();
                }
             };
@@ -725,7 +750,9 @@ function MyDialog()
             //   &1; &2;, ... The corresponding match from the sourceFileNameRegExp
             if (sourceFileNameRegExp != null) {
                var inputFileNameMatch = sourceFileNameRegExp.exec(inputFileName);
+#ifdef DEBUG
                debug ("inputFileNameMatch: " + inputFileNameMatch);
+#endif
                if (inputFileNameMatch != null) {
                   for (var j = 0; j<inputFileNameMatch.length; j++) {
                      variables[j.toString()] = inputFileNameMatch[j]
@@ -745,7 +772,9 @@ function MyDialog()
                count = groups[group];
             }
             count ++;
+#ifdef DEBUG
             debug("GROUP " + group + " count " + count);
+#endif
             groups[group] = count;
             variables['count'] = count.pad(COUNT_PAD);
 
@@ -753,7 +782,9 @@ function MyDialog()
             variables['targetDir'] = 'TARGETDIR';
             // The resulting name may include directories
             var targetString = targeFileNamePattern.replace(variableRegExp,replaceVariables);
+#ifdef DEBUG
             debug("targetString: " + targetString );
+#endif
 
             // Target file but without the output directory
             targetFiles[i] = targetString;
@@ -761,7 +792,9 @@ function MyDialog()
             listOfTransforms = listOfTransforms.concat("File ",inputFile, "\n  to .../",
                 targetString, "\n");
          }
+#ifdef DEBUG
          debug("Total files: ", targetFiles.length,"; Skiped: ",skip,"; Processed: ",targetFiles.length-skip);
+#endif
          this.transform_TextBox.text = listOfTransforms;
 
          return targetFiles;
@@ -779,9 +812,13 @@ function MyDialog()
 
             var targetFile = outputDirectory + "/" + targetString;
 
+#ifdef DEBUG
             debug("targetFile: " + targetFile );
+#endif
             var targetDirectory = File.extractDrive(targetFile) +  File.extractDirectory(targetFile);
+#ifdef DEBUG
             debug("targetDirectory: " + targetDirectory );
+#endif
 
             // Create target directory if required
             if (!File.directoryExists(targetDirectory)) {
@@ -795,7 +832,9 @@ function MyDialog()
                for( var n = u.toString(); n.length < 4 ; n = "0" + n);
                // TODO This does not take 'extension' into account
                   var tryFilePath = File.appendToName( targetFile, '-' + n );
+#ifdef DEBUG
                   debug("tryFilePath: " + tryFilePath );
+#endif
                   if ( !File.exists( tryFilePath ) ) { targetFile = tryFilePath; break; }
                }
             }
@@ -1075,7 +1114,9 @@ function KeyDialog( pd ) //pd - parentDialog
       for (var i in pd.keyTable)
       {
          checked = this.keyword_TreeBox.child( parseInt(i) ).checked;
+#ifdef DEBUG
          debug("Key#: " + parseInt(i) + " checked: " + checked );
+#endif
          pd.keyEnabled[i] = checked;
       }
       pd.setMinWidth(800);
