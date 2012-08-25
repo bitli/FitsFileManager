@@ -1,22 +1,38 @@
-// FITSFileManager
+#feature-id    Utilities > FITSFileManager
+
+#feature-info Copy and move files based on FITS keys.<br/>
+
+
+#define VERSION   "0.20"
+#define TITLE     "FITSFileManager"
+
+// #define DEBUG
+
 
 // Significantly modified from FITSkey_0.06 of Nikolay (I hope he doesn't mind)
 
 // Author: Jean-Marc Lugrin
 
-// USe at your own risk - this script move and copy files
+// Use at your own risk - this script move and copy files
 
-#feature-id    Utilities > FITSFileManager
-#define VERSION   0.20
 
+#include <pjsr/DataType.jsh>
 #include <pjsr/DataType.jsh>
 #include <pjsr/Sizer.jsh>
 //#include <pjsr/FrameStyle.jsh>
 #include <pjsr/TextAlign.jsh>
 
-// #define DEBUG
 // Set to false when doing hasardous developments...
 #define EXECUTE_COMMANDS true
+
+
+// Change log
+// 2012-08-27 - 0.1 - Initial Version
+// 2012-xx-xx - 0.2 - Enhancements and speedup
+//     Code refactoring speedups
+//     Save/restore parameters
+
+
 
 // TODO
 // Global refactoring (better MVC structure)
@@ -37,6 +53,9 @@
 // Request confirmation for move
 // Add 'clear all' icon in file list
 // Possibility to add FITS keywords to copied files (for example original file name)
+// Correct bug when manipulating check boxes
+// Mark files with missing keywords uncheked (unless optional)
+
 
 
 // Help texts
@@ -80,44 +99,174 @@ Leave blank or use a fixed name to have a single counter. The default &targetDir
 directory. &filter; would count separetely for each filter.\n\
 "
 
-//----------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------------------------------
+// User Interface Parameters
+// ------------------------------------------------------------------------------------------------------------------------
+
+// The GUI parameters keeps track of this information in
+// a form easy to be saved and presented to the user.
 
 
-// -- Default patterns (use part before first slash in teh file name)
-var targeFileNamePattern = "&1;_&binning;_&temp;C_&type;_&exposure;s_&filter;_&count;&extension;";
-//var targeFileNamePattern = "&filename;_AS_&1;_bin_&binning;_filter_&filter;_temp_&temp;_type_&type;_exp_&exposure;s_count_&count;&extension;";
 
-// Default file name reguler expression
-var sourceFileNameRegExp = /([^-]+)-/;
+#define FFM_COUNT_PAD 4
 
-var orderBy = "&rank;"
-var groupByPattern = "&targetDir;";
+#define FFM_SETTINGS_KEY_BASE  "FITSFileManager/"
+
+#define FFM_DEFAULT_SOURCE_FILENAME_REGEXP /([^-_.]+)[._-]/
+
+function FFM_GUIParameters() {
+
+   this.reset = function () {
+
+      // SETTINGS: Saved latest correct GUI state
+      this.targeFileNamePattern = "&1;_&binning;_&temp;C_&type;_&exposure;s_&filter;_&count;&extension;";
+      //this.targeFileNamePattern = "&filename;_AS_&1;_bin_&binning;_filter_&filter;_temp_&temp;_type_&type;_exp_&exposure;s_count_&count;&extension;";
+
+      // Default file name reguler expression
+      this.sourceFileNameRegExp = FFM_DEFAULT_SOURCE_FILENAME_REGEXP;
+
+      this.orderBy = "&rank;"
+      this.groupByPattern = "&targetDir;";
+    }
+   this.reset();
 
 
-#define COUNT_PAD 4
+   // For debugging and logging
+   this.toString = function() {
+      var s = "GUIParameters:\n";
+      s += "  targeFileNamePattern:           " + replaceAmps(this.targeFileNamePattern) + "\n";
+      s += "  sourceFileNameRegExp:           " + replaceAmps(regExpToString(this.sourceFileNameRegExp)) + "\n";
+      s += "  orderBy:                        " + replaceAmps(this.orderBy) + "\n";
+      s += "  groupByPattern:                 " + replaceAmps(this.groupByPattern) + "\n";
+      return s;
+   }
+}
 
-//----------------------------------------------------------------------------
+FFM_GUIParameters.prototype.loadSettings = function()
+{
+   function load( key, type )
+   {
+      var setting = Settings.read( FFM_SETTINGS_KEY_BASE + key, type );
+#ifdef DEBUG
+      Console.writeln("FFM_GUIParameters.load: ", key, ": ", (setting===null ? 'null' : replaceAmps(setting.toString())));
+#endif
+      return setting;
+   }
 
-// Parsing the keywords in the targetFileNamePattern (1 characters will be removed at
-// head (&) and tail (;), this is hard coded and must be modified if required
-var variableRegExp = /&[a-zA-Z0-9]+;/g;
+   function loadIndexed( key, index, type )
+   {
+      return load( key + '_' + index.toString(), type );
+   }
+
+   var o;
+   if ( (o = load( "version",    DataType_Double )) != null ) {
+      if (o > VERSION) {
+         Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' have version ", o, " later than script version ", VERSION, ", settings ignored");
+      } else {
+         if ( (o = load( "targeFileNamePattern",    DataType_String )) != null ) {
+            this.targeFileNamePattern = o;
+         };
+         if ( (o = load( "sourceFileNameRegExp",    DataType_String )) != null ) {
+            try {
+               this.sourceFileNameRegExp = RegExp(o);
+            } catch (err) {
+               // Default in case of error in load
+               guiParameters.sourceFileNameRegExp = FFM_DEFAULT_SOURCE_FILENAME_REGEXP;
+#ifdef DEBUG
+               debug("loadSettings: bad regexp - err: " + err);
+#endif
+            }
+         };
+         if ( (o = load( "orderBy",                 DataType_String )) != null )
+            this.orderBy = o;
+         if ( (o = load( "groupByPattern",          DataType_String )) != null )
+            this.groupByPattern = o;
+      }
+   } else {
+      Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' do not have a 'version' key, settings ignored");
+   }
+
+};
+
+FFM_GUIParameters.prototype.saveSettings = function()
+{
+   function save( key, type, value ) {
+#ifdef DEBUG
+      Console.writeln("saveSettings: key=",key,", type=", type, ", value=" ,replaceAmps(value.toString()));
+#endif
+      Settings.write( FFM_SETTINGS_KEY_BASE + key, type, value );
+   }
+
+   function saveIndexed( key, index, type, value ) {
+#ifdef DEBUG
+      Console.writeln("saveSettings: key=",key,", index=", index, ", type=", type, ", value=" ,replaceAmps(value.toString()));
+#endif
+      save( key + '_' + index.toString(), type, value );
+   }
+
+   save( "version",                  DataType_Double,  parseFloat(VERSION) );
+   save( "targeFileNamePattern",     DataType_String,  this.targeFileNamePattern );
+   save( "sourceFileNameRegExp",     DataType_String,  regExpToString(this.sourceFileNameRegExp) );
+   save( "orderBy",                  DataType_String,  this.orderBy );
+   save( "groupByPattern",           DataType_String,  this.groupByPattern );
+
+}
+
+
+
+
+
+// ------------------------------------------------------------------------------------------------------------------------
+// Utility functions
+// ------------------------------------------------------------------------------------------------------------------------
+
 
 // -- Utility methods
 
 #ifdef DEBUG
 function debug(str) {
-   var s = replaceAll(str.toString(),'&','&amp;');
+   var s = replaceAmps(str.toString());
    Console.writeln(s);
    //processEvents();
 }
 #endif
 
 
+// ------- string functions
+
 function replaceAll (txt, replace, with_this) {
   return txt.replace(new RegExp(replace, 'g'),with_this);
 }
 
+FFM_replaceAmpsRegExp = new RegExp('&', 'g');
 
+function replaceAmps (txt) {
+  return txt.replace(FFM_replaceAmpsRegExp,'&amp;');
+}
+
+
+
+// Remove quotes and trim
+function unQuote (s) {
+   var t = s.trim();
+   if (t.length>0 && t[0]=="'" && t[t.length-1]=="'") {
+      return t.substring(1,t.length-1).trim();
+   }
+   return t;
+}
+
+
+// ------- formatting functions
+
+// Pad a mumber with leading 0
+Number.prototype.pad = function(size){
+      var s = String(this);
+      while (s.length < size) s = "0" + s;
+      return s;
+}
+
+
+// ------- file functions
 
 function copyFile( sourceFilePath, targetFilePath ) {
    var f = new File;
@@ -135,23 +284,9 @@ function copyFile( sourceFilePath, targetFilePath ) {
 
 
 
-// Remove quotes and trim
-function unQuote (s) {
-   var t = s.trim();
-   if (t.length>0 && t[0]=="'" && t[t.length-1]=="'") {
-      return t.substring(1,t.length-1).trim();
-   }
-   return t;
-}
 
-// Pad a mumber with leading 0
-Number.prototype.pad = function(size){
-      var s = String(this);
-      while (s.length < size) s = "0" + s;
-      return s;
-}
 
-// -- FITS utility methods
+// ------- FITS utility methods
 
 // Read the fits keywords of a file, return an array FITSKeyword (value is empty string if there is no value)
 function LoadFITSKeywords( fitsFilePath )
@@ -241,7 +376,8 @@ function LoadFITSKeywords( fitsFilePath )
    return '';
 }
 
-// -- Conversion support
+
+// ------ Conversion support functions
 function convertFilter(rawFilterName) {
    var filterConversions = [
       [/green/i, 'green'],
@@ -279,6 +415,27 @@ function convertType(rawTypeName) {
    return unquotedName.toLowerCase();
 }
 
+// --- Pattern matching and RegExp functions
+
+function regExpToString(re) {
+   if (re == null) {
+      return "";
+   } else {
+   // Remove lading and trainling slahes
+      var reString = re.toString();
+      return  reString.substring(1, reString.length-1);
+   }
+}
+
+// Parsing the keywords in the targetFileNamePattern (1 characters will be removed at
+// head (&) and tail (;), this is hard coded and must be modified if required
+var variableRegExp = /&[a-zA-Z0-9]+;/g;
+
+
+
+
+// --- Variable handling
+
 // Extract the variables to form group names and file names from the file name, FITS keywords and rank
 function extractVariables(inputFile, keys, rank) {
 
@@ -292,9 +449,9 @@ function extractVariables(inputFile, keys, rank) {
    variables['binning'] = xBinning.toFixed(0)+"x"+yBinning.toFixed(0);
 
    // Use a fixed count, will be updated for each file
-   variables['count'] = 0 .pad(COUNT_PAD);
+   variables['count'] = 0 .pad(FFM_COUNT_PAD);
    //   &rank;      The rank in the list of files of the file being moved/copied, padded to COUNT_PAD.
-   variables['rank'] = rank.pad(COUNT_PAD);
+   variables['rank'] = rank.pad(FFM_COUNT_PAD);
 
    //   &exposure;   The exposure from EXPOSURE, as an integer (assume seconds)
    var exposure = findKeyWord(keys,'EXPOSURE');
@@ -340,7 +497,7 @@ function MyDialog()
    var outputDirectory = "";
    this.engine_mode = 0;       //0=move, 1=copy
 
-#ifdef DFEBUG
+#ifdef DEBUG
    outputDirectory = "C:/temp";
 #endif
 
@@ -447,7 +604,7 @@ function MyDialog()
    {
 
 #ifdef DEBUG
-      debug("Found "+fileNames.length);
+      debug("getFiles: Found "+fileNames.length);
 #endif
 
       // Rank of file in all files (checked or not)
@@ -476,7 +633,9 @@ function MyDialog()
       }
       console.writeln(" ");
       if (qtyNew == 0) {console.writeln("No new files"); return;}
-      console.writeln("New ",qtyNew,"\nTotal ",this.inputFiles.length);
+#ifdef DEBUG
+      debug("getFiles: New " + qtyNew +"\nTotal " +this.inputFiles.length);
+#endif
       this.UpdateTreeBox();
       this.QTY.text = "Total files: " + this.inputFiles.length;
       this.setMinWidth(800);
@@ -576,12 +735,12 @@ function MyDialog()
    this.targetFilePattern_Edit = new Edit( this );
    with ( this.targetFilePattern_Edit )
    {
-      text = targeFileNamePattern;
+      text = guiParameters.targeFileNamePattern;
       toolTip = TARGET_PATTERN_TOOLTIP;
       enabled = true;
       onTextUpdated = function()
       {
-         targeFileNamePattern = text;
+         guiParameters.targeFileNamePattern = text;
          this.dialog.buildTargetFiles();
       }
    }
@@ -590,34 +749,29 @@ function MyDialog()
    this.sourcePattern_Edit = new Edit( this );
    with ( this.sourcePattern_Edit )
    {
-      if (sourceFileNameRegExp==null) {
-         text = "";
-      } else {
-         var re = sourceFileNameRegExp.toString();
-         text = re.substring(1, re.length-1);
-      }
+      text = regExpToString(guiParameters.sourceFileNameRegExp);
       toolTip = SOURCE_FILENAME_REGEXP_TOOLTIP;
       enabled = true;
       onTextUpdated = function()
       {
-         var re = text.trim();
+         var re = this.text.trim();
          if (re.length == 0) {
-            sourceFileNameRegExp = null;
+            guiParameters.sourceFileNameRegExp = null;
 #ifdef DEBUG
-            debug("sourcePattern_Edit - cancel regexp");
+            debug("sourcePattern_Edit: onTextUpdated:- cancel regexp");
 #endif
          } else {
             try {
-               sourceFileNameRegExp = RegExp(text);
+               guiParameters.sourceFileNameRegExp = RegExp(re);
                this.textColor = 0;
 #ifdef DEBUG
-               debug("sourcePattern_Edit - regexp: " + sourceFileNameRegExp);
+               debug("sourcePattern_Edit: onTextUpdated: regexp: " + guiParameters.sourceFileNameRegExp);
 #endif
             } catch (err) {
-               sourceFileNameRegExp = null;
+               guiParameters.sourceFileNameRegExp = null;
                this.textColor = 0xFF0000;
 #ifdef DEBUG
-               debug("sourcePattern_Edit - bad regexp - err: " + err);
+               debug("sourcePattern_Edit: onTextUpdated:  bad regexp - err: " + err);
 #endif
             }
          }
@@ -630,12 +784,12 @@ function MyDialog()
    this.groupPattern_Edit = new Edit( this );
    with ( this.groupPattern_Edit )
    {
-      text = groupByPattern;
+      text = guiParameters.groupByPattern;
       toolTip = GROUP_PATTERN_TOOLTIP;
       enabled = true;
       onTextUpdated = function()
       {
-         groupByPattern = text;
+         guiParameters.groupByPattern = text;
          this.dialog.buildTargetFiles();
       }
    }
@@ -694,23 +848,22 @@ function MyDialog()
 
 
 #ifdef DEBUG
-      debug("** targeFileNamePattern '" + targeFileNamePattern + "'");
-      debug("** sourceFileNameRegExp '" + sourceFileNameRegExp + "'");
-      debug("** variableRegExp '" + variableRegExp + "'");
-      debug("** groupByPattern '" + groupByPattern + "'");
+      debug("buildTargetFiles: targeFileNamePattern = '" + guiParameters.targeFileNamePattern + "'");
+      debug("buildTargetFiles: sourceFileNameRegExp = '" + guiParameters.sourceFileNameRegExp + "'");
+      debug("buildTargetFiles: groupByPattern = '" + guiParameters.groupByPattern + "'");
 #endif
 
       // Separate directory from file name part
-      var indexOfLastSlash = targeFileNamePattern.lastIndexOf('/');
+      var indexOfLastSlash = guiParameters.targeFileNamePattern.lastIndexOf('/');
       if (indexOfLastSlash>0) {
-         var targetDirectoryPattern= targeFileNamePattern.substring(0,indexOfLastSlash);
-         var targetNamePattern= targeFileNamePattern.substring(indexOfLastSlash+1);
+         var targetDirectoryPattern= guiParameters.targeFileNamePattern.substring(0,indexOfLastSlash);
+         var targetNamePattern= guiParameters.targeFileNamePattern.substring(indexOfLastSlash+1);
       } else {
-         var targetDirectoryPattern = targeFileNamePattern;
+         var targetDirectoryPattern = guiParameters.targeFileNamePattern;
          var targetNamePattern= '';
       }
 #ifdef DEBUG
-      debug("targetDirectoryPattern: '" + targetDirectoryPattern + "' targetNamePattern: '" +  targetNamePattern + "'");
+      debug("buildTargetFiles: targetDirectoryPattern = '" + targetDirectoryPattern + "', targetNamePattern = '" +  targetNamePattern + "'");
 #endif
 
       // List of text accumulating the transformation rules for display
@@ -747,10 +900,10 @@ function MyDialog()
             // The file name part is calculated at each scan as the regxep may have been changed
             // TODO Optimize this maybe, clear the numbered variables of a previous scan
             //   &1; &2;, ... The corresponding match from the sourceFileNameRegExp
-            if (sourceFileNameRegExp != null) {
-               var inputFileNameMatch = sourceFileNameRegExp.exec(inputFileName);
+            if (guiParameters.sourceFileNameRegExp != null) {
+               var inputFileNameMatch = guiParameters.sourceFileNameRegExp.exec(inputFileName);
 #ifdef DEBUG
-               debug ("inputFileNameMatch: " + inputFileNameMatch);
+               debug ("buildTargetFiles: inputFileNameMatch= " + inputFileNameMatch);
 #endif
                if (inputFileNameMatch != null) {
                   for (var j = 0; j<inputFileNameMatch.length; j++) {
@@ -765,24 +918,24 @@ function MyDialog()
             variables['targetDir'] = targetDirectory;
 
             // Expand the groupByPattern to form the id of the counter (targetDir may be used)
-            group = groupByPattern.replace(variableRegExp, replaceVariables);
+            group = guiParameters.groupByPattern.replace(variableRegExp, replaceVariables);
             count = 0;
             if (groups.hasOwnProperty(group)) {
                count = groups[group];
             }
             count ++;
 #ifdef DEBUG
-            debug("GROUP " + group + " count " + count);
+            debug("buildTargetFiles: group = " + group + ", count = " + count);
 #endif
             groups[group] = count;
-            variables['count'] = count.pad(COUNT_PAD);
+            variables['count'] = count.pad(FFM_COUNT_PAD);
 
             // We should not use 'targetDir' in the expansion of the file name
             variables['targetDir'] = 'TARGETDIR';
             // The resulting name may include directories
-            var targetString = targeFileNamePattern.replace(variableRegExp,replaceVariables);
+            var targetString = guiParameters.targeFileNamePattern.replace(variableRegExp,replaceVariables);
 #ifdef DEBUG
-            debug("targetString: " + targetString );
+            debug("buildTargetFiles: targetString = " + targetString );
 #endif
 
             // Target file but without the output directory
@@ -791,7 +944,7 @@ function MyDialog()
             listOfTransforms.push("File ".concat(inputFile, "\n  to .../",targetString, "\n"));
          }
 #ifdef DEBUG
-         debug("Total files: ", targetFiles.length,"; Skiped: ",skip,"; Processed: ",targetFiles.length-skip);
+         debug("buildTargetFiles: Total files: ", targetFiles.length,"; Skiped: ",skip,"; Processed: ",targetFiles.length-skip);
 #endif
          this.transform_TextBox.text = listOfTransforms.join("");
 
@@ -811,11 +964,11 @@ function MyDialog()
             var targetFile = outputDirectory + "/" + targetString;
 
 #ifdef DEBUG
-            debug("targetFile: " + targetFile );
+            debug("apply: targetFile = " + targetFile );
 #endif
             var targetDirectory = File.extractDrive(targetFile) +  File.extractDirectory(targetFile);
 #ifdef DEBUG
-            debug("targetDirectory: " + targetDirectory );
+            debug("apply: targetDirectory = " + targetDirectory );
 #endif
 
             // Create target directory if required
@@ -831,7 +984,7 @@ function MyDialog()
                // TODO This does not take 'extension' into account
                   var tryFilePath = File.appendToName( targetFile, '-' + n );
 #ifdef DEBUG
-                  debug("tryFilePath: " + tryFilePath );
+                  debug("apply: tryFilePath= " + tryFilePath );
 #endif
                   if ( !File.exists( tryFilePath ) ) { targetFile = tryFilePath; break; }
                }
@@ -1113,7 +1266,7 @@ function KeyDialog( pd ) //pd - parentDialog
       {
          checked = this.keyword_TreeBox.child( parseInt(i) ).checked;
 #ifdef DEBUG
-         debug("Key#: " + parseInt(i) + " checked: " + checked );
+         debug("KeyDialog: Key#= " + parseInt(i) + " checked= " + checked );
 #endif
          pd.keyEnabled[i] = checked;
       }
@@ -1156,7 +1309,13 @@ function KeyDialog( pd ) //pd - parentDialog
    this.adjustToContents();
 }
 
+// TODO Should be in main()
+guiParameters = new FFM_GUIParameters();
+guiParameters.loadSettings();
+
 MyDialog.prototype = new Dialog;
 KeyDialog.prototype = new Dialog;
 var dialog = new MyDialog;
 dialog.execute();
+guiParameters.saveSettings();
+
