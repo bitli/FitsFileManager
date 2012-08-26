@@ -388,6 +388,7 @@ function LoadFITSKeywords( fitsFilePath )
 
 
 // ------ Conversion support functions
+
 function convertFilter(rawFilterName) {
    var filterConversions = [
       [/green/i, 'green'],
@@ -403,6 +404,7 @@ function convertFilter(rawFilterName) {
       }
    }
    // TODO Remove internal spaces etc...
+   // Maybe use batch preprocssing: filter.replace( /[^a-zA-Z0-9\+\-_]/g, '_' ).replace( /_+/g, '_' );
    return unquotedName.toLowerCase();
 }
 
@@ -413,6 +415,7 @@ function convertType(rawTypeName) {
       [/.*offset.*/i, 'bias'],
       [/.*dark.*/i, 'dark'],
       [/.*light.*/i, 'light'],
+      [/.*science.*/i, 'light'],
    ];
    var unquotedName = unQuote(rawTypeName);
    for (var i=0; i<typeConversions.length; i++) {
@@ -422,6 +425,7 @@ function convertType(rawTypeName) {
       }
    }
    // TODO Remove internal spaces etc...
+   // Maybe use batch preprocssing: filter.replace( /[^a-zA-Z0-9\+\-_]/g, '_' ).replace( /_+/g, '_' );
    return unquotedName.toLowerCase();
 }
 
@@ -446,8 +450,8 @@ var variableRegExp = /&[a-zA-Z0-9]+;/g;
 
 // --- Variable handling
 
-// Extract the variables to form group names and file names from the file name, FITS keywords and rank
-function extractVariables(inputFile, keys, rank) {
+// Extract the variables to form group names and file names from the file name, FITS keywords
+function extractVariables(inputFile, keys) {
 
    var inputFileName =  File.extractName(inputFile);
 
@@ -653,29 +657,26 @@ function MyDialog()
    }
 
    //---------------------------------------------------------------------------------------
-   this.getFiles = function (fileNames)
+   // Add a list of files to the TreeBox (remove duplicates)
+   this.addFiles = function (fileNames)
    {
 
 #ifdef DEBUG
-      debug("getFiles: Adding "+fileNames.length + " files");
+      debug("addFiles: Adding "+fileNames.length + " files");
 #endif
-
-      // Rank of the file in all files (checked or not), start at 1
-      var rank = this.inputFiles.length;
 
       var qtyNew = 0;
       for ( var i = 0; i<fileNames.length; i++ )
       {
 #ifdef DEBUG
-         debug("getFiles: Check and add [" + i + "] " + fileNames[i]);
+         debug("addFiles: Check and add [" + i + "] " + fileNames[i]);
 #endif
          if (this.inputFiles.indexOf(fileNames[i]) < 0) //Add file only one times
          {
             var keys = LoadFITSKeywords(fileNames[i]);
             this.inputFiles.push(fileNames[i]);
             this.inputKeys.push(keys);
-            rank ++;
-            var variables = extractVariables(fileNames[i], keys, rank);
+            var variables = extractVariables(fileNames[i], keys);
 
             this.inputVariables.push(variables);
             qtyNew++;
@@ -686,7 +687,7 @@ function MyDialog()
          return;
       }
 #ifdef DEBUG
-      debug("getFiles: New " + qtyNew +"\nTotal " +this.inputFiles.length);
+      debug("addFiles: New " + qtyNew +"\nTotal " +this.inputFiles.length);
 #endif
       this.UpdateTreeBox();
       this.QTY.text = "Total files: " + this.inputFiles.length;
@@ -723,7 +724,7 @@ function MyDialog()
          ofd.multipleSelections = true;
          ofd.caption = "Select FITS Files";
          ofd.filters = [["FITS Files", "*.fit", "*.fits", "*.fts"]];
-         if ( ofd.execute() ) this.dialog.getFiles(ofd.fileNames);
+         if ( ofd.execute() ) this.dialog.addFiles(ofd.fileNames);
       }
    }
 
@@ -751,7 +752,7 @@ function MyDialog()
 #ifdef DEBUG
             debug("Finish searching FITS file in SubFolders");
 #endif
-            this.dialog.getFiles(fileNames);
+            this.dialog.addFiles(fileNames);
          }
       }
    }
