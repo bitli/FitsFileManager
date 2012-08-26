@@ -37,7 +37,8 @@
 //     Code refactoring, speedups
 //     Save/restore parameters
 //     Corrected mapping of files in tree and list if not sorted as loaded,
-//     added refresh button because there is no onSort event
+//     added refresh button because there is no onSort event,
+//     default sort is ascending on FileName
 //     Added button remove all
 
 
@@ -564,6 +565,7 @@ function MyDialog()
       headerVisible = true;
       headerSorting = true;
       setHeaderText(0, "Filename");
+      sort(0,true);
 
       setMinSize( 400, 200 );
 
@@ -770,15 +772,20 @@ function MyDialog()
 #endif
          if ( this.dialog.inputFiles.length == 0 ) return;
 
-         for ( var i = this.dialog.files_TreeBox.numberOfChildren; --i >= 0; )
+         for ( var iTreeBox = this.dialog.files_TreeBox.numberOfChildren; --iTreeBox >= 0; )
          {
 
-            if ( this.dialog.files_TreeBox.child( i ).selected )
+            if ( this.dialog.files_TreeBox.child( iTreeBox ).selected )
             {
+               var nameInTreeBox = this.dialog.files_TreeBox.child(iTreeBox).text(0);
+               var i = this.dialog.inputFiles.indexOf(nameInTreeBox);
+               if (i < 0) {
+                  throw ("SCRIPT ERROR : buildTargetFiles: files_TreeBox[" + iTreeBox +"] = " + nameInTreeBox +" - not found in inputFiles");
+               }
                this.dialog.inputFiles.splice(i,1);
                this.dialog.inputKeys.splice(i,1);
                this.dialog.inputVariables.splice(i,1);
-               this.dialog.files_TreeBox.remove( i );
+               this.dialog.files_TreeBox.remove( iTreeBox );
             }
          }
          this.dialog.QTY.text = "Total files: " + this.dialog.inputFiles.length;
@@ -931,6 +938,9 @@ function MyDialog()
       // Make an array with the resulting file name for each file
       var targetFiles = new Array(this.inputFiles.length);
 
+      // A map of file name to index to check duplicates
+      var targetFileNameToIndexInTreeBox = {};
+
       //var orderedFiles = new Array(this.inputFiles.length);
 
       // A map of group count values
@@ -972,7 +982,7 @@ function MyDialog()
             var nameInTreeBox = this.files_TreeBox.child(iTreeBox).text(0);
             var i = this.inputFiles.indexOf(nameInTreeBox);
             if (i < 0) {
-               throw ("SCRIPT ERROR : invalid index  " + i);
+               throw ("SCRIPT ERROR : buildTargetFiles: files_TreeBox[" + iTreeBox +"] = " + nameInTreeBox +" - not found in inputFiles");
             }
 
             var inputFile = this.inputFiles[i];
@@ -1043,6 +1053,12 @@ function MyDialog()
             debug("buildTargetFiles: targetString = " + targetString );
 #endif
 
+            // Check for duplicates
+            if (targetFileNameToIndexInTreeBox.hasOwnProperty(targetString)) {
+               Console.writeln("**** DUPLICATE "  + targetString + " at " + iTreeBox + " with " + targetFileNameToIndexInTreeBox[targetString]);
+            }
+            targetFileNameToIndexInTreeBox[targetString] = iTreeBox;
+
             // Target file but without the output directory
             targetFiles[i] = targetString;
 
@@ -1059,6 +1075,7 @@ function MyDialog()
    //engine----------------------------------------------------------------------------
    this.apply = function () {
 
+      // TODO - do not rebuild, as the order may not be what is presented in the list (or check order)
       var targetFiles =  this.buildTargetFiles();
       var count = 0;
 
