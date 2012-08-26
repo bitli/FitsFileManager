@@ -28,7 +28,7 @@
 #include <pjsr/TextAlign.jsh>
 
 // Set to false when doing hasardous developments...
-#define EXECUTE_COMMANDS true
+#define EXECUTE_COMMANDS false
 
 
 // Change log
@@ -322,7 +322,7 @@ function LoadFITSKeywords( fitsFilePath )
    var f = new File;
    f.openForReading( fitsFilePath );
 
-   var keywords = new Array;
+   var keywords = [];
    for ( ;; )
    {
       var rawData = f.read( DataType_ByteArray, 80 );
@@ -498,180 +498,53 @@ function extractVariables(inputFile, keys) {
 
 }
 
-//----------------------------------------------------------------------------
-function MyDialog()
-{
-   this.__base__ = Dialog;
-   this.__base__();
-   this.inputFiles = []; //Array of filename with full path
-   this.inputKeys = [];  //keys of all files. Big RAW array of all file keys.
-   this.inputVariables = [];  //variables of all files (derived from FITS). Big RAW array of all variables map.
-   this.keyTable = [];   //accumulated names of keywords from all files
-   this.keyEnabled = []; //true == selected keywords
-   this.defaultKey = ["SET-TEMP","EXPOSURE","IMAGETYP","FILTER  ", "XBINNING","YBINNING"];
-   var outputDirectory = "";
-   this.engine_mode = 0;       //0=move, 1=copy
 
+// ------------------------------------------------------------------------------------------------------------------------
+// Engine
+// ------------------------------------------------------------------------------------------------------------------------
+
+function FFM_Engine() {
+
+   // This is from the GUI
+   this.outputDirectory = "";
 #ifdef DEBUG
-   outputDirectory = "C:/temp";
+  this.outputDirectory = "C:/temp";
 #endif
 
-   //------------------------------------------------------------
-   this.onShow = function() {
-//      this.filesAdd_Button.onClick();
-   }
-
-   //hide columns of unchecked keywords---------------------------
-   // TODO Repai
-   this.hideKey = function () {
-      //if (DEBUGGING_MODE_ON) console.clear();
-
-      for (var i in this.keyEnabled) {
-         var c = parseInt(i) + 1;
-         // debug("Column: " + i + " "  + c + " enabled: " + this.keyEnabled[parseInt(i)] + " " );
-         // console.writeln(" *** " + i + " " + typeof i + " " + typeof this.keyEnabled[i] + " " + this.files_TreeBox.numberOfColumns);
-
-         // TODO Does not work unles debug is enabled
-         // this.files_TreeBox.showColumn( c, this.keyEnabled[i]);
-      }
-   }
-
-   //----------------------------------------------------------------------------------
-   // KeyWord Dialog
-   this.SD = new KeyDialog( this );
-   this.Key_button = new ToolButton( this );
-   with ( this.Key_button )
-   {
-      icon = new Bitmap( ":/images/icons/text.png" );
-      toolTip = "KeyWord Dialog";
-      onClick = function()
-      {
-         if (this.dialog.keyTable.length)
-         {
-            this.dialog.SD.execute();
-            this.dialog.hideKey();
-         }
-      }
-   }
-
-   //----------------------------------------------------------
-   // File List TreeBox
-   this.files_TreeBox = new TreeBox( this );
-   with ( this.files_TreeBox )
-   {
-      rootDecoration = false;
-      numberOfColumns = 1;
-      multipleSelection = true;
-      headerVisible = true;
-      headerSorting = true;
-      setHeaderText(0, "Filename");
-      sort(0,true);
-
-      setMinSize( 400, 200 );
-
-      // Assume that 'check' is the only operation that update the nodes,
-      // this may not be true...
-      onNodeUpdated = function( node, column ) // Invert CheckMark
-      {
-
-#ifdef DEBUG_EVENTS
-         debug("files_TreeBox: onNodeUpdated("+node+","+column+")");
-#endif
-         for (var i=0; i < this.selectedNodes.length; i++)
-         {
-            if ( node === this.selectedNodes[i] ) continue; // skip curent clicked node, because it will inverted automaticaly
-            this.selectedNodes[i].checked = !this.selectedNodes[i].checked;
-         }
-         this.dialog.buildTargetFiles();
-      };
-#ifdef DEBUG_EVENTS
-      onCurrentNodeUpdated = function(node) {
-         debug("files_TreeBox: onCurrentNodeUpdated("+node+")");
-      };
-      onNodeActivated = function(node) {
-         debug("files_TreeBox: onNodeActivated("+node+")");
-      };
-      onNodeClicked = function(node) {
-         debug("files_TreeBox: onNodeClicked("+node+")");
-      };
-      onNodeCollapsed = function(node) {
-         debug("files_TreeBox: onNodeCollapsed("+node+")");
-      };
-      onNodeDoubleClicked = function(node) {
-         debug("files_TreeBox: onNodeDoubleClicked("+node+")");
-      };
-      onNodeEntered = function(node) {
-         // this is not called unless mouse events are enabled
-         debug("files_TreeBox: onNodeEntered("+node+")");
-      };
-      onNodeExpanded = function(node) {
-         debug("files_TreeBox: onNodeExpanded("+node+")");
-      };
-      onNodeSelectionUpdated = function() {
-         debug("files_TreeBox: onNodeSelectionUpdated()");
-      };
-#endif
-   }
+   // TODO Make a global parameter
+   this.defaultKey = ["SET-TEMP","EXPOSURE","IMAGETYP","FILTER  ", "XBINNING","YBINNING"];
 
 
+   // Variables that can be reset (when doing clear all)
+   this.reset = function() {
+      // Cache of file information. 3parallel arrays, the order is usually NOT the same as in the GUI
+      this.inputFiles = []; //Array of filename with full path
+      this.inputKeys = [];  // Array of an array of FITSKeywords for the corresponding file
+      this.inputVariables = [];  // Array of Map of stable variables for the corresponding file
 
-   //----------------------------------------------------------
-   this.UpdateTreeBox = function ()
-   {
-      this.files_TreeBox.clear();
+      // Cache global FITS key information (two parallel arrays)
+      this.keyTable = [];   //accumulated names of keywords from all files
+      this.keyEnabled = []; //true == selected keywords
 
-      this.keyTable = []; // clear
+      // Target files is a subset of the inputFiles, each file is defined by an index
+      // in input file and the corresponding new file name. Unchecked files are not
+      // present in the list. Initially empty. 2 parallel arrays.
+      this.targetFilesIndices = [];
+      this.targetFiles = [];
+    }
 
-      // Accumulate all KeyName in keyTabe
-      for (var i = 0; i < this.inputFiles.length; ++i) {
-         var keys = this.inputKeys[i]; // keywords of one file
-
-          // Create TreeBoxNode for file
-         var node = new TreeBoxNode( this.files_TreeBox );
-         node.setText( 0, this.inputFiles[i] ); //write name of the file to first column
-         node.checked = true;
-
-
-         for ( var j in keys )
-         {
-            var name = keys[j].name; //name of Keyword from file
-            var k = this.keyTable.indexOf(name);// find index of "name" in keyTable
-            if (k < 0) // new keyName
-            {
-               this.keyTable.push(name);//add keyword name to table
-               this.files_TreeBox.numberOfColumns++;// add new column
-               this.files_TreeBox.setHeaderText(this.keyTable.length, name);//set name of new column
-               //console.writeln("*** " + this.files_TreeBox.numberOfColumns + " " + name);
-               k = this.keyTable.length-1;
-               this.keyEnabled[k] = (this.defaultKey.indexOf(name)> -1);//compare with defauld enabled keywords
-
-               //this.files_TreeBox.showColumn( this.files_TreeBox.numberOfColumns, this.keyEnabled[k]);
-            }
-            // TODO Supports other formatting (dates ?) or show raw text
-            if (keys[j].isNumeric) {
-                  node.setText( k+1, Number(keys[j].value).toFixed(3) );
-            } else {
-                  node.setText( k+1, keys[j].value.trim() );
-            }
-         }
-      }
-      this.hideKey(); //hide the columns of unchecked FITS keywords
-   }
-
-   //---------------------------------------------------------------------------------------
-   // Add a list of files to the TreeBox (remove duplicates)
-   this.addFiles = function (fileNames)
-   {
+   // -- Add a list of files
+   this.addFiles = function (fileNames) {
 
 #ifdef DEBUG
       debug("addFiles: Adding "+fileNames.length + " files");
 #endif
 
-      var qtyNew = 0;
-      for ( var i = 0; i<fileNames.length; i++ )
-      {
+      var nmbFilesAdded = 0;
+      var nmbFilesDuplicated = 0;
+      for ( var i = 0; i<fileNames.length; i++ ) {
 #ifdef DEBUG
-         debug("addFiles: Check and add [" + i + "] " + fileNames[i]);
+         debug("addFiles: Check for duplicate and add fileNames[" + i + "] " + fileNames[i]);
 #endif
          if (this.inputFiles.indexOf(fileNames[i]) < 0) //Add file only one times
          {
@@ -681,277 +554,47 @@ function MyDialog()
             var variables = extractVariables(fileNames[i], keys);
 
             this.inputVariables.push(variables);
-            qtyNew++;
-         }
-      }
-      if (qtyNew == 0) {
-         console.writeln("No new files");
-         return;
-      }
-#ifdef DEBUG
-      debug("addFiles: New " + qtyNew +"\nTotal " +this.inputFiles.length);
-#endif
-      this.UpdateTreeBox();
-      this.QTY.text = "Total files: " + this.inputFiles.length;
-      this.setMinWidth(800);
-      this.adjustToContents();
-      this.dialog.updateButtonState();
-
-      this.buildTargetFiles();
-      //this.hideKey(); // *** TEST
-   }
-
-   // Total file Label ---------------------------------------------------------------------------
-   this.QTY = new Label( this );
-   this.QTY.textAlignment = TextAlign_Right|TextAlign_VertCenter;
-
-   //enable/disable buttons
-   this.updateButtonState = function()
-   {
-      var enabled = !((!this.inputFiles.length) || (!outputDirectory));
-      this.dialog.move_Button.enabled = enabled;
-      this.dialog.copy_Button.enabled = enabled;
-      this.dialog.txt_Button.enabled = enabled;
-   }
-
-   // Add files ---------------------------------------------------------------------------
-   this.filesAdd_Button = new ToolButton( this );
-   with ( this.filesAdd_Button )
-   {
-      icon = new Bitmap( ":/images/image_container/add_files.png" );
-      toolTip = "Add files";
-      onClick = function()
-      {
-         var ofd = new OpenFileDialog;
-         ofd.multipleSelections = true;
-         ofd.caption = "Select FITS Files";
-         ofd.filters = [["FITS Files", "*.fit", "*.fits", "*.fts"]];
-         if ( ofd.execute() ) this.dialog.addFiles(ofd.fileNames);
-      }
-   }
-
-
-   // Add Dir ---------------------------------------------------------------------------
-   this.dirAdd_Button = new ToolButton( this );
-   with ( this.dirAdd_Button )
-   {
-      icon = new Bitmap( ":/images/icons/folders.png" );
-      toolTip = "Add folder including subfolders";
-      onClick = function()
-      {
-         var gdd = new GetDirectoryDialog;
-         //gdd.initialPath = outputDirectory;
-         gdd.caption = "Select Input Directory";
-         if ( gdd.execute() )
-         {
-#ifdef DEBUG
-            debug("Start searching FITS file in SubFolders");
-#endif
-            // TODO Make configurable
-            var fileNames = searchDirectory(gdd.directory+"/*.fit" ,true)
-            .concat(searchDirectory(gdd.directory+"/*.fits",true))
-            .concat(searchDirectory(gdd.directory+"/*.fts",true));
-#ifdef DEBUG
-            debug("Finish searching FITS file in SubFolders");
-#endif
-            this.dialog.addFiles(fileNames);
-         }
-      }
-   }
-
-   // Close selected files ---------------------------------------------------------------------------
-   this.files_close_Button = new ToolButton( this );
-   with ( this.files_close_Button )
-   {
-      icon = new Bitmap( ":/images/close.png" );
-      toolTip = "<p>Removed selected images from the list.</p>";
-      onClick = function()
-      {
-#ifdef DEBUG
-         debug("Remove files");
-#endif
-         if ( this.dialog.inputFiles.length == 0 ) return;
-
-         for ( var iTreeBox = this.dialog.files_TreeBox.numberOfChildren; --iTreeBox >= 0; )
-         {
-
-            if ( this.dialog.files_TreeBox.child( iTreeBox ).selected )
-            {
-               var nameInTreeBox = this.dialog.files_TreeBox.child(iTreeBox).text(0);
-               var i = this.dialog.inputFiles.indexOf(nameInTreeBox);
-               if (i < 0) {
-                  throw ("SCRIPT ERROR : buildTargetFiles: files_TreeBox[" + iTreeBox +"] = " + nameInTreeBox +" - not found in inputFiles");
-               }
-               this.dialog.inputFiles.splice(i,1);
-               this.dialog.inputKeys.splice(i,1);
-               this.dialog.inputVariables.splice(i,1);
-               this.dialog.files_TreeBox.remove( iTreeBox );
-            }
-         }
-         this.dialog.QTY.text = "Total files: " + this.dialog.inputFiles.length;
-         this.dialog.updateButtonState();
-         // Refresh the generated files
-         this.dialog.buildTargetFiles();
-
-      }
-   }
-
-   this.files_close_all_Button = new ToolButton( this );
-   with ( this.files_close_all_Button )
-   {
-      icon = new Bitmap( ":/images/close_all.png" );
-      toolTip = "<p>Removed all images from the list.</p>";
-      onClick = function()
-      {
-#ifdef DEBUG
-         debug("Remove all files (" + this.dialog.inputFiles.length + ")");
-#endif
-         if ( this.dialog.inputFiles.length == 0 ) return;
-
-         // TODO We can probably clear in one go
-         for ( var i = this.dialog.files_TreeBox.numberOfChildren; --i >= 0; )
-         {
-               this.dialog.files_TreeBox.remove( i );
-         }
-         this.dialog.inputFiles = [];
-         this.dialog.inputKeys = [];
-         this.dialog.inputVariables = [];
-         this.dialog.updateButtonState();
-         // Also forget all FITS keys
-         this.keyTable = [];
-         this.keyEnabled = [];
-         // Refresh the generated files
-         this.dialog.buildTargetFiles();
-
-      }
-   }
-
-
-
-   // Target pattern --------------------------------------------------------------------------------------
-   this.targetFilePattern_Edit = new Edit( this );
-   with ( this.targetFilePattern_Edit )
-   {
-      text = guiParameters.targeFileNamePattern;
-      toolTip = TARGET_PATTERN_TOOLTIP;
-      enabled = true;
-      onTextUpdated = function()
-      {
-         guiParameters.targeFileNamePattern = text;
-         this.dialog.buildTargetFiles();
-      }
-   }
-
-   // Source file name pattern --------------------------------------------------------------------------------------
-   this.sourcePattern_Edit = new Edit( this );
-   with ( this.sourcePattern_Edit )
-   {
-      text = regExpToString(guiParameters.sourceFileNameRegExp);
-      toolTip = SOURCE_FILENAME_REGEXP_TOOLTIP;
-      enabled = true;
-      onTextUpdated = function()
-      {
-         var re = this.text.trim();
-         if (re.length == 0) {
-            guiParameters.sourceFileNameRegExp = null;
-#ifdef DEBUG
-            debug("sourcePattern_Edit: onTextUpdated:- cancel regexp");
-#endif
+            nmbFilesAdded++;
          } else {
-            try {
-               guiParameters.sourceFileNameRegExp = RegExp(re);
-               this.textColor = 0;
-#ifdef DEBUG
-               debug("sourcePattern_Edit: onTextUpdated: regexp: " + guiParameters.sourceFileNameRegExp);
-#endif
-            } catch (err) {
-               guiParameters.sourceFileNameRegExp = null;
-               this.textColor = 0xFF0000;
-#ifdef DEBUG
-               debug("sourcePattern_Edit: onTextUpdated:  bad regexp - err: " + err);
-#endif
-            }
-         }
-         // Refresh the generated files
-         this.dialog.buildTargetFiles();
-      }
-   }
-
-   // Group pattern --------------------------------------------------------------------------------------
-   this.groupPattern_Edit = new Edit( this );
-   with ( this.groupPattern_Edit )
-   {
-      text = guiParameters.groupByPattern;
-      toolTip = GROUP_PATTERN_TOOLTIP;
-      enabled = true;
-      onTextUpdated = function()
-      {
-         guiParameters.groupByPattern = text;
-         this.dialog.buildTargetFiles();
-      }
-   }
-
-
-
-
-
-   //Output Dir --------------------------------------------------------------------------------------
-   this.outputDir_Edit = new Edit( this );
-   this.outputDir_Edit.readOnly = true;
-   this.outputDir_Edit.text = outputDirectory;
-   this.outputDir_Edit.toolTip ="select output directory.";
-
-   this.outputDirSelect_Button = new ToolButton( this );
-   with ( this.outputDirSelect_Button )
-   {
-      icon = new Bitmap( ":/images/icons/select.png" );
-      toolTip = "Select output directory";
-      onClick = function()
-      {
-         var gdd = new GetDirectoryDialog;
-         gdd.initialPath = outputDirectory;
-         gdd.caption = "Select Output Directory";
-         if ( gdd.execute() )
-         {
-            outputDirectory = gdd.directory;
-            this.dialog.outputDir_Edit.text = outputDirectory;
-            this.dialog.updateButtonState();
+            nmbFilesDuplicated ++;
          }
       }
+
+      Console.writeln("" + nmbFilesAdded + " files added, " + nmbFilesDuplicated + " duplicated file ignored");
+
    }
 
-   // Source file name pattern --------------------------------------------------------------------------------------
-   this.transform_TextBox = new TextBox( this );
-   with ( this.transform_TextBox )
-   {
-      text = '';
-      toolTip = "Transformations that will be executed";
-      enabled = true;
-      readOnly = true;
+   // -- remvove a file by name
+   this.removeFiles = function (fileName) {
+      var index = this.inputFiles.indexOf(fileName);
+      if (index < 0) {
+         throw ("SCRIPT ERROR : removeFiles: file " + fileName + " not in inputFiles");
+      }
+      this.inputFiles.splice(index,1);
+      this.inputKeys.splice(index,1);
+      this.inputVariables.splice(index,1);
    }
 
-   // ===================================================================================
-   // -- ENGINE
-
-   this.buildTargetFiles = function() {
-
-      // Make an array with the resulting file name for each file
-      var targetFiles = new Array(this.inputFiles.length);
-
-      // A map of file name to index to check duplicates
-      var targetFileNameToIndexInTreeBox = {};
-
-      //var orderedFiles = new Array(this.inputFiles.length);
-
-      // A map of group count values
-      var groups = {};
-
+   //--  Build the list of target files for the selected input files (in that order)
+   this.buildTargetFiles = function(listOfFiles) {
 
 #ifdef DEBUG
+      debug("buildTargetFiles: list of " + listOfFiles.length + " files");
       debug("buildTargetFiles: targeFileNamePattern = '" + guiParameters.targeFileNamePattern + "'");
       debug("buildTargetFiles: sourceFileNameRegExp = '" + guiParameters.sourceFileNameRegExp + "'");
       debug("buildTargetFiles: groupByPattern = '" + guiParameters.groupByPattern + "'");
 #endif
+
+      // Reinitialize thetarget files
+      this.targetFilesIndices = [];
+      this.targetFiles = [];
+
+      // A map of file name to index to check duplicates
+      var targetFileNameToIndexInTreeBox = {};
+
+      // A map of group count values
+      var groups = {};
+
 
       // Separate directory from file name part in target pattern
       var indexOfLastSlash = guiParameters.targeFileNamePattern.lastIndexOf('/');
@@ -966,30 +609,22 @@ function MyDialog()
       debug("buildTargetFiles: targetDirectoryPattern = '" + targetDirectoryPattern + "', targetNamePattern = '" +  targetNamePattern + "'");
 #endif
 
-      // List of text accumulating the transformation rules for display
-      var listOfTransforms = [];
-      // Number of the file in the order they are processed (as sorted by the TreeBox)
-      var rank = 0;
-
-      var skip = 0;
       // Initialized inside each loop, declared here for clarity
       var count = 0;
       var group = '';
-      for (var iTreeBox = 0; iTreeBox < this.inputFiles.length; ++iTreeBox) {
+      for (var i = 0; i < listOfFiles.length; ++i) {
 
-            if ( !this.files_TreeBox.child(iTreeBox).checked ) { skip++; continue; }
-            // Select name in tree box, find corresponding file in inputFiles
-            var nameInTreeBox = this.files_TreeBox.child(iTreeBox).text(0);
-            var i = this.inputFiles.indexOf(nameInTreeBox);
-            if (i < 0) {
-               throw ("SCRIPT ERROR : buildTargetFiles: files_TreeBox[" + iTreeBox +"] = " + nameInTreeBox +" - not found in inputFiles");
+            var inputFile = listOfFiles[i];
+
+            var inputFileIndex = this.inputFiles.indexOf(inputFile);
+            if (inputFileIndex < 0) {
+               throw ("SCRIPT ERROR : buildTargetFiles: file not in inputFiles: " + inputFile + " (" + i + ")");
             }
-
-            var inputFile = this.inputFiles[i];
-            var inputFileName =  File.extractName(inputFile);
 #ifdef DEBUG
-            debug("buildTargetFiles: processing inputFile[" + i + "] = " + inputFile + ", TeexBox[" + iTreeBox + "].text:" + nameInTreeBox);
+            debug("buildTargetFiles: " + i + ": processing inputFile[" + inputFileIndex + "] = " + inputFile);
 #endif
+
+            var inputFileName =  File.extractName(inputFile);
 
             var variables = this.inputVariables[i];
             // Method to handle replacement of variables in target file name pattern
@@ -1009,8 +644,7 @@ function MyDialog()
             };
 
             //   &rank;      The rank in the list of files of the file being moved/copied, padded to COUNT_PAD.
-            rank ++;
-            variables['rank'] = rank.pad(FFM_COUNT_PAD);
+            variables['rank'] = i.pad(FFM_COUNT_PAD);
 
             // The file name part is calculated at each scan as the regxep may have been changed
             // TODO Optimize this maybe, clear the numbered variables of a previous scan
@@ -1053,37 +687,48 @@ function MyDialog()
             debug("buildTargetFiles: targetString = " + targetString );
 #endif
 
-            // Check for duplicates
+            // Check for duplicates TODO THIS IS NOT IN TREE BOX
             if (targetFileNameToIndexInTreeBox.hasOwnProperty(targetString)) {
-               Console.writeln("**** DUPLICATE "  + targetString + " at " + iTreeBox + " with " + targetFileNameToIndexInTreeBox[targetString]);
+               Console.writeln("**** DUPLICATE "  + targetString + " at " + inputFileIndex + " with " + targetFileNameToIndexInTreeBox[targetString]);
             }
-            targetFileNameToIndexInTreeBox[targetString] = iTreeBox;
+            targetFileNameToIndexInTreeBox[targetString] = inputFileIndex;
 
             // Target file but without the output directory
-            targetFiles[i] = targetString;
+            this.targetFilesIndices.push(inputFileIndex);
+            this.targetFiles.push(targetString);
 
-            listOfTransforms.push("File ".concat(inputFile, "\n  to .../",targetString, "\n"));
          }
 #ifdef DEBUG
-         debug("buildTargetFiles: Total files: ", targetFiles.length,"; Skiped: ",skip,"; Processed: ",targetFiles.length-skip);
+         debug("buildTargetFiles: Total files: ", this.targetFiles.length);
 #endif
-         this.transform_TextBox.text = listOfTransforms.join("");
 
-         return targetFiles;
     }
 
-   //engine----------------------------------------------------------------------------
-   this.apply = function () {
 
-      // TODO - do not rebuild, as the order may not be what is presented in the list (or check order)
-      var targetFiles =  this.buildTargetFiles();
+    // -- Make List of text accumulating the transformation rules for display
+    this.makeListOfTransforms = function() {
+      var listOfTransforms = [];
+      for (var i = 0; i<this.targetFiles.length; i++) {
+         var index = this.targetFilesIndices[i];
+         var inputFile = this.inputFiles[index];
+         listOfTransforms.push("File ".concat(inputFile, "\n  to .../",this.targetFiles[i], "\n"));
+      }
+      return listOfTransforms;
+    }
+
+
+   // -- Copy or move files
+   this.apply = function (engine_mode) {
+
       var count = 0;
 
-      for (i in targetFiles) {
-            var targetString = targetFiles[i];
-            var inputFile = this.inputFiles[i];
+      for (var i=0; i<this.targetFiles.length; i++) {
 
-            var targetFile = outputDirectory + "/" + targetString;
+            var index = this.targetFilesIndices[i];
+            var targetString = this.targetFiles[i];
+            var inputFile = this.inputFiles[index];
+
+            var targetFile = this.outputDirectory + "/" + targetString;
 
 #ifdef DEBUG
             debug("apply: targetFile = " + targetFile );
@@ -1112,7 +757,7 @@ function MyDialog()
                }
             }
 
-            if (this.engine_mode==0) {
+            if (engine_mode==0) {
                console.writeln("move " + inputFile +"\n  to "+ targetFile);
                if (EXECUTE_COMMANDS) File.move(inputFile,targetFile);
             } else {
@@ -1120,12 +765,509 @@ function MyDialog()
                if (EXECUTE_COMMANDS)  copyFile(inputFile,targetFile);
             }
             count ++;
+
+            // To allow abort ?
             processEvents();
 
          }
-         console.writeln("Total files: ", this.inputFiles.length,"; Processed: ",count);
+         //console.writeln("Total files: ", this.inputFiles.length,"; Processed: ",count);
 
    };
+
+   // -- Export the keywords of a list of files
+   this.exportFITSKeyWords = function() {
+      var tab = String.fromCharCode(9);
+      var f = new File();
+      var fileName = "FITS_keys";
+      var fileDir = this.outputDirectory;
+      var t = fileDir + "/" + fileName + ".txt";
+      // Create numbered file nameto create new file
+      if ( File.exists( t ) ) {
+         for ( var u = 1; ; ++u ) {
+            for( var n = u.toString(); n.length < 4 ; n = "0" + n);
+            var tryFilePath = File.appendToName( t, '-' + n );
+            if ( !File.exists( tryFilePath ) ) { t = tryFilePath; break; }
+         }
+      }
+      f.create(t);
+
+      //output header (tab separated selected fits keyword + 'Filename')
+      for ( var i =0; i<this.keyTable.length; i++) {
+         if (!this.keyEnabled[i]) continue;
+         f.outTextLn(this.keyTable[i]+tab);
+      }
+      f.outTextLn("Filename"+String.fromCharCode(10,13));
+
+      //output FITS data
+      for ( var j =0; j< this.targetFilesIndices.length; j++) {
+         var inputIndex = this.targetFilesIndices[i];
+
+         var key = this.inputKeys[inputIndex];
+         for ( var i = 0; i< this.keyTable.length; i++) {
+            if (!this.keyEnabled[i]) continue;
+            var name = this.keyTable[i];
+            for (var k in key) {
+               if (!(key[k].name == name)) continue;
+               if (key[k].isNumeric) {
+                  var value = parseFloat(key[k].value)
+               } else {
+                  var value = key[k].value;
+                  value = value.replace( /'/g, "" );
+                  value = value.replace( / /g, "" ); //delete left space
+                  value = value.replace( /:/g, "." );
+               }
+
+               f.outText(value.toString());
+               for (var w = value.toString().length; w < 8; w++) f.outText(" ");
+               f.outText(tab);
+               k=-1;
+               break;
+            }
+            if (k > -1) f.outText("        "+tab);
+         }
+         f.outTextLn(this.inputFiles[j]+String.fromCharCode(10,13));
+      }
+      f.close();
+      console.writeln("FITSKeywords saved to ",t);
+   }
+
+   // -- Return true if move or copy is possible
+   this.canDoOperation = function() {
+         return !((!this.inputFiles.length) || (!this.outputDirectory));
+   }
+
+
+
+   this.reset();
+}
+
+
+// ------------------------------------------------------------------------------------------------------------------------
+// GUI
+// ------------------------------------------------------------------------------------------------------------------------
+
+function MyDialog(engine)
+{
+   this.__base__ = Dialog;
+   this.__base__();
+   this.engine = engine;
+
+
+   //------------------------------------------------------------
+   this.onShow = function() {
+//      this.filesAdd_Button.onClick();
+   }
+
+   //hide columns of unchecked keywords---------------------------
+   // TODO Repai
+   this.hideKey = function () {
+      //if (DEBUGGING_MODE_ON) console.clear();
+
+      for (var i in this.engine.keyEnabled) {
+         var c = parseInt(i) + 1;
+         // debug("Column: " + i + " "  + c + " enabled: " + this.keyEnabled[parseInt(i)] + " " );
+         // console.writeln(" *** " + i + " " + typeof i + " " + typeof this.keyEnabled[i] + " " + this.files_TreeBox.numberOfColumns);
+
+         // TODO Does not work unles debug is enabled
+         // this.files_TreeBox.showColumn( c, this.keyEnabled[i]);
+      }
+   }
+
+   //----------------------------------------------------------------------------------
+   // KeyWord Dialog
+   this.SD = new KeyDialog( this );
+   this.Key_button = new ToolButton( this );
+   with ( this.Key_button )
+   {
+      icon = new Bitmap( ":/images/icons/text.png" );
+      toolTip = "KeyWord Dialog";
+      onClick = function()
+      {
+         if (this.dialog.engine.keyTable.length)
+         {
+            this.dialog.SD.execute();
+            this.dialog.hideKey();
+         }
+      }
+   }
+
+   //----------------------------------------------------------
+   // File List TreeBox
+   this.files_TreeBox = new TreeBox( this );
+   with ( this.files_TreeBox )
+   {
+      rootDecoration = false;
+      numberOfColumns = 1;
+      multipleSelection = true;
+      headerVisible = true;
+      headerSorting = true;
+      setHeaderText(0, "Filename");
+      sort(0,true);
+
+      setMinSize( 400, 200 );
+
+      // Assume that 'check' is the only operation that update the nodes,
+      // this may not be true...
+      onNodeUpdated = function( node, column ) // Invert CheckMark
+      {
+
+#ifdef DEBUG_EVENTS
+         debug("files_TreeBox: onNodeUpdated("+node+","+column+")");
+#endif
+         for (var i=0; i < this.selectedNodes.length; i++)
+         {
+            if ( node === this.selectedNodes[i] ) continue; // skip curent clicked node, because it will inverted automaticaly
+            this.selectedNodes[i].checked = !this.selectedNodes[i].checked;
+         }
+         this.dialog.refreshTargetFiles();
+      };
+#ifdef DEBUG_EVENTS
+      onCurrentNodeUpdated = function(node) {
+         debug("files_TreeBox: onCurrentNodeUpdated("+node+")");
+      };
+      onNodeActivated = function(node) {
+         debug("files_TreeBox: onNodeActivated("+node+")");
+      };
+      onNodeClicked = function(node) {
+         debug("files_TreeBox: onNodeClicked("+node+")");
+      };
+      onNodeCollapsed = function(node) {
+         debug("files_TreeBox: onNodeCollapsed("+node+")");
+      };
+      onNodeDoubleClicked = function(node) {
+         debug("files_TreeBox: onNodeDoubleClicked("+node+")");
+      };
+      onNodeEntered = function(node) {
+         // this is not called unless mouse events are enabled
+         debug("files_TreeBox: onNodeEntered("+node+")");
+      };
+      onNodeExpanded = function(node) {
+         debug("files_TreeBox: onNodeExpanded("+node+")");
+      };
+      onNodeSelectionUpdated = function() {
+         debug("files_TreeBox: onNodeSelectionUpdated()");
+      };
+#endif
+   }
+
+
+
+   //----------------------------------------------------------
+   // Rebuild the TreeBox content
+   this.rebuildFilesTreeBox = function ()
+   {
+      this.files_TreeBox.clear();
+
+      // TODO IN ENGINE
+      this.engine.keyTable = []; // clear
+      this.engine.keyEnabled = []; // clear
+
+      // Accumulate all KeyName in keyTabe
+      for (var i = 0; i < this.engine.inputFiles.length; ++i) {
+         var keys = this.engine.inputKeys[i]; // keywords of one file
+
+         // Create TreeBoxNode for file
+         var node = new TreeBoxNode( this.files_TreeBox );
+         //write name of the file to first column
+         node.setText( 0, this.engine.inputFiles[i] );
+         node.checked = true;
+
+#ifdef DEBUG
+         debug("rebuildFilesTreeBox: adding " + keys.length + " column data");
+#endif
+         for ( var j = 0; j<keys.length; j++) {
+            var name = keys[j].name; //name of Keyword from file
+            var k = this.engine.keyTable.indexOf(name);// find index of "name" in keyTable
+            if (k < 0)  {
+               // new keyName
+#ifdef DEBUG_COLUMNS
+               debug("rebuildFilesTreeBox: Creating new column " + name + " at " + this.files_TreeBox.numberOfColumns);
+#endif
+               this.engine.keyTable.push(name);//add keyword name to table
+               this.files_TreeBox.numberOfColumns++;// add new column
+               this.files_TreeBox.setHeaderText(this.engine.keyTable.length, name);//set name of new column
+               //console.writeln("*** " + this.files_TreeBox.numberOfColumns + " " + name);
+               this.engine.keyEnabled.push (this.engine.defaultKey.indexOf(name)> -1);//compare with default enabled keywords
+               k = this.engine.keyTable.length-1;
+
+               //this.files_TreeBox.showColumn( this.files_TreeBox.numberOfColumns, this.keyEnabled[k]);
+            }
+            // TODO Supports other formatting (dates ?) or show raw text
+            if (keys[j].isNumeric) {
+               node.setText( k+1, Number(keys[j].value).toFixed(3) );
+            } else {
+               node.setText( k+1, keys[j].value.trim() );
+            }
+         }
+      }
+      this.hideKey(); //hide the columns of unchecked FITS keywords
+   }
+
+   //---------------------------------------------------------------------------------------
+   // Add a list of files to the TreeBox (remove duplicates)
+   this.addFilesAction = function (fileNames)
+   {
+      this.engine.addFiles(fileNames);
+
+      this.rebuildFilesTreeBox();
+      this.QTY.text = "Total files: " + this.engine.inputFiles.length;
+      this.setMinWidth(800);
+      this.adjustToContents();
+      this.dialog.updateButtonState();
+
+      this.refreshTargetFiles();
+      //this.hideKey(); // *** TEST
+   }
+
+   // Total file Label ---------------------------------------------------------------------------
+   this.QTY = new Label( this );
+   this.QTY.textAlignment = TextAlign_Right|TextAlign_VertCenter;
+
+   //enable/disable buttons
+   this.updateButtonState = function()
+   {
+      var enabled = this.dialog.engine.canDoOperation();
+      this.dialog.move_Button.enabled = enabled;
+      this.dialog.copy_Button.enabled = enabled;
+      this.dialog.txt_Button.enabled = enabled;
+   }
+
+   // Add files ---------------------------------------------------------------------------
+   this.filesAdd_Button = new ToolButton( this );
+   with ( this.filesAdd_Button )
+   {
+      icon = new Bitmap( ":/images/image_container/add_files.png" );
+      toolTip = "Add files";
+      onClick = function()
+      {
+         var ofd = new OpenFileDialog;
+         ofd.multipleSelections = true;
+         ofd.caption = "Select FITS Files";
+         ofd.filters = [["FITS Files", "*.fit", "*.fits", "*.fts"]];
+         if ( ofd.execute() ) {
+            this.dialog.addFilesAction(ofd.fileNames);
+         }
+      }
+   }
+
+
+   // Add Dir ---------------------------------------------------------------------------
+   this.dirAdd_Button = new ToolButton( this );
+   with ( this.dirAdd_Button )
+   {
+      icon = new Bitmap( ":/images/icons/folders.png" );
+      toolTip = "Add folder including subfolders";
+      onClick = function()
+      {
+         var gdd = new GetDirectoryDialog;
+         //gdd.initialPath = outputDirectory;
+         gdd.caption = "Select Input Directory";
+         if ( gdd.execute() )
+         {
+#ifdef DEBUG
+            debug("Start searching FITS file in SubFolders");
+#endif
+            // TODO Make configurable
+            var fileNames = searchDirectory(gdd.directory+"/*.fit" ,true)
+            .concat(searchDirectory(gdd.directory+"/*.fits",true))
+            .concat(searchDirectory(gdd.directory+"/*.fts",true));
+#ifdef DEBUG
+            debug("Finish searching FITS file in SubFolders");
+#endif
+            this.dialog.addFilesAction(fileNames);
+         }
+      }
+   }
+
+   // Close selected files ---------------------------------------------------------------------------
+   this.files_close_Button = new ToolButton( this );
+   with ( this.files_close_Button )
+   {
+      icon = new Bitmap( ":/images/close.png" );
+      toolTip = "<p>Removed selected images from the list.</p>";
+      onClick = function()
+      {
+#ifdef DEBUG
+         debug("Remove files");
+#endif
+
+         for ( var iTreeBox = this.dialog.files_TreeBox.numberOfChildren; --iTreeBox >= 0; )
+         {
+
+            if ( this.dialog.files_TreeBox.child( iTreeBox ).selected )
+            {
+               var nameInTreeBox = this.dialog.files_TreeBox.child(iTreeBox).text(0);
+
+               this.dialog.engine.removeFiles(nameInTreeBox);
+               this.dialog.files_TreeBox.remove( iTreeBox );
+            }
+         }
+         this.dialog.QTY.text = "Total files: " + this.dialog.engine.inputFiles.length;
+         this.dialog.updateButtonState();
+         // Refresh the generated files
+         this.dialog.refreshTargetFiles();
+
+      }
+   }
+
+   // Close all files ---------------------------------------------------------------------------
+   this.files_close_all_Button = new ToolButton( this );
+   with ( this.files_close_all_Button )
+   {
+      icon = new Bitmap( ":/images/close_all.png" );
+      toolTip = "<p>Removed all images from the list.</p>";
+      onClick = function()
+      {
+#ifdef DEBUG
+         debug("Remove all files (" + this.dialog.engine.inputFiles.length + ")");
+#endif
+
+         // TODO We can probably clear in one go
+         for ( var i = this.dialog.files_TreeBox.numberOfChildren; --i >= 0; )
+         {
+               this.dialog.files_TreeBox.remove( i );
+         }
+         this.dialog.engine.reset();
+         this.dialog.updateButtonState();
+         // Refresh the generated files
+         this.dialog.refreshTargetFiles();
+
+      }
+   }
+
+
+
+   // Target pattern --------------------------------------------------------------------------------------
+   this.targetFilePattern_Edit = new Edit( this );
+   with ( this.targetFilePattern_Edit )
+   {
+      text = guiParameters.targeFileNamePattern;
+      toolTip = TARGET_PATTERN_TOOLTIP;
+      enabled = true;
+      onTextUpdated = function()
+      {
+         guiParameters.targeFileNamePattern = text;
+         this.dialog.refreshTargetFiles();
+      }
+   }
+
+   // Source file name pattern --------------------------------------------------------------------------------------
+   this.sourcePattern_Edit = new Edit( this );
+   with ( this.sourcePattern_Edit )
+   {
+      text = regExpToString(guiParameters.sourceFileNameRegExp);
+      toolTip = SOURCE_FILENAME_REGEXP_TOOLTIP;
+      enabled = true;
+      onTextUpdated = function()
+      {
+         var re = this.text.trim();
+         if (re.length == 0) {
+            guiParameters.sourceFileNameRegExp = null;
+#ifdef DEBUG
+            debug("sourcePattern_Edit: onTextUpdated:- cancel regexp");
+#endif
+         } else {
+            try {
+               guiParameters.sourceFileNameRegExp = RegExp(re);
+               this.textColor = 0;
+#ifdef DEBUG
+               debug("sourcePattern_Edit: onTextUpdated: regexp: " + guiParameters.sourceFileNameRegExp);
+#endif
+            } catch (err) {
+               guiParameters.sourceFileNameRegExp = null;
+               this.textColor = 0xFF0000;
+#ifdef DEBUG
+               debug("sourcePattern_Edit: onTextUpdated:  bad regexp - err: " + err);
+#endif
+            }
+         }
+         // Refresh the generated files
+         this.dialog.refreshTargetFiles();
+      }
+   }
+
+   // Group pattern --------------------------------------------------------------------------------------
+   this.groupPattern_Edit = new Edit( this );
+   with ( this.groupPattern_Edit )
+   {
+      text = guiParameters.groupByPattern;
+      toolTip = GROUP_PATTERN_TOOLTIP;
+      enabled = true;
+      onTextUpdated = function()
+      {
+         guiParameters.groupByPattern = text;
+         this.dialog.refreshTargetFiles();
+      }
+   }
+
+
+
+
+
+   //Output Dir --------------------------------------------------------------------------------------
+   this.outputDir_Edit = new Edit( this );
+   this.outputDir_Edit.readOnly = true;
+   this.outputDir_Edit.text = this.engine.outputDirectory;
+   this.outputDir_Edit.toolTip ="select output directory.";
+
+   this.outputDirSelect_Button = new ToolButton( this );
+   with ( this.outputDirSelect_Button )
+   {
+      icon = new Bitmap( ":/images/icons/select.png" );
+      toolTip = "Select output directory";
+      onClick = function()
+      {
+         var gdd = new GetDirectoryDialog;
+         gdd.initialPath = this.engine.outputDirectory;
+         gdd.caption = "Select Output Directory";
+         if ( gdd.execute() )
+         {
+            this.engine.outputDirectory = gdd.directory;
+            this.dialog.outputDir_Edit.text = this.engine.outputDirectory;
+            this.dialog.updateButtonState();
+         }
+      }
+   }
+
+   // Source file name pattern --------------------------------------------------------------------------------------
+   this.transform_TextBox = new TextBox( this );
+   with ( this.transform_TextBox )
+   {
+      text = '';
+      toolTip = "Transformations that will be executed";
+      enabled = true;
+      readOnly = true;
+   }
+
+   // ===================================================================================
+   //
+
+   this.refreshTargetFiles = function() {
+
+#ifdef DEBUG
+      debug("refreshTargetFiles() called");
+#endif
+
+      var listOfFiles = [];
+
+      for (var iTreeBox = 0; iTreeBox < this.files_TreeBox.numberOfChildren; ++iTreeBox) {
+
+         if ( this.files_TreeBox.child(iTreeBox).checked ) {
+            // Select name in tree box, find corresponding file in inputFiles
+            var nameInTreeBox = this.files_TreeBox.child(iTreeBox).text(0);
+            listOfFiles.push(nameInTreeBox);
+         }
+      }
+
+
+      this.engine.buildTargetFiles(listOfFiles);
+
+      // List of text accumulating the transformation rules for display
+      var listOfTransforms = this.engine.makeListOfTransforms();
+      this.transform_TextBox.text = listOfTransforms.join("");
+
+    }
+
 
    //Engine buttons --------------------------------------------------------------------------------------
    this.move_Button = new PushButton( this );
@@ -1135,8 +1277,7 @@ function MyDialog()
       enabled = false;
       onClick = function()
       {
-         parent.engine_mode = 0;
-         parent.apply();
+         parent.engine.apply(0);
          //this.dialog.ok();
       }
    }
@@ -1148,7 +1289,7 @@ function MyDialog()
       enabled = true;
       onClick = function()
       {
-         parent.buildTargetFiles();
+         parent.refreshTargetFiles();
       }
    }
 
@@ -1159,8 +1300,7 @@ function MyDialog()
       enabled = false;
       onClick = function()
       {
-         parent.engine_mode = 1;
-         parent.apply();
+         parent.engine.apply(1);
          //this.dialog.ok();
       }
    }
@@ -1171,69 +1311,10 @@ function MyDialog()
       text = "Export FITS.txt";
       toolTip = "For Checked files write FitKeywords value to file FITS.txt in output directory";
       enabled = false;
-      onClick = function()
-      {
-         var tab = String.fromCharCode(9);
-         var f = new File();
-         var fileName = "FITS_keys";
-         var fileDir = outputDirectory;
-         var t = fileDir + "/" + fileName + ".txt";
-         // Create numbered file nameto create new file
-         if ( File.exists( t ) )
-         {
-            for ( var u = 1; ; ++u )
-            {
-               for( var n = u.toString(); n.length < 4 ; n = "0" + n);
-               var tryFilePath = File.appendToName( t, '-' + n );
-               if ( !File.exists( tryFilePath ) ) { t = tryFilePath; break; }
-            }
-         }
-         f.create(t);
-
-         //output header (tab separated selected fits keyword + 'Filename')
-         for ( var i in parent.keyTable)
-         {
-            if (!parent.keyEnabled[i]) continue;
-            f.outTextLn(parent.keyTable[i]+tab);
-         }
-         f.outTextLn("Filename"+String.fromCharCode(10,13));
-
-         //output FITS data
-         var skip = 0;
-         for ( var j in parent.inputFiles)
-         {
-            if ( !parent.files_TreeBox.child(parseInt(j)).checked ) { skip++; continue; }
-            var key = parent.inputKeys[j];
-            for ( var i in parent.keyTable)
-            {
-               if (!parent.keyEnabled[i]) continue;
-               var name = parent.keyTable[i];
-               for (var k in key)
-               {
-                  if (!(key[k].name == name)) continue;
-                  if (key[k].isNumeric)
-                     var value = parseFloat(key[k].value)
-                  else
-                  {
-                     var value = key[k].value;
-                     value = value.replace( /'/g, "" );
-                     value = value.replace( / /g, "" ); //delete left space
-                     value = value.replace( /:/g, "." );
-                  }
-
-                  f.outText(value.toString());
-                  for (var w = value.toString().length; w < 8; w++) f.outText(" ");
-                  f.outText(tab);
-                  k=-1;
-                  break;
-               }
-               if (k > -1) f.outText("        "+tab);
-            }
-            f.outTextLn(parent.inputFiles[j]+String.fromCharCode(10,13));
-         }
-         f.close();
-         console.writeln("FITSKeywords saved to ",t);
+      onClick = function() {
+         parent.engine.exportFITSKeyWords();
       }
+
    }
 
 
@@ -1379,17 +1460,18 @@ function KeyDialog( pd ) //pd - parentDialog
       this.keyword_TreeBox.clear();
 
       // Fill list of keywords from parent keyTable
-      for (i in pd.keyTable)
+      for (i in pd.engine.keyTable)
       {
          var node = new TreeBoxNode(this.keyword_TreeBox);
-         node.setText( 0, pd.keyTable[i] );
-         node.checked = pd.keyEnabled[i];
+         node.setText( 0, pd.engine.keyTable[i] );
+         node.checked = pd.engine.keyEnabled[i];
       }
 
       // Fill list of files from parent list of files
       this.file_ComboBox.clear();
-      for (i in pd.inputFiles)
-         this.file_ComboBox.addItem(pd.inputFiles[i]);
+      for (i in pd.engine.inputFiles) {
+         this.file_ComboBox.addItem(pd.engine.inputFiles[i]);
+      }
       this.file_ComboBox.onItemSelected(0);
       this.setMinSize(400,600);
    }
@@ -1397,13 +1479,13 @@ function KeyDialog( pd ) //pd - parentDialog
    // Save list of selected keywords in parent keyEnabled array
    this.onHide = function()
    {
-      for (var i in pd.keyTable)
+      for (var i in pd.engine.keyTable)
       {
          checked = this.keyword_TreeBox.child( parseInt(i) ).checked;
 #ifdef DEBUG
          debug("KeyDialog: Key#= " + parseInt(i) + " checked= " + checked );
 #endif
-         pd.keyEnabled[i] = checked;
+         pd.engine.keyEnabled[i] = checked;
       }
       pd.setMinWidth(800);
    }
@@ -1415,8 +1497,9 @@ function KeyDialog( pd ) //pd - parentDialog
    {
       onItemSelected = function( index )
       {
-         for ( var i in pd.keyTable)
+         for ( var i in pd.engine.keyTable) {
             parent.keyword_TreeBox.child(parseInt(i)).setText(1,pd.files_TreeBox.child(index).text(parseInt(i)+1));
+         }
       }
 
    }
@@ -1448,9 +1531,11 @@ function KeyDialog( pd ) //pd - parentDialog
 guiParameters = new FFM_GUIParameters();
 guiParameters.loadSettings();
 
+var engine = new FFM_Engine();
+
 MyDialog.prototype = new Dialog;
 KeyDialog.prototype = new Dialog;
-var dialog = new MyDialog;
+var dialog = new MyDialog(engine);
 dialog.execute();
 guiParameters.saveSettings();
 
