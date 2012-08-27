@@ -26,7 +26,8 @@
 #include <pjsr/Sizer.jsh>
 //#include <pjsr/FrameStyle.jsh>
 #include <pjsr/TextAlign.jsh>
-
+#include <pjsr/StdIcon.jsh>
+#include <pjsr/StdButton.jsh>
 // Set to false when doing hasardous developments...
 #define EXECUTE_COMMANDS false
 
@@ -122,7 +123,8 @@ directory. &filter; would count separetely for each filter.\n\
 
 #define FFM_SETTINGS_KEY_BASE  "FITSFileManager/"
 
-#define FFM_DEFAULT_SOURCE_FILENAME_REGEXP /([^-_.]+)[._-]/
+// Select the first sequence without -_. or the whole name in &1; (second group is non capturing)
+#define FFM_DEFAULT_SOURCE_FILENAME_REGEXP /([^-_.]+)(?:[._-]|$)/
 
 function FFM_GUIParameters() {
 
@@ -564,7 +566,7 @@ function FFM_Engine() {
 
    }
 
-   // -- remvove a file by name
+   // -- remove a file by name ----------------------------------------------------------
    this.removeFiles = function (fileName) {
       var index = this.inputFiles.indexOf(fileName);
       if (index < 0) {
@@ -575,7 +577,9 @@ function FFM_Engine() {
       this.inputVariables.splice(index,1);
    }
 
-   //--  Build the list of target files for the selected input files (in that order)
+
+
+   // --  Build the list of target files for the selected input files -------------------
    this.buildTargetFiles = function(listOfFiles) {
 
 #ifdef DEBUG
@@ -585,15 +589,13 @@ function FFM_Engine() {
       debug("buildTargetFiles: groupByPattern = '" + guiParameters.groupByPattern + "'");
 #endif
 
-      // Reinitialize thetarget files
+      // Reinitialize the target files indices and mapping
       this.targetFilesIndices = [];
       this.targetFiles = [];
 
-      // A map of file name to index to check duplicates
-      var targetFileNameToIndexInTreeBox = {};
 
       // A map of group count values
-      var groups = {};
+      var countingGroups = {};
 
 
       // Separate directory from file name part in target pattern
@@ -669,11 +671,11 @@ function FFM_Engine() {
             // Expand the groupByPattern to form the id of the counter (targetDir may be used)
             group = guiParameters.groupByPattern.replace(variableRegExp, replaceVariables);
             count = 0;
-            if (groups.hasOwnProperty(group)) {
-               count = groups[group];
+            if (countingGroups.hasOwnProperty(group)) {
+               count = countingGroups[group];
             }
             count ++;
-            groups[group] = count;
+            countingGroups[group] = count;
             variables['count'] = count.pad(FFM_COUNT_PAD);
 #ifdef DEBUG
             debug("buildTargetFiles: group = " + group + ", count = " + count);
@@ -687,11 +689,6 @@ function FFM_Engine() {
             debug("buildTargetFiles: targetString = " + targetString );
 #endif
 
-            // Check for duplicates TODO THIS IS NOT IN TREE BOX
-            if (targetFileNameToIndexInTreeBox.hasOwnProperty(targetString)) {
-               Console.writeln("**** DUPLICATE "  + targetString + " at " + inputFileIndex + " with " + targetFileNameToIndexInTreeBox[targetString]);
-            }
-            targetFileNameToIndexInTreeBox[targetString] = inputFileIndex;
 
             // Target file but without the output directory
             this.targetFilesIndices.push(inputFileIndex);
@@ -704,8 +701,56 @@ function FFM_Engine() {
 
     }
 
+    // Check that the opercheckValidTargetations can be executed for a list of files ------------------------------
+    this.checkValidTargets = function(listOfFiles) {
 
-    // -- Make List of text accumulating the transformation rules for display
+      var errors = [];
+
+      for (var i = 0; i < listOfFiles.length; ++i) {
+         var inputFile = listOfFiles[i];
+         var inputFileIndex = this.inputFiles.indexOf(inputFile);
+         if (inputFileIndex < 0) {
+            throw ("SCRIPT ERROR : check: file not in inputFiles: " + inputFile + " (" + i + ")");
+         }
+         if (this.targetFilesIndices.length<i ||
+            this.targetFilesIndices[i] != inputFileIndex) {
+            // Sort order changed
+            return ["The order of some column changed since last refresh, please refresh"];
+         }
+      }
+
+      // Check duplicates
+      // A map of target file name to original name
+      var targetFileNameInputFile = {};
+      for (var i=0; i<this.targetFiles.length; i++) {
+         var index = this.targetFilesIndices[i];
+         var targetString = this.targetFiles[i];
+         var inputFile = this.inputFiles[index];
+         if (targetFileNameInputFile.hasOwnProperty(targetString)) {
+            errors.push("File '"  + inputFile + "' generates same file '" + targetString + "' as '" + targetFileNameInputFile[targetString] +"'");
+         }
+         targetFileNameInputFile[targetString] = inputFile;
+      }
+
+      // Check bad names (empty, /, ...)
+
+      // Check existing target files
+      for (var i=0; i<this.targetFiles.length; i++) {
+         var index = this.targetFilesIndices[i];
+         var targetString = this.targetFiles[i];
+         var inputFile = this.inputFiles[index];
+         var targetFilePath = this.outputDirectory + "/" + targetString;
+         if (File.exists(targetFilePath)) {
+            errors.push("File '"  + inputFile + "' generates the already existing file '" + targetFilePath + "'");
+         }
+      }
+
+      return errors;
+    }
+
+
+
+    // -- Make List of text accumulating the transformation rules for display --------------
     this.makeListOfTransforms = function() {
       var listOfTransforms = [];
       for (var i = 0; i<this.targetFiles.length; i++) {
@@ -717,8 +762,8 @@ function FFM_Engine() {
     }
 
 
-   // -- Copy or move files
-   this.apply = function (engine_mode) {
+   // -- Execute copy or move operation ----------------------------------------------------
+   this.executeFileOperations = function (engine_mode) {
 
       var count = 0;
 
@@ -731,11 +776,11 @@ function FFM_Engine() {
             var targetFile = this.outputDirectory + "/" + targetString;
 
 #ifdef DEBUG
-            debug("apply: targetFile = " + targetFile );
+            debug("executeFileOperations: targetFile = " + targetFile );
 #endif
             var targetDirectory = File.extractDrive(targetFile) +  File.extractDirectory(targetFile);
 #ifdef DEBUG
-            debug("apply: targetDirectory = " + targetDirectory );
+            debug("executeFileOperations: targetDirectory = " + targetDirectory );
 #endif
 
             // Create target directory if required
@@ -751,7 +796,7 @@ function FFM_Engine() {
                // TODO This does not take 'extension' into account
                   var tryFilePath = File.appendToName( targetFile, '-' + n );
 #ifdef DEBUG
-                  debug("apply: tryFilePath= " + tryFilePath );
+                  debug("executeFileOperations: tryFilePath= " + tryFilePath );
 #endif
                   if ( !File.exists( tryFilePath ) ) { targetFile = tryFilePath; break; }
                }
@@ -1242,12 +1287,7 @@ function MyDialog(engine)
    // ===================================================================================
    //
 
-   this.refreshTargetFiles = function() {
-
-#ifdef DEBUG
-      debug("refreshTargetFiles() called");
-#endif
-
+   this.makeListOfCheckedFiles = function() {
       var listOfFiles = [];
 
       for (var iTreeBox = 0; iTreeBox < this.files_TreeBox.numberOfChildren; ++iTreeBox) {
@@ -1259,6 +1299,17 @@ function MyDialog(engine)
          }
       }
 
+      return listOfFiles;
+   }
+
+
+   this.refreshTargetFiles = function() {
+
+#ifdef DEBUG
+      debug("refreshTargetFiles() called");
+#endif
+
+      var listOfFiles = this.makeListOfCheckedFiles();
 
       this.engine.buildTargetFiles(listOfFiles);
 
@@ -1270,6 +1321,27 @@ function MyDialog(engine)
 
 
    //Engine buttons --------------------------------------------------------------------------------------
+   this.check_Button = new PushButton( this );
+   with ( this.check_Button ) {
+      text = "Check validity";
+      toolTip = "Check that the target files are valid\nthis is automatically done before any other operation";
+      enabled = true;
+      onClick = function()
+      {
+         var listOfFiles = parent.makeListOfCheckedFiles();
+         var errors = parent.engine.checkValidTargets(listOfFiles);
+         if (errors.length > 0) {
+            var msg = new MessageBox( errors.join("\n"),
+                   "Check failed", StdIcon_Error, StdButton_Ok );
+            msg.execute();
+         } else {
+            var msg = new MessageBox("Check ok",
+            "Check successfull", StdIcon_Information, StdButton_Ok );
+             msg.execute();
+         }
+      }
+   }
+
    this.move_Button = new PushButton( this );
    with ( this.move_Button ) {
       text = "Move files";
@@ -1277,8 +1349,17 @@ function MyDialog(engine)
       enabled = false;
       onClick = function()
       {
-         parent.engine.apply(0);
+         var listOfFiles = parent.makeListOfCheckedFiles();
+         var errors = parent.engine.checkValidTargets(listOfFiles);
+         if (errors.length > 0) {
+            var msg = new MessageBox( errors.join("\n"),
+                   "Check failed", StdIcon_Error, StdButton_Ok );
+            msg.execute();
+            return;
+         }
+         parent.engine.executeFileOperations(0);
          //this.dialog.ok();
+         // TODO Refresh source
       }
    }
 
@@ -1300,7 +1381,15 @@ function MyDialog(engine)
       enabled = false;
       onClick = function()
       {
-         parent.engine.apply(1);
+         var listOfFiles = parent.makeListOfCheckedFiles();
+         var errors = parent.engine.checkValidTargets(listOfFiles);
+         if (errors.length > 0) {
+            var msg = new MessageBox( errors.join("\n"),
+                   "Check failed", StdIcon_Error, StdButton_Ok );
+            msg.execute();
+            return;
+         }
+         parent.engine.executeFileOperations(1);
          //this.dialog.ok();
       }
    }
@@ -1417,6 +1506,7 @@ function MyDialog(engine)
    {
       spacing = 2;
       add( this.refresh_Button);
+      add( this.check_Button);
       add( this.move_Button);
       add( this.copy_Button);
       add( this.txt_Button);
@@ -1483,7 +1573,7 @@ function KeyDialog( pd ) //pd - parentDialog
       {
          checked = this.keyword_TreeBox.child( parseInt(i) ).checked;
 #ifdef DEBUG
-         debug("KeyDialog: Key#= " + parseInt(i) + " checked= " + checked );
+         // debug("KeyDialog: Key#= " + parseInt(i) + " checked= " + checked );
 #endif
          pd.engine.keyEnabled[i] = checked;
       }
@@ -1498,7 +1588,9 @@ function KeyDialog( pd ) //pd - parentDialog
       onItemSelected = function( index )
       {
          for ( var i in pd.engine.keyTable) {
-            parent.keyword_TreeBox.child(parseInt(i)).setText(1,pd.files_TreeBox.child(index).text(parseInt(i)+1));
+            var keyValue = pd.files_TreeBox.child(index).text(parseInt(i)+1);
+            // TODO Find comment
+            parent.keyword_TreeBox.child(parseInt(i)).setText(1,keyValue);
          }
       }
 
@@ -1514,8 +1606,10 @@ function KeyDialog( pd ) //pd - parentDialog
       numberOfColumns = 2;
       setHeaderText(0, "name");
       setHeaderText(1, "value");
+      setHeaderText(2, "comment");
       setColumnWidth(0,100);
       setColumnWidth(1,200);
+      setColumnWidth(2,600);
    }
 
    // Assemble FITS keyword Dialog
