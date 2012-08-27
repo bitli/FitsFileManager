@@ -45,27 +45,23 @@
 
 
 // TODO
-// Global refactoring (better MVC structure)
-// Speed up if large number of files
-// Save parameters, keep list of recent patterns used
+// keep list of recent patterns used
 // Option for handling of minus and other special characters for form file name being valid PI ids
-// Default output directory same as input if no putput directory specified
-// Mark in error if duplicate or already exists
 // Add FITS keywords as variables, with formatting options
 // Add optional indicator to accept missing values '?' and default value
+// Check for missing key values
 // Add sequence of optional text to ignore if missing variable value ()
-// Support specification of an order for 'count'
+// Generate and 'orderBy' column
+// Show sythetic keys in table, only show selected keys
 // Hide common header part of source folders to make file name more visible
 // Add a way to use directory of source file as variable  &filedir, &filedirparent for pattern matching and group names
 // Support date formatting, number formatting
 // Create a log file for record the source files
 // Ensure source is refreshed in case of move
-// Request confirmation for move
-// Add 'clear all' icon in file list
-// Possibility to add FITS keywords to copied files (for example original file name)
-// Correct bug when manipulating check boxes
-// Mark files with missing keywords uncheked (unless optional)
-// Allow to open selected files
+// Request confirmation for move (or move and copy)
+// Add 'reset' icon for rules
+// Possibility to add FITS keywords to copied files (for example original file name, or replace erroneous values)
+// Allow to open selected files (not required, part of new file manager)
 
 // For icons, see http://pixinsight.com/forum/index.php?topic=1953.msg12267#msg12267
 
@@ -362,8 +358,8 @@ function LoadFITSKeywords( fitsFilePath )
          if ( name != "SIMPLE  " && value.trim() != 'T' )
             throw new Error( "File does not seem a valid FITS file: " + fitsFilePath );
 
-      // Add new keyword. Note: use FITSKeyword with PI >= 1.6.1
-      keywords.push( new FITSKeyword( name.toString(), value.toString(), comment.toString() ) );
+      // Add new keyword.
+      keywords.push( new FITSKeyword( name.trim(), value.trim(), comment.trim() ) );
    }
    f.close();
    return keywords;
@@ -371,7 +367,7 @@ function LoadFITSKeywords( fitsFilePath )
 
 
  function findKeyWord(keys, name) {
-   // keys = all keywords from current file
+   // keys = array of all FITSKeyword of a file
    // for in all keywords of the file
    for (var k in keys) {
       //debug("kw: '" + keys[k].name + "' '"+ keys[k].value + "'");
@@ -481,7 +477,7 @@ function extractVariables(inputFile, keys) {
    variables['filename'] = inputFileName;
 
    //   &filter:     The filter name from FILTER as lower case trimmed normalized name.
-   var filter = findKeyWord(keys,'FILTER  ');
+   var filter = findKeyWord(keys,'FILTER');
    variables['filter'] = convertFilter(filter);
 
    //   &temp;       The SET-TEMP temperature in C as an integer
