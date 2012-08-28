@@ -1576,9 +1576,15 @@ function KeyDialog( pd ) //pd - parentDialog
 
       this.keyword_TreeBox.clear();
 
+      var testRootNode = new TreeBoxNode(this.keyword_TreeBox);
+      testRootNode.expanded = true;
+      testRootNode.setText(0,"FITS keywords");
+
+
       // Fill list of keywords from parent keyTable
       for (var i =0; i<pd.engine.keyTable.length; i++) {
-         var node = new TreeBoxNode(this.keyword_TreeBox);
+         // TEST var node = new TreeBoxNode(this.keyword_TreeBox);
+         var node = new TreeBoxNode(testRootNode);
          node.setText( 0, pd.engine.keyTable[i] );
          node.checked = pd.engine.keyEnabled[i];
       }
@@ -1598,8 +1604,9 @@ function KeyDialog( pd ) //pd - parentDialog
 #ifdef DEBUG
           debug("file_ComboBox: onHide");
 #endif
+      var fitsParentNode = this.keyword_TreeBox.child(0);
       for (var i =0; i<pd.engine.keyTable.length; i++) {
-         checked = this.keyword_TreeBox.child(i).checked;
+         checked = fitsParentNode.child(i).checked;
 #ifdef DEBUG
          // debug("KeyDialog: Key#= " + parseInt(i) + " checked= " + checked );
 #endif
@@ -1619,6 +1626,9 @@ function KeyDialog( pd ) //pd - parentDialog
 #ifdef DEBUG
           debug("file_ComboBox: onItemSelected - " + index + " key table length = " + pd.engine.keyTable.length);
 #endif
+        // TEST var fitsParentNode = parent.keyword_TreeBox;
+        var fitsParentNode = parent.keyword_TreeBox.child(0);
+
          for (var i = 0; i<pd.engine.keyTable.length; i++) {
             // Copying from original treebox (assume all in same order)
            //  var keyValue = pd.files_TreeBox.child(index).text(i+1);
@@ -1636,8 +1646,8 @@ function KeyDialog( pd ) //pd - parentDialog
             debug("file_ComboBox: onItemSelected - keyName=" + keyName + ",  keyWord=" + keyWord );
 #endif
             if (keyWord != null) {
-               parent.keyword_TreeBox.child(i).setText(1,keyWord.value);
-               parent.keyword_TreeBox.child(i).setText(2,keyWord.comment);
+               fitsParentNode.child(i).setText(1,keyWord.value);
+               fitsParentNode.child(i).setText(2,keyWord.comment);
             }
          }
       }
