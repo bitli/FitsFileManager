@@ -62,6 +62,7 @@
 // Add 'reset' icon for rules
 // Possibility to add FITS keywords to copied files (for example original file name, or replace erroneous values)
 // Allow to open selected files (not required, part of new file manager)
+// Configurable list of transformation, especially for filters (ha, ..)
 
 // For icons, see http://pixinsight.com/forum/index.php?topic=1953.msg12267#msg12267
 
@@ -353,6 +354,9 @@ function LoadFITSKeywords( fitsFilePath )
          comment = rawData.toString( 8, 80-8 );
       }
 
+#ifdef DEBUG_FITS
+   debug("LoadFITSKeywords: - name[" + name + "],["+value+ "],["+comment+"]");
+#endif
       // Perform a naive sanity check: a valid FITS file must begin with a SIMPLE=T keyword.
       if ( keywords.length == 0 )
          if ( name != "SIMPLE  " && value.trim() != 'T' )
@@ -1526,6 +1530,7 @@ function MyDialog(engine)
 }
 //End if Main Dialog------------------------------------------------------------
 
+// ---------------------------------------------------------------------------------------------------------
 
 // Present a dialog with:
 //   A seclection of the files (drop down)
@@ -1546,8 +1551,7 @@ function KeyDialog( pd ) //pd - parentDialog
       this.keyword_TreeBox.clear();
 
       // Fill list of keywords from parent keyTable
-      for (i in pd.engine.keyTable)
-      {
+      for (var i =0; i<pd.engine.keyTable.length; i++) {
          var node = new TreeBoxNode(this.keyword_TreeBox);
          node.setText( 0, pd.engine.keyTable[i] );
          node.checked = pd.engine.keyEnabled[i];
@@ -1555,19 +1559,21 @@ function KeyDialog( pd ) //pd - parentDialog
 
       // Fill list of files from parent list of files
       this.file_ComboBox.clear();
-      for (i in pd.engine.inputFiles) {
+      for (i = 0; i< pd.engine.inputFiles.length; i++) {
          this.file_ComboBox.addItem(pd.engine.inputFiles[i]);
       }
       this.file_ComboBox.onItemSelected(0);
-      this.setMinSize(400,600);
+      this.setMinSize(700,600);
    }
 
    // Save list of selected keywords in parent keyEnabled array
    this.onHide = function()
    {
-      for (var i in pd.engine.keyTable)
-      {
-         checked = this.keyword_TreeBox.child( parseInt(i) ).checked;
+#ifdef DEBUG
+          debug("file_ComboBox: onHide");
+#endif
+      for (var i =0; i<pd.engine.keyTable.length; i++) {
+         checked = this.keyword_TreeBox.child(i).checked;
 #ifdef DEBUG
          // debug("KeyDialog: Key#= " + parseInt(i) + " checked= " + checked );
 #endif
@@ -1583,10 +1589,30 @@ function KeyDialog( pd ) //pd - parentDialog
    {
       onItemSelected = function( index )
       {
-         for ( var i in pd.engine.keyTable) {
-            var keyValue = pd.files_TreeBox.child(index).text(parseInt(i)+1);
-            // TODO Find comment
-            parent.keyword_TreeBox.child(parseInt(i)).setText(1,keyValue);
+         // Assume that index in combox is same as index in inputfiles
+#ifdef DEBUG
+          debug("file_ComboBox: onItemSelected - " + index + " key table length = " + pd.engine.keyTable.length);
+#endif
+         for (var i = 0; i<pd.engine.keyTable.length; i++) {
+            // Copying from original treebox (assume all in same order)
+            var keyValue = pd.files_TreeBox.child(index).text(i+1);
+
+            parent.keyword_TreeBox.child(i).setText(1,keyValue);
+            var keyName = pd.engine.keyTable[i];
+            var keys = pd.engine.inputKeys[index];
+            var keyIndex = -1;
+            for (var j = 0; j<keys.length; j++) {
+               if (keys[j].name === keyName) {
+                  keyIndex = i;
+                  break;
+               }
+            }
+#ifdef DEBUG_FITS
+            debug("file_ComboBox: onItemSelected - keyName=" + keyName + ",  keyIndex=" + keyIndex );
+#endif
+            if (keyIndex>=0) {
+               parent.keyword_TreeBox.child(i).setText(2,keys[keyIndex].comment);
+            }
          }
       }
 
