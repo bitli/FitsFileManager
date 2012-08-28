@@ -908,13 +908,13 @@ function MyDialog(engine)
    this.hideKey = function () {
       //if (DEBUGGING_MODE_ON) console.clear();
 
-      for (var i in this.engine.keyEnabled) {
-         var c = parseInt(i) + 1;
+      for (var i = 0; i<this.engine.keyEnabled.length;i++) {
+         var c = i + 1;
          // debug("Column: " + i + " "  + c + " enabled: " + this.keyEnabled[parseInt(i)] + " " );
          // console.writeln(" *** " + i + " " + typeof i + " " + typeof this.keyEnabled[i] + " " + this.files_TreeBox.numberOfColumns);
 
          // TODO Does not work unles debug is enabled
-         // this.files_TreeBox.showColumn( c, this.keyEnabled[i]);
+         this.files_TreeBox.showColumn( c, this.engine.keyEnabled[i]);
       }
    }
 
@@ -1595,23 +1595,23 @@ function KeyDialog( pd ) //pd - parentDialog
 #endif
          for (var i = 0; i<pd.engine.keyTable.length; i++) {
             // Copying from original treebox (assume all in same order)
-            var keyValue = pd.files_TreeBox.child(index).text(i+1);
+           //  var keyValue = pd.files_TreeBox.child(index).text(i+1);
 
-            parent.keyword_TreeBox.child(i).setText(1,keyValue);
             var keyName = pd.engine.keyTable[i];
             var keys = pd.engine.inputKeys[index];
-            var keyIndex = -1;
+            var keyWord = null;
             for (var j = 0; j<keys.length; j++) {
                if (keys[j].name === keyName) {
-                  keyIndex = i;
+                  keyWord = keys[j];
                   break;
                }
             }
 #ifdef DEBUG_FITS
-            debug("file_ComboBox: onItemSelected - keyName=" + keyName + ",  keyIndex=" + keyIndex );
+            debug("file_ComboBox: onItemSelected - keyName=" + keyName + ",  keyWord=" + keyWord );
 #endif
-            if (keyIndex>=0) {
-               parent.keyword_TreeBox.child(i).setText(2,keys[keyIndex].comment);
+            if (keyWord != null) {
+               parent.keyword_TreeBox.child(i).setText(1,keyWord.value);
+               parent.keyword_TreeBox.child(i).setText(2,keyWord.comment);
             }
          }
       }
