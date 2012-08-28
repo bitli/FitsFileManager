@@ -701,11 +701,12 @@ function FFM_Engine() {
 
     }
 
-    // Check that the opercheckValidTargetations can be executed for a list of files ------------------------------
+    // Check that the operations can be executed for a list of files ------------------------------
     this.checkValidTargets = function(listOfFiles) {
 
       var errors = [];
 
+      // Check if files are still in the same order, otherwise the &count; may have changed
       for (var i = 0; i < listOfFiles.length; ++i) {
          var inputFile = listOfFiles[i];
          var inputFileIndex = this.inputFiles.indexOf(inputFile);
@@ -719,8 +720,14 @@ function FFM_Engine() {
          }
       }
 
-      // Check duplicates
-      // A map of target file name to original name
+      for (var i = 0; i < listOfFiles.length; ++i) {
+         var inputFile = listOfFiles[i];
+         if (! File.exists(inputFile)) {
+            errors.push("File '"  + inputFile + "' is not present any more, please refresh'");
+         }
+      }
+
+      // Check duplicates target names
       var targetFileNameInputFile = {};
       for (var i=0; i<this.targetFiles.length; i++) {
          var index = this.targetFilesIndices[i];
@@ -1319,6 +1326,22 @@ function MyDialog(engine)
 
     }
 
+    this.removeDeletedFiles = function() {
+      for ( var iTreeBox = this.dialog.files_TreeBox.numberOfChildren; --iTreeBox >= 0; ) {
+
+         var nameInTreeBox = this.dialog.files_TreeBox.child(iTreeBox).text(0);
+         if (!File.exists(nameInTreeBox)) {
+
+            this.dialog.engine.removeFiles(nameInTreeBox);
+            this.dialog.files_TreeBox.remove( iTreeBox );
+         }
+
+         this.dialog.QTY.text = "Total files: " + this.dialog.engine.inputFiles.length;
+         this.dialog.updateButtonState();
+         // Caller must refresh the generated files
+       }
+    }
+
 
    //Engine buttons --------------------------------------------------------------------------------------
    this.check_Button = new PushButton( this );
@@ -1358,6 +1381,8 @@ function MyDialog(engine)
             return;
          }
          parent.engine.executeFileOperations(0);
+         parent.removeDeletedFiles();
+         parent.refreshTargetFiles();
          //this.dialog.ok();
          // TODO Refresh source
       }
@@ -1370,6 +1395,7 @@ function MyDialog(engine)
       enabled = true;
       onClick = function()
       {
+         parent.removeDeletedFiles();
          parent.refreshTargetFiles();
       }
    }
