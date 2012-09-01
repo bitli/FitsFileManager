@@ -11,9 +11,9 @@
 // Tracing - define DEBUG if you define any other
 #define DEBUG
 //#define DEBUG_EVENTS
-#define DEBUG_FITS
-//#define DEBUG_VARS
-#define DEBUG_COLUMNS
+//#define DEBUG_FITS
+#define DEBUG_VARS
+//#define DEBUG_COLUMNS
 
 
 // Significantly modified from FITSkey_0.06 of Nikolay (I hope he doesn't mind)
@@ -31,6 +31,7 @@
 #include <pjsr/StdIcon.jsh>
 #include <pjsr/StdButton.jsh>
 #include <pjsr/FrameStyle.jsh>
+#include <pjsr/Color.jsh>
 // Set to false when doing hasardous developments...
 #define EXECUTE_COMMANDS false
 
@@ -377,30 +378,31 @@ function loadFITSKeywords( fitsFilePath )
    return keywords;
 }
 
-
- function findKeyWord(keys, name) {
+// Find a FITS keyword by name in an array of FITSKeywords, return its value or null if undefined
+function findKeyWord(fitsKeyWordsArray, name) {
    // keys = array of all FITSKeyword of a file
    // for in all keywords of the file
-   for (var k in keys) {
+   for (var k =0; k<fitsKeyWordsArray.length; k++) {
       //debug("kw: '" + keys[k].name + "' '"+ keys[k].value + "'");
-      if (keys[k].name === name)  {
+      if (fitsKeyWordsArray[k].name === name)  {
          // keyword found in the file >> extract value
 #ifdef DEBUG_FITS
-         debug("findKeyWord: '" + keys[k].name + "' found '"+ keys[k].value + "'");
+         debug("findKeyWord: '" + fitsKeyWordsArray[k].name + "' found '"+ fitsKeyWordsArray[k].value + "'");
 #endif
-         return (keys[k].value)
+         return (fitsKeyWordsArray[k].value)
       }
    }
 #ifdef DEBUG_FITS
    debug("findKeyWord: '" +name + "' not found");
 #endif
-   return '';
+   return null;
 }
 
 
 // ------ Conversion support functions
 
 function convertFilter(rawFilterName) {
+   if (rawFilterName === null) { return null}
    var filterConversions = [
       [/green/i, 'green'],
       [/red/i, 'red'],
@@ -420,6 +422,7 @@ function convertFilter(rawFilterName) {
 }
 
 function convertType(rawTypeName) {
+   if (rawTypeName === null) { return null}
    var typeConversions = [
       [/.*flat.*/i, 'flat'],
       [/.*bias.*/i, 'bias'],
@@ -476,9 +479,13 @@ function extractVariables(inputFile, keys) {
    var variables = [];
 
    //   &binning     Binning from XBINNING and YBINNING as integers, like 2x2.
-   var xBinning =parseInt(findKeyWord(keys,'XBINNING'));
-   var yBinning =parseInt(findKeyWord(keys,'YBINNING'));
-   variables['binning'] = xBinning.toFixed(0)+"x"+yBinning.toFixed(0);
+   var xBinning = parseInt(findKeyWord(keys,'XBINNING'));
+   var yBinning = parseInt(findKeyWord(keys,'YBINNING'));
+   if (isNaN(xBinning) || isNaN(yBinning)) {
+      variables['binning'] = null;
+   } else {
+       variables['binning'] = xBinning.toFixed(0)+"x"+yBinning.toFixed(0);
+   }
 
    // 'count' and 'rank' depends on the order, will be recalculated when files are processed,
    // here for documentation purpose
@@ -487,7 +494,12 @@ function extractVariables(inputFile, keys) {
 
    //   &exposure;   The exposure from EXPOSURE, as an integer (assume seconds)
    var exposure = findKeyWord(keys,'EXPOSURE');
-   variables['exposure'] = parseFloat(exposure).toFixed(0);
+   var exposureF =  parseFloat(exposure);
+   if (isNaN(exposureF)) {
+      variables['exposure'] = null;
+   } else {
+      variables['exposure'] = exposureF.toFixed(0);
+   }
 
    //   &extension;   The extension of the source file (with the dot)
    variables['extension'] = File.extractExtension(inputFile);
@@ -501,7 +513,12 @@ function extractVariables(inputFile, keys) {
 
    //   &temp;       The SET-TEMP temperature in C as an integer
    var temp = findKeyWord(keys,'SET-TEMP');
-   variables['temp'] = parseFloat(temp).toFixed(0);
+   var tempF = parseFloat(temp);
+   if (isNaN(tempF)) {
+      variables['temp'] = null;
+   } else {
+      variables['temp'] = tempF.toFixed(0);
+   }
 
    //   &type:       The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'
    var imageType = findKeyWord(keys,'IMAGETYP');
@@ -644,10 +661,11 @@ function FFM_Engine(guiParameters) {
             var inputFileName =  File.extractName(inputFile);
 
             var variables = this.inputVariables[i];
+            var missingVariables = [];
             // Method to handle replacement of variables in target file name pattern
             var replaceVariables = function(matchedSubstring, index, originalString) {
                var varName = matchedSubstring.substring(1,matchedSubstring.length-1);
-               if (variables.hasOwnProperty(varName)) {
+               if (variables.hasOwnProperty(varName) && variables[varName] !== null) {
 #ifdef DEBUG_VARS
                   debug("replaceVariables: match '" + matchedSubstring + "' '" + index + "' '" +  originalString + "' '" + varName + "' by '" + variables[varName] + "'");
 #endif
@@ -656,6 +674,7 @@ function FFM_Engine(guiParameters) {
 #ifdef DEBUG_VARS
                   debug("replaceVariables: match '" + matchedSubstring + "' '" + index + "' '" +  originalString + "' '" + varName + "' not found");
 #endif
+                  missingVariables.push(varName);
                   return  varName.toUpperCase();
                }
             };
@@ -678,15 +697,17 @@ function FFM_Engine(guiParameters) {
                }
             }
 
-            // Use only directory part, count should not be used, used to initialie 'targetdir'
+            // Use only directory part, count should not be used, used to initialize 'targetdir'
             variables['count'] = 'COUNT';
+            missingVariables = [];
             var targetDirectory =  targetDirectoryPattern.replace(variableRegExp,replaceVariables);
             variables['targetDir'] = targetDirectory;
 #ifdef DEBUG
-            debug("buildTargetFiles: targetDir = " + targetDirectory );
+            debug("buildTargetFiles: expanded targetDir = " + targetDirectory + ", missing variables: " + missingVariables);
 #endif
 
             // Expand the groupByPattern to form the id of the counter (targetDir may be used)
+            missingVariables = [];
             group = guiParameters.groupByPattern.replace(variableRegExp, replaceVariables);
             count = 0;
             if (countingGroups.hasOwnProperty(group)) {
@@ -696,15 +717,16 @@ function FFM_Engine(guiParameters) {
             countingGroups[group] = count;
             variables['count'] = count.pad(FFM_COUNT_PAD);
 #ifdef DEBUG
-            debug("buildTargetFiles: group = " + group + ", count = " + count);
+            debug("buildTargetFiles: expanded group = " + group + ", count = " + count + ", missing variables: " + missingVariables);
 #endif
 
             // We should not use 'targetDir' in the expansion of the file name
             variables['targetDir'] = 'TARGETDIR';
             // The resulting name may include directories
+            missingVariables = [];
             var targetString = guiParameters.targeFileNamePattern.replace(variableRegExp,replaceVariables);
 #ifdef DEBUG
-            debug("buildTargetFiles: targetString = " + targetString );
+            debug("buildTargetFiles: expanded targetString = " + targetString + ", missing variables: " + missingVariables);
 #endif
 
 
@@ -1043,11 +1065,10 @@ function MainDialog(engine, guiParameters)
          for ( var iKeyOfFile = 0; iKeyOfFile<keys.length; iKeyOfFile++) {
             var name = keys[iKeyOfFile].name; //name of Keyword from file
             var k = this.engine.keyTable.indexOf(name);// find index of "name" in keyTable
-            debug("****'"+name +"' k " + k + "  kt[0] '" + this.engine.keyTable[0] + " kt len "+ this.engine.keyTable.length);
             if (k < 0)  {
                // new keyName
 #ifdef DEBUG_COLUMNS
-               debug("rebuildFilesTreeBox: Creating new column " + this.filesTreeBox.numberOfColumns + " for '"  + name + "'");
+               debug("rebuildFilesTreeBox: Creating new column " + this.filesTreeBox.numberOfColumns + " for '"  + name + "', total col len " + this.engine.keyTable.length);
 #endif
                this.engine.keyTable.push(name);//add keyword name to table
                this.filesTreeBox.numberOfColumns++;// add new column
@@ -1605,8 +1626,13 @@ function FITSKeysDialog( parentDialog, engine)
          var variables = engine.inputVariables[index];
          var variable = variables[keyName];
          if (variable !== null) {
+            synthRootNode.child(i).setTextColor(0,0x00000000);
             synthRootNode.child(i).setText(1,variable);
             synthRootNode.child(i).setText(2,shownSyntheticComments[i]);
+         } else {
+            synthRootNode.child(i).setTextColor(0,0x00FF0000);
+            synthRootNode.child(i).setText(1,'');
+            synthRootNode.child(i).setText(2,'');
          }
       }
 
@@ -1628,9 +1654,11 @@ function FITSKeysDialog( parentDialog, engine)
          debug("file_ComboBox: onItemSelected - keyName=" + keyName + ",  keyWord=" + keyWord );
 #endif
          if (keyWord !== null) {
+            fitsRoootNode.child(i).setTextColor(0,0x00000000);
             fitsRoootNode.child(i).setText(1,keyWord.value);
             fitsRoootNode.child(i).setText(2,keyWord.comment);
          } else {
+            fitsRoootNode.child(i).setTextColor(0,0x00FF0000);
             fitsRoootNode.child(i).setText(1,'');
             fitsRoootNode.child(i).setText(2,'');
          }
