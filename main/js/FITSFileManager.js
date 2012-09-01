@@ -44,6 +44,7 @@
 //     added refresh button because there is no onSort event,
 //     default sort is ascending on FileName
 //     Added button remove all
+//     Added help label
 
 
 
