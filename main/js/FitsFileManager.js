@@ -30,6 +30,7 @@
 #include <pjsr/TextAlign.jsh>
 #include <pjsr/StdIcon.jsh>
 #include <pjsr/StdButton.jsh>
+#include <pjsr/FrameStyle.jsh>
 // Set to false when doing hasardous developments...
 #define EXECUTE_COMMANDS false
 
@@ -1408,11 +1409,11 @@ function MyDialog(engine)
    // Export selected fits keywords for checked files
    this.txt_Button = new PushButton( this );
    this.txt_Button.text = "Export FITS.txt";
-      this.txt_Button.toolTip = "For Checked files write FitKeywords value to file FITS.txt in output directory";
-      this.txt_Button.enabled = false;
-      this.txt_Button.onClick = function() {
-         this.parent.engine.exportFITSKeyWords();
-      }
+   this.txt_Button.toolTip = "For Checked files write FitKeywords value to file FITS.txt in output directory";
+   this.txt_Button.enabled = false;
+   this.txt_Button.onClick = function() {
+      this.parent.engine.exportFITSKeyWords();
+   }
 
 
 
@@ -1421,14 +1422,14 @@ function MyDialog(engine)
 
    this.fileButonSizer = new HorizontalSizer;
    this.fileButonSizer.margin = 6;
-      this.fileButonSizer.spacing = 4;
-      this.fileButonSizer.add( this.keyButton );
-      this.fileButonSizer.add( this.filesAdd_Button );
-      this.fileButonSizer.add( this.dirAdd_Button );
-      this.fileButonSizer.add( this.files_close_Button );
-      this.fileButonSizer.add( this.files_close_all_Button );
-      this.fileButonSizer.add( this.QTY );
-      this.fileButonSizer.addStretch();
+   this.fileButonSizer.spacing = 4;
+   this.fileButonSizer.add( this.keyButton );
+   this.fileButonSizer.add( this.filesAdd_Button );
+   this.fileButonSizer.add( this.dirAdd_Button );
+   this.fileButonSizer.add( this.files_close_Button );
+   this.fileButonSizer.add( this.files_close_all_Button );
+   this.fileButonSizer.add( this.QTY );
+   this.fileButonSizer.addStretch();
 
 
    this.inputFiles_GroupBox = new GroupBox( this );
@@ -1443,22 +1444,22 @@ function MyDialog(engine)
    this.targetFilePattern_Edit_sizer = new HorizontalSizer;
    this.targetFilePattern_Edit_sizer.margin = 4;
    this.targetFilePattern_Edit_sizer.spacing = 2;
-      var label = new Label();
-      label.minWidth			= 100;
-		label.text		= "Target file pattern: ";
-		label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
+   var label = new Label();
+   label.minWidth			= 100;
+   label.text		= "Target file pattern: ";
+   label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
-      this.targetFilePattern_Edit_sizer.add( label );
-      this.targetFilePattern_Edit_sizer.add( this.targetFilePattern_Edit );
+   this.targetFilePattern_Edit_sizer.add( label );
+   this.targetFilePattern_Edit_sizer.add( this.targetFilePattern_Edit );
 
 
    this.sourcePattern_Edit_sizer = new HorizontalSizer;
    this.sourcePattern_Edit_sizer.margin = 4;
    this.sourcePattern_Edit_sizer.spacing = 2;
-      var label = new Label();
-      label.minWidth			= 100;
-		label.text		= "File name RegExp: ";
-		label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
+   var label = new Label();
+   label.minWidth			= 100;
+   label.text		= "File name RegExp: ";
+   label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
    this.sourcePattern_Edit_sizer.add( label );
    this.sourcePattern_Edit_sizer.add( this.sourcePattern_Edit );
@@ -1467,10 +1468,10 @@ function MyDialog(engine)
    this.groupPattern_Edit_sizer = new HorizontalSizer;
    this.groupPattern_Edit_sizer.margin = 4;
    this.groupPattern_Edit_sizer.spacing = 2;
-      var label = new Label();
-      label.minWidth			= 100;
-		label.text		= "Group pattern: ";
-		label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
+   var label = new Label();
+   label.minWidth			= 100;
+   label.text		= "Group pattern: ";
+   label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
    this.groupPattern_Edit_sizer.add( label );
    this.groupPattern_Edit_sizer.add( this.groupPattern_Edit );
@@ -1480,13 +1481,13 @@ function MyDialog(engine)
    this.rules_GroupBox = new GroupBox( this );
    this.rules_GroupBox.title = "Rules";
 
-      this.rules_GroupBox.sizer = new VerticalSizer;
-      this.rules_GroupBox.sizer.margin = 6;
-      this.rules_GroupBox.sizer.spacing = 4;
+   this.rules_GroupBox.sizer = new VerticalSizer;
+   this.rules_GroupBox.sizer.margin = 6;
+   this.rules_GroupBox.sizer.spacing = 4;
 
-      this.rules_GroupBox.sizer.add( this.targetFilePattern_Edit_sizer, 100);
-      this.rules_GroupBox.sizer.add( this.sourcePattern_Edit_sizer );
-      this.rules_GroupBox.sizer.add( this.groupPattern_Edit_sizer );
+   this.rules_GroupBox.sizer.add( this.targetFilePattern_Edit_sizer, 100);
+   this.rules_GroupBox.sizer.add( this.sourcePattern_Edit_sizer );
+   this.rules_GroupBox.sizer.add( this.groupPattern_Edit_sizer );
 
 
 
@@ -1510,14 +1511,26 @@ function MyDialog(engine)
    this.sizer2.addStretch();
 
 
+   // -- HelpLabel
+   var helpLabel = new Label( this );
+   helpLabel.frameStyle = FrameStyle_Box;
+   helpLabel.margin = 4;
+   helpLabel.wordWrapping = true;
+   helpLabel.useRichText = true;
+   helpLabel.text = "<b>" + TITLE + " v" + VERSION + "</b> &mdash; Copy or move FITS image " +
+           "files using selected FITS keyword values or original file name pattern " +
+           "to create the target directory/file name.";
+
+
 
    this.sizer = new VerticalSizer;
    this.sizer.margin = 2;
    this.sizer.spacing = 2;
-   this.sizer.add( this.inputFiles_GroupBox );
+   this.sizer.add( helpLabel );
+   this.sizer.add( this.inputFiles_GroupBox,50 );
    this.sizer.add(this.rules_GroupBox);
    this.sizer.add( this.outputDir_GroupBox );
-   this.sizer.add(this.transform_TextBox);
+   this.sizer.add(this.transform_TextBox,50);
    this.sizer.add( this.sizer2 );
 
    //this.move(50,100); // move dialog to up-left corner
