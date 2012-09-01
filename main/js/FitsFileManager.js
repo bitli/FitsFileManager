@@ -173,14 +173,14 @@ FFM_GUIParameters.prototype.loadSettings = function()
    }
 
    var o;
-   if ( (o = load( "version",    DataType_Double )) != null ) {
+   if ( (o = load( "version",    DataType_Double )) !== null ) {
       if (o > VERSION) {
          Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' have version ", o, " later than script version ", VERSION, ", settings ignored");
       } else {
-         if ( (o = load( "targeFileNamePattern",    DataType_String )) != null ) {
+         if ( (o = load( "targeFileNamePattern",    DataType_String )) !== null ) {
             this.targeFileNamePattern = o;
          };
-         if ( (o = load( "sourceFileNameRegExp",    DataType_String )) != null ) {
+         if ( (o = load( "sourceFileNameRegExp",    DataType_String )) !== null ) {
             try {
                this.sourceFileNameRegExp = RegExp(o);
             } catch (err) {
@@ -191,9 +191,9 @@ FFM_GUIParameters.prototype.loadSettings = function()
 #endif
             }
          };
-         if ( (o = load( "orderBy",                 DataType_String )) != null )
+         if ( (o = load( "orderBy",                 DataType_String )) !== null )
             this.orderBy = o;
-         if ( (o = load( "groupByPattern",          DataType_String )) != null )
+         if ( (o = load( "groupByPattern",          DataType_String )) !== null )
             this.groupByPattern = o;
       }
    } else {
@@ -264,7 +264,7 @@ function replaceAmps (txt) {
 // Remove quotes and trim
 function unQuote (s) {
    var t = s.trim();
-   if (t.length>0 && t[0]=="'" && t[t.length-1]=="'") {
+   if (t.length>0 && t[0]==="'" && t[t.length-1]==="'") {
       return t.substring(1,t.length-1).trim();
    }
    return t;
@@ -332,7 +332,7 @@ function LoadFITSKeywords( fitsFilePath )
       var rawData = f.read( DataType_ByteArray, 80 );
 
       var name = rawData.toString( 0, 8 );
-      if ( name.toUpperCase() == "END     " ) // end of HDU keyword list?
+      if ( name.toUpperCase() === "END     " ) // end of HDU keyword list?
          break;
 
       if ( f.isEOF )
@@ -340,7 +340,7 @@ function LoadFITSKeywords( fitsFilePath )
 
       var value;
       var comment;
-      if ( rawData.at( 8 ) == 61 ) // value separator (an equal sign at byte 8) present?
+      if ( rawData.at( 8 ) === 61 ) // value separator (an equal sign at byte 8) present?
       {
          // This is a valued keyword
          var cmtPos = searchCommentSeparator( rawData ); // find comment separator slash
@@ -363,8 +363,8 @@ function LoadFITSKeywords( fitsFilePath )
    debug("LoadFITSKeywords: - name[" + name + "],["+value+ "],["+comment+"]");
 #endif
       // Perform a naive sanity check: a valid FITS file must begin with a SIMPLE=T keyword.
-      if ( keywords.length == 0 )
-         if ( name != "SIMPLE  " && value.trim() != 'T' )
+      if ( keywords.length === 0 )
+         if ( name !== "SIMPLE  " && value.trim() !== 'T' )
             throw new Error( "File does not seem a valid FITS file: " + fitsFilePath );
 
       // Add new keyword.
@@ -380,7 +380,7 @@ function LoadFITSKeywords( fitsFilePath )
    // for in all keywords of the file
    for (var k in keys) {
       //debug("kw: '" + keys[k].name + "' '"+ keys[k].value + "'");
-      if (keys[k].name == name)  {
+      if (keys[k].name === name)  {
          // keyword found in the file >> extract value
 #ifdef DEBUG_FITS
          debug("findKeyWord: '" + keys[k].name + "' found '"+ keys[k].value + "'");
@@ -407,7 +407,7 @@ function convertFilter(rawFilterName) {
    var unquotedName = unQuote(rawFilterName);
    for (var i=0; i<filterConversions.length; i++) {
       var filterName = unquotedName.replace(filterConversions[i][0],filterConversions[i][1]);
-      if (filterName != unquotedName) {
+      if (filterName !== unquotedName) {
          return filterName;
       }
    }
@@ -428,7 +428,7 @@ function convertType(rawTypeName) {
    var unquotedName = unQuote(rawTypeName);
    for (var i=0; i<typeConversions.length; i++) {
       var typeName = unquotedName.replace(typeConversions[i][0],typeConversions[i][1]);
-      if (typeName != unquotedName) {
+      if (typeName !== unquotedName) {
          return typeName;
       }
    }
@@ -440,7 +440,7 @@ function convertType(rawTypeName) {
 // --- Pattern matching and RegExp functions
 
 function regExpToString(re) {
-   if (re == null) {
+   if (re === null) {
       return "";
    } else {
    // Remove lading and trainling slahes
@@ -533,7 +533,7 @@ function FFM_Engine() {
 
       // Cache global FITS key information (two parallel arrays)
       this.keyTable = [];   //accumulated names of keywords from all files
-      this.keyEnabled = []; //true == selected keywords
+      this.keyEnabled = []; //true === selected keywords
 
       // Target files is a subset of the inputFiles, each file is defined by an index
       // in input file and the corresponding new file name. Unchecked files are not
@@ -658,12 +658,12 @@ function FFM_Engine() {
             // The file name part is calculated at each scan as the regxep may have been changed
             // TODO Optimize this maybe, clear the numbered variables of a previous scan
             //   &1; &2;, ... The corresponding match from the sourceFileNameRegExp
-            if (guiParameters.sourceFileNameRegExp != null) {
+            if (guiParameters.sourceFileNameRegExp !== null) {
                var inputFileNameMatch = guiParameters.sourceFileNameRegExp.exec(inputFileName);
 #ifdef DEBUG
                debug ("buildTargetFiles: inputFileNameMatch= " + inputFileNameMatch);
 #endif
-               if (inputFileNameMatch != null) {
+               if (inputFileNameMatch !== null) {
                   for (var j = 0; j<inputFileNameMatch.length; j++) {
                      variables[j.toString()] = inputFileNameMatch[j]
                   }
@@ -724,7 +724,7 @@ function FFM_Engine() {
             throw ("SCRIPT ERROR : check: file not in inputFiles: " + inputFile + " (" + i + ")");
          }
          if (this.targetFilesIndices.length<i ||
-            this.targetFilesIndices[i] != inputFileIndex) {
+            this.targetFilesIndices[i] !== inputFileIndex) {
             // Sort order changed
             return ["The order of some column changed since last refresh, please refresh"];
          }
@@ -819,7 +819,7 @@ function FFM_Engine() {
                }
             }
 
-            if (engine_mode==0) {
+            if (engine_mode===0) {
                console.writeln("move " + inputFile +"\n  to "+ targetFile);
                if (EXECUTE_COMMANDS) File.move(inputFile,targetFile);
             } else {
@@ -869,7 +869,7 @@ function FFM_Engine() {
             if (!this.keyEnabled[i]) continue;
             var name = this.keyTable[i];
             for (var k in key) {
-               if (!(key[k].name == name)) continue;
+               if (!(key[k].name === name)) continue;
                if (key[k].isNumeric) {
                   var value = parseFloat(key[k].value)
                } else {
@@ -1208,7 +1208,7 @@ function MyDialog(engine)
    this.sourcePattern_Edit.onTextUpdated = function()
       {
          var re = this.text.trim();
-         if (re.length == 0) {
+         if (re.length === 0) {
             guiParameters.sourceFileNameRegExp = null;
 #ifdef DEBUG
             debug("sourcePattern_Edit: onTextUpdated:- cancel regexp");
@@ -1624,7 +1624,7 @@ function KeyDialog( pd ) //pd - parentDialog
 #ifdef DEBUG_FITS
             debug("file_ComboBox: onItemSelected - keyName=" + keyName + ",  keyWord=" + keyWord );
 #endif
-            if (keyWord != null) {
+            if (keyWord !== null) {
                fitsParentNode.child(i).setText(1,keyWord.value);
                fitsParentNode.child(i).setText(2,keyWord.comment);
             }
@@ -1636,7 +1636,7 @@ function KeyDialog( pd ) //pd - parentDialog
             var keyName = shownSyntheticVariables[i];
             var variables = pd.engine.inputVariables[index];
             var variable = variables[keyName];
-            if (variable != null) {
+            if (variable !== null) {
                synthRootNode.child(i).setText(1,variable);
                //synthRootNode.child(i).setText(2,"");
             }
