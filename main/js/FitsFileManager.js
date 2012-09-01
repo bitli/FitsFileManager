@@ -1,3 +1,5 @@
+"use strict";
+
 #feature-id    Utilities > FITSFileManager
 
 #feature-info Copy and move files based on FITS keys.<br/>
@@ -73,8 +75,6 @@ Define how the target file name will be generated. Text is copied\n\
 as is to the output name. Keywords (between & and semicolon) are\n\
 defined from the file information and FITS keywordsas follows:\n\
    &binning;    Binning from XBINNING and YBINNING as integers, like 2x2.\n\
-   &count;      The number of the file being moved/copied int the current group, padded to COUNT_PAD.\n\
-   &rank;       The number of the file in the order of the input file list, padded to COUNT_PAD.\n\
    &exposure;   The exposure from EXPOSURE, but as an integer (assume seconds).\n\
    &extension;  The extension of the source file (with the dot.)\n\
    &filename;   The file name part of the source file.\n\
@@ -83,6 +83,9 @@ defined from the file information and FITS keywordsas follows:\n\
    &type:       The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'.\n\
    &FITSKW;     (NOT IMPLEMENTED).\n\
    &0; &1;, ... The corresponding match from the source file name pattern field.\n\
+The following keywords are dynamic (they are recalculated in case of reordering)\n\
+   &count;      The number of the file being moved/copied int the current group, padded to COUNT_PAD.\n\
+   &rank;       The number of the file in the order of the input file list, padded to COUNT_PAD.\n\
 The target file name pattern may contain forward slashes that will be used\n\
 as directory separator. Keywords may appear multiple time and may also be part of directory names.\n\
 Unknown keywords are replaced by their name in upper case.\n\
@@ -122,20 +125,22 @@ directory. &filter; would count separetely for each filter.\n\
 
 // Select the first sequence without -_. or the whole name in &1; (second group is non capturing)
 #define FFM_DEFAULT_SOURCE_FILENAME_REGEXP /([^-_.]+)(?:[._-]|$)/
+#define FFM_DEFAULT_TARGET_FILENAME_PATTERN "&1;_&binning;_&temp;C_&type;_&exposure;s_&filter;_&count;&extension;"
+#define FFM_DEFAULT_GROUP_PATTERN "&targetDir;"
 
 function FFM_GUIParameters() {
 
    this.reset = function () {
 
       // SETTINGS: Saved latest correct GUI state
-      this.targeFileNamePattern = "&1;_&binning;_&temp;C_&type;_&exposure;s_&filter;_&count;&extension;";
+      this.targeFileNamePattern = FFM_DEFAULT_TARGET_FILENAME_PATTERN;
       //this.targeFileNamePattern = "&filename;_AS_&1;_bin_&binning;_filter_&filter;_temp_&temp;_type_&type;_exp_&exposure;s_count_&count;&extension;";
 
       // Default file name reguler expression
       this.sourceFileNameRegExp = FFM_DEFAULT_SOURCE_FILENAME_REGEXP;
 
       this.orderBy = "&rank;"
-      this.groupByPattern = "&targetDir;";
+      this.groupByPattern = FFM_DEFAULT_GROUP_PATTERN;
     }
    this.reset();
 
@@ -452,11 +457,13 @@ var variableRegExp = /&[a-zA-Z0-9]+;/g;
 
 
 // --- Variable handling
+var shownSyntheticVariables = ['type','filter','exposure','temp','binning'];
 
 // Extract the variables to form group names and file names from the file name, FITS keywords
 function extractVariables(inputFile, keys) {
 
    var inputFileName =  File.extractName(inputFile);
+
 
    var variables = [];
 
@@ -604,8 +611,8 @@ function FFM_Engine() {
          var targetDirectoryPattern= guiParameters.targeFileNamePattern.substring(0,indexOfLastSlash);
          var targetNamePattern= guiParameters.targeFileNamePattern.substring(indexOfLastSlash+1);
       } else {
-         var targetDirectoryPattern = guiParameters.targeFileNamePattern;
-         var targetNamePattern= '';
+         var targetDirectoryPattern = '';
+         var targetNamePattern= guiParameters.targeFileNamePattern;
       }
 #ifdef DEBUG
       debug("buildTargetFiles: targetDirectoryPattern = '" + targetDirectoryPattern + "', targetNamePattern = '" +  targetNamePattern + "'");
@@ -667,6 +674,9 @@ function FFM_Engine() {
             variables['count'] = 'COUNT';
             var targetDirectory =  targetDirectoryPattern.replace(variableRegExp,replaceVariables);
             variables['targetDir'] = targetDirectory;
+#ifdef DEBUG
+            debug("buildTargetFiles: targetDir = " + targetDirectory );
+#endif
 
             // Expand the groupByPattern to form the id of the counter (targetDir may be used)
             group = guiParameters.groupByPattern.replace(variableRegExp, replaceVariables);
@@ -921,19 +931,17 @@ function MyDialog(engine)
          // console.writeln(" *** " + i + " " + typeof i + " " + typeof this.keyEnabled[i] + " " + this.files_TreeBox.numberOfColumns);
 
          // TODO Does not work unles debug is enabled
-         this.files_TreeBox.showColumn( c, this.engine.keyEnabled[i]);
+         this.filesTreeBox.showColumn( c, this.engine.keyEnabled[i]);
       }
    }
 
    //----------------------------------------------------------------------------------
    // KeyWord Dialog
    this.SD = new KeyDialog( this );
-   this.Key_button = new ToolButton( this );
-   with ( this.Key_button )
-   {
-      icon = new Bitmap( ":/images/icons/text.png" );
-      toolTip = "KeyWord Dialog";
-      onClick = function()
+   this.keyButton = new ToolButton( this );
+   this.keyButton.icon = new Bitmap( ":/images/icons/text.png" );
+   this.keyButton.toolTip = "KeyWord Dialog";
+   this.keyButton.onClick = function()
       {
          if (this.dialog.engine.keyTable.length)
          {
@@ -941,30 +949,29 @@ function MyDialog(engine)
             this.dialog.hideKey();
          }
       }
-   }
+
 
    //----------------------------------------------------------
    // File List TreeBox
-   this.files_TreeBox = new TreeBox( this );
-   with ( this.files_TreeBox )
-   {
-      rootDecoration = false;
-      numberOfColumns = 1;
-      multipleSelection = true;
-      headerVisible = true;
-      headerSorting = true;
-      setHeaderText(0, "Filename");
-      sort(0,true);
+   this.filesTreeBox = new TreeBox( this );
 
-      setMinSize( 400, 200 );
+      this.filesTreeBox.rootDecoration = false;
+      this.filesTreeBox.numberOfColumns = 1;
+      this.filesTreeBox.multipleSelection = true;
+      this.filesTreeBox.headerVisible = true;
+      this.filesTreeBox.headerSorting = true;
+      this.filesTreeBox.setHeaderText(0, "Filename");
+      this.filesTreeBox.sort(0,true);
+
+      this.filesTreeBox.setMinSize( 400, 200 );
 
       // Assume that 'check' is the only operation that update the nodes,
       // this may not be true...
-      onNodeUpdated = function( node, column ) // Invert CheckMark
+      this.filesTreeBox.onNodeUpdated = function( node, column ) // Invert CheckMark
       {
 
 #ifdef DEBUG_EVENTS
-         debug("files_TreeBox: onNodeUpdated("+node+","+column+")");
+         debug("filesTreeBox: onNodeUpdated("+node+","+column+")");
 #endif
          for (var i=0; i < this.selectedNodes.length; i++)
          {
@@ -974,33 +981,33 @@ function MyDialog(engine)
          this.dialog.refreshTargetFiles();
       };
 #ifdef DEBUG_EVENTS
-      onCurrentNodeUpdated = function(node) {
-         debug("files_TreeBox: onCurrentNodeUpdated("+node+")");
+      this.filesTreeBox.onCurrentNodeUpdated = function(node) {
+         debug("filesTreeBox: onCurrentNodeUpdated("+node+")");
       };
-      onNodeActivated = function(node) {
-         debug("files_TreeBox: onNodeActivated("+node+")");
+      this.filesTreeBox.onNodeActivated = function(node) {
+         debug("filesTreeBox: onNodeActivated("+node+")");
       };
-      onNodeClicked = function(node) {
-         debug("files_TreeBox: onNodeClicked("+node+")");
+      this.filesTreeBox.onNodeClicked = function(node) {
+         debug("filesTreeBox: onNodeClicked("+node+")");
       };
-      onNodeCollapsed = function(node) {
-         debug("files_TreeBox: onNodeCollapsed("+node+")");
+      this.filesTreeBox.onNodeCollapsed = function(node) {
+         debug("filesTreeBox: onNodeCollapsed("+node+")");
       };
-      onNodeDoubleClicked = function(node) {
-         debug("files_TreeBox: onNodeDoubleClicked("+node+")");
+      this.filesTreeBox.onNodeDoubleClicked = function(node) {
+         debug("filesTreeBox: onNodeDoubleClicked("+node+")");
       };
-      onNodeEntered = function(node) {
+      this.filesTreeBox.onNodeEntered = function(node) {
          // this is not called unless mouse events are enabled
-         debug("files_TreeBox: onNodeEntered("+node+")");
+         debug("filesTreeBox: onNodeEntered("+node+")");
       };
-      onNodeExpanded = function(node) {
-         debug("files_TreeBox: onNodeExpanded("+node+")");
+      this.filesTreeBox.onNodeExpanded = function(node) {
+         debug("filesTreeBox: onNodeExpanded("+node+")");
       };
-      onNodeSelectionUpdated = function() {
-         debug("files_TreeBox: onNodeSelectionUpdated()");
+      this.filesTreeBox.onNodeSelectionUpdated = function() {
+         debug("filesTreeBox: onNodeSelectionUpdated()");
       };
 #endif
-   }
+
 
 
 
@@ -1008,7 +1015,7 @@ function MyDialog(engine)
    // Rebuild the TreeBox content
    this.rebuildFilesTreeBox = function ()
    {
-      this.files_TreeBox.clear();
+      this.filesTreeBox.clear();
 
       // TODO IN ENGINE
       this.engine.keyTable = []; // clear
@@ -1019,7 +1026,7 @@ function MyDialog(engine)
          var keys = this.engine.inputKeys[i]; // keywords of one file
 
          // Create TreeBoxNode for file
-         var node = new TreeBoxNode( this.files_TreeBox );
+         var node = new TreeBoxNode( this.filesTreeBox );
          //write name of the file to first column
          node.setText( 0, this.engine.inputFiles[i] );
          node.checked = true;
@@ -1033,16 +1040,16 @@ function MyDialog(engine)
             if (k < 0)  {
                // new keyName
 #ifdef DEBUG_COLUMNS
-               debug("rebuildFilesTreeBox: Creating new column " + name + " at " + this.files_TreeBox.numberOfColumns);
+               debug("rebuildFilesTreeBox: Creating new column " + name + " at " + this.filesTreeBox.numberOfColumns);
 #endif
                this.engine.keyTable.push(name);//add keyword name to table
-               this.files_TreeBox.numberOfColumns++;// add new column
-               this.files_TreeBox.setHeaderText(this.engine.keyTable.length, name);//set name of new column
-               //console.writeln("*** " + this.files_TreeBox.numberOfColumns + " " + name);
+               this.filesTreeBox.numberOfColumns++;// add new column
+               this.filesTreeBox.setHeaderText(this.engine.keyTable.length, name);//set name of new column
+               //console.writeln("*** " + this.filesTreeBox.numberOfColumns + " " + name);
                this.engine.keyEnabled.push (this.engine.defaultKey.indexOf(name)> -1);//compare with default enabled keywords
                k = this.engine.keyTable.length-1;
 
-               //this.files_TreeBox.showColumn( this.files_TreeBox.numberOfColumns, this.keyEnabled[k]);
+               //this.filesTreeBox.showColumn( this.filesTreeBox.numberOfColumns, this.keyEnabled[k]);
             }
             // TODO Supports other formatting (dates ?) or show raw text
             if (keys[j].isNumeric) {
@@ -1086,11 +1093,9 @@ function MyDialog(engine)
 
    // Add files ---------------------------------------------------------------------------
    this.filesAdd_Button = new ToolButton( this );
-   with ( this.filesAdd_Button )
-   {
-      icon = new Bitmap( ":/images/image_container/add_files.png" );
-      toolTip = "Add files";
-      onClick = function()
+   this.filesAdd_Button.icon = new Bitmap( ":/images/image_container/add_files.png" );
+   this.filesAdd_Button.toolTip = "Add files";
+   this.filesAdd_Button.onClick = function()
       {
          var ofd = new OpenFileDialog;
          ofd.multipleSelections = true;
@@ -1100,16 +1105,14 @@ function MyDialog(engine)
             this.dialog.addFilesAction(ofd.fileNames);
          }
       }
-   }
+
 
 
    // Add Dir ---------------------------------------------------------------------------
    this.dirAdd_Button = new ToolButton( this );
-   with ( this.dirAdd_Button )
-   {
-      icon = new Bitmap( ":/images/icons/folders.png" );
-      toolTip = "Add folder including subfolders";
-      onClick = function()
+   this.dirAdd_Button.icon = new Bitmap( ":/images/icons/folders.png" );
+   this.dirAdd_Button.toolTip = "Add folder including subfolders";
+   this.dirAdd_Button.onClick = function()
       {
          var gdd = new GetDirectoryDialog;
          //gdd.initialPath = outputDirectory;
@@ -1129,29 +1132,27 @@ function MyDialog(engine)
             this.dialog.addFilesAction(fileNames);
          }
       }
-   }
+
 
    // Close selected files ---------------------------------------------------------------------------
    this.files_close_Button = new ToolButton( this );
-   with ( this.files_close_Button )
-   {
-      icon = new Bitmap( ":/images/close.png" );
-      toolTip = "<p>Removed selected images from the list.</p>";
-      onClick = function()
+   this.files_close_Button.icon = new Bitmap( ":/images/close.png" );
+   this.files_close_Button.toolTip = "<p>Removed selected images from the list.</p>";
+   this.files_close_Button.onClick = function()
       {
 #ifdef DEBUG
          debug("Remove files");
 #endif
 
-         for ( var iTreeBox = this.dialog.files_TreeBox.numberOfChildren; --iTreeBox >= 0; )
+         for ( var iTreeBox = this.dialog.filesTreeBox.numberOfChildren; --iTreeBox >= 0; )
          {
 
-            if ( this.dialog.files_TreeBox.child( iTreeBox ).selected )
+            if ( this.dialog.filesTreeBox.child( iTreeBox ).selected )
             {
-               var nameInTreeBox = this.dialog.files_TreeBox.child(iTreeBox).text(0);
+               var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).text(0);
 
                this.dialog.engine.removeFiles(nameInTreeBox);
-               this.dialog.files_TreeBox.remove( iTreeBox );
+               this.dialog.filesTreeBox.remove( iTreeBox );
             }
          }
          this.dialog.QTY.text = "Total files: " + this.dialog.engine.inputFiles.length;
@@ -1160,24 +1161,22 @@ function MyDialog(engine)
          this.dialog.refreshTargetFiles();
 
       }
-   }
+
 
    // Close all files ---------------------------------------------------------------------------
    this.files_close_all_Button = new ToolButton( this );
-   with ( this.files_close_all_Button )
-   {
-      icon = new Bitmap( ":/images/close_all.png" );
-      toolTip = "<p>Removed all images from the list.</p>";
-      onClick = function()
+   this.files_close_all_Button.icon = new Bitmap( ":/images/close_all.png" );
+   this.files_close_all_Button.toolTip = "<p>Removed all images from the list.</p>";
+   this.files_close_all_Button.onClick = function()
       {
 #ifdef DEBUG
          debug("Remove all files (" + this.dialog.engine.inputFiles.length + ")");
 #endif
 
          // TODO We can probably clear in one go
-         for ( var i = this.dialog.files_TreeBox.numberOfChildren; --i >= 0; )
+         for ( var i = this.dialog.filesTreeBox.numberOfChildren; --i >= 0; )
          {
-               this.dialog.files_TreeBox.remove( i );
+               this.dialog.filesTreeBox.remove( i );
          }
          this.dialog.engine.reset();
          this.dialog.updateButtonState();
@@ -1185,32 +1184,28 @@ function MyDialog(engine)
          this.dialog.refreshTargetFiles();
 
       }
-   }
+
 
 
 
    // Target pattern --------------------------------------------------------------------------------------
    this.targetFilePattern_Edit = new Edit( this );
-   with ( this.targetFilePattern_Edit )
-   {
-      text = guiParameters.targeFileNamePattern;
-      toolTip = TARGET_PATTERN_TOOLTIP;
-      enabled = true;
-      onTextUpdated = function()
+   this.targetFilePattern_Edit.text = guiParameters.targeFileNamePattern;
+   this.targetFilePattern_Edit.toolTip = TARGET_PATTERN_TOOLTIP;
+   this.targetFilePattern_Edit.enabled = true;
+   this.targetFilePattern_Edit.onTextUpdated = function()
       {
-         guiParameters.targeFileNamePattern = text;
+         guiParameters.targeFileNamePattern = this.text;
          this.dialog.refreshTargetFiles();
       }
-   }
+
 
    // Source file name pattern --------------------------------------------------------------------------------------
    this.sourcePattern_Edit = new Edit( this );
-   with ( this.sourcePattern_Edit )
-   {
-      text = regExpToString(guiParameters.sourceFileNameRegExp);
-      toolTip = SOURCE_FILENAME_REGEXP_TOOLTIP;
-      enabled = true;
-      onTextUpdated = function()
+   this.sourcePattern_Edit.text = regExpToString(guiParameters.sourceFileNameRegExp);
+   this.sourcePattern_Edit.toolTip = SOURCE_FILENAME_REGEXP_TOOLTIP;
+   this.sourcePattern_Edit.enabled = true;
+   this.sourcePattern_Edit.onTextUpdated = function()
       {
          var re = this.text.trim();
          if (re.length == 0) {
@@ -1236,21 +1231,19 @@ function MyDialog(engine)
          // Refresh the generated files
          this.dialog.refreshTargetFiles();
       }
-   }
+
 
    // Group pattern --------------------------------------------------------------------------------------
    this.groupPattern_Edit = new Edit( this );
-   with ( this.groupPattern_Edit )
+   this.groupPattern_Edit.text = guiParameters.groupByPattern;
+   this.groupPattern_Edit.toolTip = GROUP_PATTERN_TOOLTIP;
+   this.groupPattern_Edit.enabled = true;
+   this.groupPattern_Edit.onTextUpdated = function()
    {
-      text = guiParameters.groupByPattern;
-      toolTip = GROUP_PATTERN_TOOLTIP;
-      enabled = true;
-      onTextUpdated = function()
-      {
-         guiParameters.groupByPattern = text;
-         this.dialog.refreshTargetFiles();
-      }
+      guiParameters.groupByPattern = this.text;
+      this.dialog.refreshTargetFiles();
    }
+
 
 
 
@@ -1263,33 +1256,29 @@ function MyDialog(engine)
    this.outputDir_Edit.toolTip ="select output directory.";
 
    this.outputDirSelect_Button = new ToolButton( this );
-   with ( this.outputDirSelect_Button )
-   {
-      icon = new Bitmap( ":/images/icons/select.png" );
-      toolTip = "Select output directory";
-      onClick = function()
+   this.outputDirSelect_Button.icon = new Bitmap( ":/images/icons/select.png" );
+   this.outputDirSelect_Button.toolTip = "Select output directory";
+   this.outputDirSelect_Button.onClick = function()
       {
          var gdd = new GetDirectoryDialog;
-         gdd.initialPath = this.engine.outputDirectory;
+         gdd.initialPath = this.parent.engine.outputDirectory;
          gdd.caption = "Select Output Directory";
          if ( gdd.execute() )
          {
-            this.engine.outputDirectory = gdd.directory;
-            this.dialog.outputDir_Edit.text = this.engine.outputDirectory;
+            this.dialog.engine.outputDirectory = gdd.directory;
+            this.dialog.outputDir_Edit.text = this.dialog.engine.outputDirectory;
             this.dialog.updateButtonState();
          }
       }
-   }
+
 
    // Source file name pattern --------------------------------------------------------------------------------------
    this.transform_TextBox = new TextBox( this );
-   with ( this.transform_TextBox )
-   {
-      text = '';
-      toolTip = "Transformations that will be executed";
-      enabled = true;
-      readOnly = true;
-   }
+   this.transform_TextBox.text = '';
+       this.transform_TextBox.toolTip = "Transformations that will be executed";
+       this.transform_TextBox.enabled = true;
+       this.transform_TextBox.readOnly = true;
+
 
    // ===================================================================================
    //
@@ -1297,11 +1286,11 @@ function MyDialog(engine)
    this.makeListOfCheckedFiles = function() {
       var listOfFiles = [];
 
-      for (var iTreeBox = 0; iTreeBox < this.files_TreeBox.numberOfChildren; ++iTreeBox) {
+      for (var iTreeBox = 0; iTreeBox < this.filesTreeBox.numberOfChildren; ++iTreeBox) {
 
-         if ( this.files_TreeBox.child(iTreeBox).checked ) {
+         if ( this.filesTreeBox.child(iTreeBox).checked ) {
             // Select name in tree box, find corresponding file in inputFiles
-            var nameInTreeBox = this.files_TreeBox.child(iTreeBox).text(0);
+            var nameInTreeBox = this.filesTreeBox.child(iTreeBox).text(0);
             listOfFiles.push(nameInTreeBox);
          }
       }
@@ -1327,13 +1316,13 @@ function MyDialog(engine)
     }
 
     this.removeDeletedFiles = function() {
-      for ( var iTreeBox = this.dialog.files_TreeBox.numberOfChildren; --iTreeBox >= 0; ) {
+      for ( var iTreeBox = this.dialog.filesTreeBox.numberOfChildren; --iTreeBox >= 0; ) {
 
-         var nameInTreeBox = this.dialog.files_TreeBox.child(iTreeBox).text(0);
+         var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).text(0);
          if (!File.exists(nameInTreeBox)) {
 
             this.dialog.engine.removeFiles(nameInTreeBox);
-            this.dialog.files_TreeBox.remove( iTreeBox );
+            this.dialog.filesTreeBox.remove( iTreeBox );
          }
 
          this.dialog.QTY.text = "Total files: " + this.dialog.engine.inputFiles.length;
@@ -1345,14 +1334,13 @@ function MyDialog(engine)
 
    //Engine buttons --------------------------------------------------------------------------------------
    this.check_Button = new PushButton( this );
-   with ( this.check_Button ) {
-      text = "Check validity";
-      toolTip = "Check that the target files are valid\nthis is automatically done before any other operation";
-      enabled = true;
-      onClick = function()
+   this.check_Button.text = "Check validity";
+   this.check_Button.toolTip = "Check that the target files are valid\nthis is automatically done before any other operation";
+   this.check_Button.enabled = true;
+   this.check_Button.onClick = function()
       {
-         var listOfFiles = parent.makeListOfCheckedFiles();
-         var errors = parent.engine.checkValidTargets(listOfFiles);
+         var listOfFiles = this.parent.makeListOfCheckedFiles();
+         var errors = this.parent.engine.checkValidTargets(listOfFiles);
          if (errors.length > 0) {
             var msg = new MessageBox( errors.join("\n"),
                    "Check failed", StdIcon_Error, StdButton_Ok );
@@ -1363,194 +1351,175 @@ function MyDialog(engine)
              msg.execute();
          }
       }
-   }
+
 
    this.move_Button = new PushButton( this );
-   with ( this.move_Button ) {
-      text = "Move files";
-      toolTip = "Move Checked files to output directory";
-      enabled = false;
-      onClick = function()
+   this.move_Button.text = "Move files";
+   this.move_Button.toolTip = "Move Checked files to output directory";
+   this.move_Button.enabled = false;
+   this.move_Button.onClick = function()
       {
-         var listOfFiles = parent.makeListOfCheckedFiles();
-         var errors = parent.engine.checkValidTargets(listOfFiles);
+         var listOfFiles = this.parent.makeListOfCheckedFiles();
+         var errors = this.parent.engine.checkValidTargets(listOfFiles);
          if (errors.length > 0) {
             var msg = new MessageBox( errors.join("\n"),
                    "Check failed", StdIcon_Error, StdButton_Ok );
             msg.execute();
             return;
          }
-         parent.engine.executeFileOperations(0);
-         parent.removeDeletedFiles();
-         parent.refreshTargetFiles();
+         this.parent.engine.executeFileOperations(0);
+         this.parent.removeDeletedFiles();
+         this.parent.refreshTargetFiles();
          //this.dialog.ok();
          // TODO Refresh source
       }
-   }
+
 
    this.refresh_Button = new PushButton( this );
-   with ( this.refresh_Button ) {
-      text = "Refresh list";
-      toolTip = "Refresh the list of operations\nrequired after a sort on an header (there is on onSort event)";
-      enabled = true;
-      onClick = function()
+   this.refresh_Button.text = "Refresh list";
+   this.refresh_Button.toolTip = "Refresh the list of operations\nrequired after a sort on an header (there is on onSort event)";
+   this.refresh_Button.enabled = true;
+   this.refresh_Button.onClick = function()
       {
-         parent.removeDeletedFiles();
-         parent.refreshTargetFiles();
+         this.parent.removeDeletedFiles();
+         this.parent.refreshTargetFiles();
       }
-   }
+
 
    this.copy_Button = new PushButton( this );
-   with ( this.copy_Button ) {
-      text = "Copy files";
-      toolTip = "Copy Checked files to output directory";
-      enabled = false;
-      onClick = function()
+   this.copy_Button.text = "Copy files";
+      this.copy_Button.toolTip = "Copy Checked files to output directory";
+      this.copy_Button.enabled = false;
+      this.copy_Button.onClick = function()
       {
-         var listOfFiles = parent.makeListOfCheckedFiles();
-         var errors = parent.engine.checkValidTargets(listOfFiles);
+         var listOfFiles = this.parent.makeListOfCheckedFiles();
+         var errors = this.parent.engine.checkValidTargets(listOfFiles);
          if (errors.length > 0) {
             var msg = new MessageBox( errors.join("\n"),
                    "Check failed", StdIcon_Error, StdButton_Ok );
             msg.execute();
             return;
          }
-         parent.engine.executeFileOperations(1);
+         this.parent.engine.executeFileOperations(1);
          //this.dialog.ok();
       }
-   }
+
 
    // Export selected fits keywords for checked files
    this.txt_Button = new PushButton( this );
-   with ( this.txt_Button ) {
-      text = "Export FITS.txt";
-      toolTip = "For Checked files write FitKeywords value to file FITS.txt in output directory";
-      enabled = false;
-      onClick = function() {
-         parent.engine.exportFITSKeyWords();
+   this.txt_Button.text = "Export FITS.txt";
+      this.txt_Button.toolTip = "For Checked files write FitKeywords value to file FITS.txt in output directory";
+      this.txt_Button.enabled = false;
+      this.txt_Button.onClick = function() {
+         this.parent.engine.exportFITSKeyWords();
       }
 
-   }
+
 
 
    //Sizer------------------------------------------------------------
 
    this.fileButonSizer = new HorizontalSizer;
-   with ( this.fileButonSizer )
-   {
-      margin = 6;
-      spacing = 4;
-      add( this.Key_button );
-      add( this.filesAdd_Button );
-      add( this.dirAdd_Button );
-      add( this.files_close_Button );
-      add( this.files_close_all_Button );
-      add( this.QTY );
-      addStretch();
-   }
+   this.fileButonSizer.margin = 6;
+      this.fileButonSizer.spacing = 4;
+      this.fileButonSizer.add( this.keyButton );
+      this.fileButonSizer.add( this.filesAdd_Button );
+      this.fileButonSizer.add( this.dirAdd_Button );
+      this.fileButonSizer.add( this.files_close_Button );
+      this.fileButonSizer.add( this.files_close_all_Button );
+      this.fileButonSizer.add( this.QTY );
+      this.fileButonSizer.addStretch();
+
 
    this.inputFiles_GroupBox = new GroupBox( this );
-   with (this.inputFiles_GroupBox)
-   {
-      title = "Input";
-      sizer = new VerticalSizer;
-      sizer.margin = 6;
-      sizer.spacing = 4;
-      sizer.add( this.files_TreeBox,100 );
-      sizer.add( this.fileButonSizer );
-   }
+   this.inputFiles_GroupBox.title = "Input";
+   this.inputFiles_GroupBox.sizer = new VerticalSizer;
+   this.inputFiles_GroupBox.sizer.margin = 6;
+   this.inputFiles_GroupBox.sizer.spacing = 4;
+   this.inputFiles_GroupBox.sizer.add( this.filesTreeBox,100 );
+   this.inputFiles_GroupBox.sizer.add( this.fileButonSizer );
+
 
    this.targetFilePattern_Edit_sizer = new HorizontalSizer;
-   with (this.targetFilePattern_Edit_sizer) {
-      margin = 4;
-      spacing = 2;
+   this.targetFilePattern_Edit_sizer.margin = 4;
+   this.targetFilePattern_Edit_sizer.spacing = 2;
       var label = new Label();
       label.minWidth			= 100;
 		label.text		= "Target file pattern: ";
 		label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
-      add( label );
-      add( this.targetFilePattern_Edit );
-   }
+      this.targetFilePattern_Edit_sizer.add( label );
+      this.targetFilePattern_Edit_sizer.add( this.targetFilePattern_Edit );
+
 
    this.sourcePattern_Edit_sizer = new HorizontalSizer;
-   with (this.sourcePattern_Edit_sizer) {
-      margin = 4;
-      spacing = 2;
+   this.sourcePattern_Edit_sizer.margin = 4;
+   this.sourcePattern_Edit_sizer.spacing = 2;
       var label = new Label();
       label.minWidth			= 100;
 		label.text		= "File name RegExp: ";
 		label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
-      add( label );
-      add( this.sourcePattern_Edit );
-   }
+   this.sourcePattern_Edit_sizer.add( label );
+   this.sourcePattern_Edit_sizer.add( this.sourcePattern_Edit );
+
 
    this.groupPattern_Edit_sizer = new HorizontalSizer;
-   with (this.groupPattern_Edit_sizer) {
-      margin = 4;
-      spacing = 2;
+   this.groupPattern_Edit_sizer.margin = 4;
+   this.groupPattern_Edit_sizer.spacing = 2;
       var label = new Label();
       label.minWidth			= 100;
 		label.text		= "Group pattern: ";
 		label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
-      add( label );
-      add( this.groupPattern_Edit );
-   }
+   this.groupPattern_Edit_sizer.add( label );
+   this.groupPattern_Edit_sizer.add( this.groupPattern_Edit );
+
 
 
    this.rules_GroupBox = new GroupBox( this );
-   with (this.rules_GroupBox)
-   {
-      title = "Rules";
+   this.rules_GroupBox.title = "Rules";
 
-      sizer = new VerticalSizer;
-      sizer.margin = 6;
-      sizer.spacing = 4;
+      this.rules_GroupBox.sizer = new VerticalSizer;
+      this.rules_GroupBox.sizer.margin = 6;
+      this.rules_GroupBox.sizer.spacing = 4;
 
-      sizer.add( this.targetFilePattern_Edit_sizer, 100);
-      sizer.add( this.sourcePattern_Edit_sizer );
-      sizer.add( this.groupPattern_Edit_sizer );
-   }
+      this.rules_GroupBox.sizer.add( this.targetFilePattern_Edit_sizer, 100);
+      this.rules_GroupBox.sizer.add( this.sourcePattern_Edit_sizer );
+      this.rules_GroupBox.sizer.add( this.groupPattern_Edit_sizer );
+
 
 
    this.outputDir_GroupBox = new GroupBox( this );
-   with (this.outputDir_GroupBox)
-   {
-      title = "Output base directory";
-      sizer = new HorizontalSizer;
-      sizer.margin = 6;
-      sizer.spacing = 4;
-      sizer.add( this.outputDir_Edit, 100 );
-      sizer.add( this.outputDirSelect_Button );
-   }
+   this.outputDir_GroupBox.title = "Output base directory";
+   this.outputDir_GroupBox.sizer = new HorizontalSizer;
+   this.outputDir_GroupBox.sizer.margin = 6;
+   this.outputDir_GroupBox.sizer.spacing = 4;
+   this.outputDir_GroupBox.sizer.add( this.outputDir_Edit, 100 );
+   this.outputDir_GroupBox.sizer.add( this.outputDirSelect_Button );
+
 
 
    this.sizer2 = new HorizontalSizer;
-   with ( this.sizer2 )
-   {
-      spacing = 2;
-      add( this.refresh_Button);
-      add( this.check_Button);
-      add( this.move_Button);
-      add( this.copy_Button);
-      add( this.txt_Button);
-      addStretch();
-   }
+   this.sizer2.spacing = 2;
+   this.sizer2.add( this.refresh_Button);
+   this.sizer2.add( this.check_Button);
+   this.sizer2.add( this.move_Button);
+   this.sizer2.add( this.copy_Button);
+   this.sizer2.add( this.txt_Button);
+   this.sizer2.addStretch();
+
 
 
    this.sizer = new VerticalSizer;
-   with ( this.sizer )
-   {
-      margin = 2;
-      spacing = 2;
-      add( this.inputFiles_GroupBox );
-      add(this.rules_GroupBox);
-      add( this.outputDir_GroupBox );
-      add(this.transform_TextBox);
-      add( this.sizer2 );
-   }
+   this.sizer.margin = 2;
+   this.sizer.spacing = 2;
+   this.sizer.add( this.inputFiles_GroupBox );
+   this.sizer.add(this.rules_GroupBox);
+   this.sizer.add( this.outputDir_GroupBox );
+   this.sizer.add(this.transform_TextBox);
+   this.sizer.add( this.sizer2 );
+
    //this.move(50,100); // move dialog to up-left corner
 
 }
@@ -1576,18 +1545,34 @@ function KeyDialog( pd ) //pd - parentDialog
 
       this.keyword_TreeBox.clear();
 
-      var testRootNode = new TreeBoxNode(this.keyword_TreeBox);
-      testRootNode.expanded = true;
-      testRootNode.setText(0,"FITS keywords");
+      // sythetic keywords root node
+      var synthRoootNode = new TreeBoxNode(this.keyword_TreeBox);
+      synthRoootNode.expanded = true;
+      synthRoootNode.setText(0,"Synthetic keywords");
+
+
+      // Fill list of keywords from parent keyTable
+      for (var i =0; i<shownSyntheticVariables.length; i++) {
+         var node = new TreeBoxNode(synthRoootNode);
+         node.setText( 0, shownSyntheticVariables[i] );
+         node.checked = true;
+      }
+
+
+
+      // fits keywords root node
+      var fitsRoootNode = new TreeBoxNode(this.keyword_TreeBox);
+      fitsRoootNode.expanded = true;
+      fitsRoootNode.setText(0,"FITS keywords");
 
 
       // Fill list of keywords from parent keyTable
       for (var i =0; i<pd.engine.keyTable.length; i++) {
-         // TEST var node = new TreeBoxNode(this.keyword_TreeBox);
-         var node = new TreeBoxNode(testRootNode);
+         var node = new TreeBoxNode(fitsRoootNode);
          node.setText( 0, pd.engine.keyTable[i] );
          node.checked = pd.engine.keyEnabled[i];
       }
+
 
       // Fill list of files from parent list of files
       this.file_ComboBox.clear();
@@ -1604,9 +1589,9 @@ function KeyDialog( pd ) //pd - parentDialog
 #ifdef DEBUG
           debug("file_ComboBox: onHide");
 #endif
-      var fitsParentNode = this.keyword_TreeBox.child(0);
+      var fitsRoootNode = this.keyword_TreeBox.child(1);
       for (var i =0; i<pd.engine.keyTable.length; i++) {
-         checked = fitsParentNode.child(i).checked;
+         var checked = fitsRoootNode.child(i).checked;
 #ifdef DEBUG
          // debug("KeyDialog: Key#= " + parseInt(i) + " checked= " + checked );
 #endif
@@ -1618,21 +1603,15 @@ function KeyDialog( pd ) //pd - parentDialog
 
    // FITS keyword combox box for file selection
    this.file_ComboBox = new ComboBox( this );
-   with ( this.file_ComboBox )
-   {
-      onItemSelected = function( index )
+   this.file_ComboBox.onItemSelected = function( index )
       {
          // Assume that index in combox is same as index in inputfiles
 #ifdef DEBUG
           debug("file_ComboBox: onItemSelected - " + index + " key table length = " + pd.engine.keyTable.length);
 #endif
-        // TEST var fitsParentNode = parent.keyword_TreeBox;
-        var fitsParentNode = parent.keyword_TreeBox.child(0);
+        var fitsParentNode = this.parent.keyword_TreeBox.child(1);
 
          for (var i = 0; i<pd.engine.keyTable.length; i++) {
-            // Copying from original treebox (assume all in same order)
-           //  var keyValue = pd.files_TreeBox.child(index).text(i+1);
-
             var keyName = pd.engine.keyTable[i];
             var keys = pd.engine.inputKeys[index];
             var keyWord = null;
@@ -1650,25 +1629,36 @@ function KeyDialog( pd ) //pd - parentDialog
                fitsParentNode.child(i).setText(2,keyWord.comment);
             }
          }
-      }
+
+        var synthRootNode = this.parent.keyword_TreeBox.child(0);
+
+         for (var i =0; i<shownSyntheticVariables.length; i++) {
+            var keyName = shownSyntheticVariables[i];
+            var variables = pd.engine.inputVariables[index];
+            var variable = variables[keyName];
+            if (variable != null) {
+               synthRootNode.child(i).setText(1,variable);
+               //synthRootNode.child(i).setText(2,"");
+            }
+         }
+
+
 
    }
 
    //----------------------------------------------------------
    // FITS keyword List TreeBox
    this.keyword_TreeBox = new TreeBox( this );
-   with ( this.keyword_TreeBox )
-   {
-      toolTip = "Checkmark to include to report";
-      rootDecoration = false;
-      numberOfColumns = 2;
-      setHeaderText(0, "name");
-      setHeaderText(1, "value");
-      setHeaderText(2, "comment");
-      setColumnWidth(0,100);
-      setColumnWidth(1,200);
-      setColumnWidth(2,600);
-   }
+   this.keyword_TreeBox.toolTip = "Checkmark to include to report";
+   this.keyword_TreeBox.rootDecoration = false;
+   this.keyword_TreeBox.numberOfColumns = 2;
+   this.keyword_TreeBox.setHeaderText(0, "name");
+   this.keyword_TreeBox.setHeaderText(1, "value");
+   this.keyword_TreeBox.setHeaderText(2, "comment");
+   this.keyword_TreeBox.setColumnWidth(0,100);
+   this.keyword_TreeBox.setColumnWidth(1,200);
+   this.keyword_TreeBox.setColumnWidth(2,600);
+
 
    // Assemble FITS keyword Dialog
    this.sizer = new VerticalSizer;
