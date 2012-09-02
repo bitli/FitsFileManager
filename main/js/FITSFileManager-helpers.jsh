@@ -1,6 +1,6 @@
 // FITSFileManager-help.js
 
-
+// This file is part of FITSFileManager
 
 #include <pjsr/DataType.jsh>
 

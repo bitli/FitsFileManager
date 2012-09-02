@@ -4,22 +4,22 @@
 
 #feature-info Copy and move files based on FITS keys.<br/>
 
-// Significantly modified from FITSkey_0.06 of Nikolay (I hope he doesn't mind)
+// Base on FITSkey_0.06 of Nikolay but almost completely rewritten with another approach (I hope he doesn't mind)
 
 // Author: Jean-Marc Lugrin
 
 
-#define VERSION   "0.20"
+#define VERSION   "0.30"
 #define TITLE     "FITSFileManager"
 
 // --- Debugging control ----------------
 // Set to false when doing hasardous developments...
 #define EXECUTE_COMMANDS false
 // Tracing - define DEBUG if you define any other
-#define DEBUG
+//#define DEBUG
 //#define DEBUG_EVENTS
 //#define DEBUG_FITS
-#define DEBUG_VARS
+//#define DEBUG_VARS
 //#define DEBUG_COLUMNS
 
 #ifdef DEBUG
@@ -78,6 +78,7 @@ function debug(str) {
 // Select the first sequence without -_. or the whole name in &1; (second group is non capturing)
 #define FFM_DEFAULT_SOURCE_FILENAME_REGEXP /([^-_.]+)(?:[._-]|$)/
 #define FFM_DEFAULT_TARGET_FILENAME_PATTERN "&1;_&binning;_&temp;C_&type;_&exposure;s_&filter;_&count;&extension;"
+// #define FFM_DEFAULT_TARGET_FILENAME_PATTERN "&filename;_AS_&1;_bin_&binning;_filter_&filter;_temp_&temp;_type_&type;_exp_&exposure;s_count_&count;&extension;";
 #define FFM_DEFAULT_GROUP_PATTERN "&targetDir;"
 
 

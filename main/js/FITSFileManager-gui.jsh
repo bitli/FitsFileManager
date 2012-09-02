@@ -23,9 +23,9 @@ defined from the file information and FITS keywordsas follows:\n\
    &exposure;   The exposure from EXPOSURE, but as an integer (assume seconds).\n\
    &extension;  The extension of the source file (with the dot.)\n\
    &filename;   The file name part of the source file.\n\
-   &filter:     The filter name from FILTER as lower case trimmed normalized name.\n\
+   &filter;     The filter name from FILTER as lower case trimmed normalized name.\n\
    &temp;       The SET-TEMP temperature in C as an integer.\n\
-   &type:       The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'.\n\
+   &type;       The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'.\n\
    &FITSKW;     (NOT IMPLEMENTED).\n\
    &0; &1;, ... The corresponding match from the source file name pattern field.\n\
 The following keywords are dynamic (they are recalculated in case of reordering)\n\
@@ -55,15 +55,51 @@ Leave blank or use a fixed name to have a single counter. The default &targetDir
 directory. &filter; would count separetely for each filter.\n\
 "
 
+#define HELP_TEXT "<style>body {font-size:12px;}</style>\
+<body><p>DOCUMENTATION IS WORK IN PROGRESS<br/>\
+Define how the target file name will be generated. Text is copied<br/>\
+as is to the output name. Keywords (between &amp; and semicolon) are<br/>\
+defined from the file information and FITS keywordsas follows:\
+<dl>\
+   <dt>&amp;binning;</dt><dd>Binning from XBINNING and YBINNING as integers, like 2x2.</dd>\
+   <dt>&amp;exposure;</dt><dd>The exposure from EXPOSURE, but as an integer (assume seconds).<\dd>\
+   <dt>&amp;extension;</dt><dd>The extension of the source file (with the dot.)<\dd>\
+   <dt>&amp;filename;</dt><dd>The file name part of the source file.<\dd>\
+   <dt>&amp;filter;</dt><dd>The filter name from FILTER as lower case trimmed normalized name.<\dd>\
+   <dt>&amp;temp;</dt><dd>The SET-TEMP temperature in C as an integer.<\dd>\
+   <dt>&amp;type;</dt><dd>The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'.<\dd>\
+   <dt>&amp;FITSKW;</dt><dd>(NOT IMPLEMENTED).<\dd>\
+   <dt>&amp;0; &amp;1;, ... </dt><dd>The corresponding match from the source file name pattern field.<\dd>\
+</dl>\
+The following keywords are dynamic (they are recalculated in case of reordering)\
+<dl>\
+   <dt>&amp;count;</dt><dd>The number of the file being moved/copied int the current group, padded to COUNT_PAD.<\dd>\
+   <dt>&amp;rank;</dt><dd>The number of the file in the order of the input file list, padded to COUNT_PAD.<\dd>\
+</dl>\
+<p>The target file name pattern may contain forward slashes that will be used<br/>\
+as directory separator. Keywords may appear multiple time and may also be part of directory names.<br/>\
+Unknown keywords are replaced by their name in upper case.<br/>\
+The default pattern has no directory and use a part of the original file name as a prefix.</p>\
+<p>Define  a regular expression (without the surround slashes) that will be applied to all file names<br/>\
+without the extension. The 'match' array resulting from the regular expression matching can be used<br/>\
+in the target file name pattern as &amp;0; (whole expression), &amp;1 (first group), ...<br/>\
+The default extract the part of the name before the first dash (you can replace the<br/>\
+two dashes by two underlines for example).<br/>\
+In case of error the field turns red</p>\
+<p>Define the pattern to generate a group name used by &amp;count;.<br/>\
+Each group has its own group number starting at 1. You can use the same variables<br/>\
+as for the target file name, except &amp;count;. In addition you can use:<br/>\
+   &amp;targetDir;    The directory part of the target file name (except that &amp;count; is not replaced).<br/>\
+Leave blank or use a fixed name to have a single counter. The default &amp;targetDir; count in each target<br/>\
+directory. &amp;filter; would count separetely for each filter.</p></body>\
+"
+
+
 // ------------------------------------------------------------------------------------------------------------------------
 // User Interface Parameters
 // ------------------------------------------------------------------------------------------------------------------------
 
-// The GUI parameters keeps track of this information in
-// a form easy to be saved and presented to the user.
-
-
-
+// The GUI parameters keeps track of the parameters that are saved between executions
 
 function FFM_GUIParameters() {
 
@@ -71,12 +107,12 @@ function FFM_GUIParameters() {
 
       // SETTINGS: Saved latest correct GUI state
       this.targeFileNamePattern = FFM_DEFAULT_TARGET_FILENAME_PATTERN;
-      //this.targeFileNamePattern = "&filename;_AS_&1;_bin_&binning;_filter_&filter;_temp_&temp;_type_&type;_exp_&exposure;s_count_&count;&extension;";
 
-      // Default file name reguler expression
+      // Default regular expression to parse file name
       this.sourceFileNameRegExp = FFM_DEFAULT_SOURCE_FILENAME_REGEXP;
 
-      this.orderBy = "&rank;"
+      this.orderBy = "&rank;" // UNUSED
+      // Default pattern to create groups
       this.groupByPattern = FFM_DEFAULT_GROUP_PATTERN;
     }
    this.reset();
@@ -166,7 +202,7 @@ FFM_GUIParameters.prototype.saveSettings = function()
 
 
 // ------------------------------------------------------------------------------------------------------------------------
-// GUI
+// GUI Main Dialog
 // ------------------------------------------------------------------------------------------------------------------------
 
 function MainDialog(engine, guiParameters)
@@ -175,16 +211,11 @@ function MainDialog(engine, guiParameters)
    this.__base__();
    this.engine = engine;
 
-   //hide columns of unchecked keywords---------------------------
+   //hide columns of unchecked keywords (called to apply changes)
    this.hideKey = function () {
-      //if (DEBUGGING_MODE_ON) console.clear();
 
       for (var i = 0; i<this.engine.keyEnabled.length;i++) {
          var c = i + 1;
-         // debug("Column: " + i + " "  + c + " enabled: " + this.keyEnabled[parseInt(i)] + " " );
-         // console.writeln(" *** " + i + " " + typeof i + " " + typeof this.keyEnabled[i] + " " + this.files_TreeBox.numberOfColumns);
-
-         // TODO Does not work unles debug is enabled
          this.filesTreeBox.showColumn( c, this.engine.keyEnabled[i]);
       }
    }
@@ -518,26 +549,24 @@ function MainDialog(engine, guiParameters)
    this.outputDirSelect_Button = new ToolButton( this );
    this.outputDirSelect_Button.icon = new Bitmap( ":/images/icons/select.png" );
    this.outputDirSelect_Button.toolTip = "Select output directory";
-   this.outputDirSelect_Button.onClick = function()
-      {
-         var gdd = new GetDirectoryDialog;
-         gdd.initialPath = this.parent.engine.outputDirectory;
-         gdd.caption = "Select Output Directory";
-         if ( gdd.execute() )
-         {
-            this.dialog.engine.outputDirectory = gdd.directory;
-            this.dialog.outputDir_Edit.text = this.dialog.engine.outputDirectory;
-            this.dialog.updateButtonState();
-         }
+   this.outputDirSelect_Button.onClick = function() {
+      var gdd = new GetDirectoryDialog;
+      gdd.initialPath = this.parent.engine.outputDirectory;
+      gdd.caption = "Select Output Directory";
+      if ( gdd.execute() ) {
+         this.dialog.engine.outputDirectory = gdd.directory;
+         this.dialog.outputDir_Edit.text = this.dialog.engine.outputDirectory;
+         this.dialog.updateButtonState();
       }
+   }
 
 
    // Source file name pattern --------------------------------------------------------------------------------------
    this.transform_TextBox = new TextBox( this );
    this.transform_TextBox.text = '';
-       this.transform_TextBox.toolTip = "Transformations that will be executed";
-       this.transform_TextBox.enabled = true;
-       this.transform_TextBox.readOnly = true;
+   this.transform_TextBox.toolTip = "Transformations that will be executed";
+   this.transform_TextBox.enabled = true;
+   this.transform_TextBox.readOnly = true;
 
 
    // ===================================================================================
@@ -758,6 +787,14 @@ function MainDialog(engine, guiParameters)
    this.outputDir_GroupBox.sizer.add( this.outputDir_Edit, 100 );
    this.outputDir_GroupBox.sizer.add( this.outputDirSelect_Button );
 
+   this.helpButton = new ToolButton( this );
+   this.helpButton.icon = new Bitmap( ":/images/interface/browseDocumentationButton.png" );
+   this.helpButton.toolTip = "Browse Documentation";
+   this.helpDialog = new HelpDialog(this);
+   this.helpButton.onClick = function() {
+      this.dialog.helpDialog.execute();
+   }
+
 
 
    this.sizer2 = new HorizontalSizer;
@@ -767,12 +804,13 @@ function MainDialog(engine, guiParameters)
    this.sizer2.add( this.move_Button);
    this.sizer2.add( this.copy_Button);
    this.sizer2.add( this.txt_Button);
+   this.sizer2.add( this.helpButton);
    this.sizer2.addStretch();
 
 
    // -- HelpLabel
    var helpLabel = new Label( this );
-   // helpLabel.frameStyle = FrameStyle_Box;
+   helpLabel.frameStyle = FrameStyle_Box;
    helpLabel.margin = 4;
    helpLabel.wordWrapping = true;
    helpLabel.useRichText = true;
@@ -780,27 +818,13 @@ function MainDialog(engine, guiParameters)
            "files using selected FITS keyword values or original file name pattern " +
            "to create the target directory/file name.";
 
-   var helpButton = new ToolButton( this );
-   helpButton.icon = new Bitmap( ":/images/interface/browseDocumentationButton.png" );
-   helpButton.toolTip = "Browse Documentation";
-   helpButton.onClick = function()
-      {
 
-      }
-
-
-   var helpSizer = new HorizontalSizer;
-   // helpSizer.frameStyle = FrameStyle_Box;
-   helpSizer.margin = 2;
-   helpSizer.spacing = 2;
-   helpSizer.add( helpLabel,100 );
-   helpSizer.add( helpButton);
 
 
    this.sizer = new VerticalSizer;
    this.sizer.margin = 2;
    this.sizer.spacing = 2;
-   this.sizer.add( helpSizer );
+   this.sizer.add( helpLabel );
    this.sizer.add( this.inputFiles_GroupBox,50 );
    this.sizer.add(this.rules_GroupBox);
    this.sizer.add( this.outputDir_GroupBox );
@@ -813,8 +837,33 @@ function MainDialog(engine, guiParameters)
 MainDialog.prototype = new Dialog;
 
 
-// ---------------------------------------------------------------------------------------------------------
-// Fits keys dialog
+// ------------------------------------------------------------------------------------------------------------------------
+// Documentation dialog
+// ------------------------------------------------------------------------------------------------------------------------
+function HelpDialog( parentDialog, engine)
+{
+   this.__base__ = Dialog;
+   this.__base__();
+   this.sizer = new VerticalSizer();
+   this.sizer.margin = 5;
+
+   this.windowTitle = "FITSFileManager help";
+   this.helpLabel = new Label();
+   this.helpLabel.width = 600;
+   this.helpLabel.useRichText = true;
+   this.helpLabel.text = HELP_TEXT;
+   this.helpLabel.adjustToContents();
+   this.sizer.add(this.helpLabel);
+   this.adjustToContents();
+
+
+}
+HelpDialog.prototype = new Dialog;
+
+
+// ------------------------------------------------------------------------------------------------------------------------
+// FITS and syntehetic keys dialog
+// ------------------------------------------------------------------------------------------------------------------------
 // Present a dialog with:
 //   A selection of the files (drop down)
 //   A list of  FITS keywords (selection box, keyword, value)  of the selected file, as a TreeBox
@@ -845,7 +894,7 @@ function FITSKeysDialog( parentDialog, engine)
       // TODO Refactor action code to be in keyword_TreeBox
       // Assume that index in combox is same as index in inputfiles
 #ifdef DEBUG
-      debug("file_ComboBox: onItemSelected - " + index + " key table length = " + engine.keyTable.length);
+      debug("FITSKeysDialog: file_ComboBox: onItemSelected - " + index + " key table length = " + engine.keyTable.length);
 #endif
 
       var keyword_TreeBox = this.parent.keyword_TreeBox;
@@ -883,7 +932,7 @@ function FITSKeysDialog( parentDialog, engine)
             }
          }
 #ifdef DEBUG_FITS
-         debug("file_ComboBox: onItemSelected - keyName=" + keyName + ",  keyWord=" + keyWord );
+         debug("FITSKeysDialog: file_ComboBox: onItemSelected - keyName=" + keyName + ",  keyWord=" + keyWord );
 #endif
          if (keyWord !== null) {
             fitsRoootNode.child(i).setTextColor(0,0x00000000);
@@ -899,12 +948,43 @@ function FITSKeysDialog( parentDialog, engine)
    }
 
 
+   // Export selected fits keywords for checked files
+   this.cancel_Button = new PushButton( this );
+   this.cancel_Button.text = "Cancel";
+   this.cancel_Button.enabled = true;
+   this.cancel_Button.onClick = function() {
+      this.dialog.cancel();
+   }
+   this.ok_Button = new PushButton( this );
+   this.ok_Button.text = "OK";
+   this.ok_Button.enabled = true;
+   this.ok_Button.onClick = function() {
+#ifdef DEBUG
+      debug("FITSKeysDialog: ok_Button: onClick");
+#endif
+      var fitsRoootNode = this.parent.keyword_TreeBox.child(1);
+      for (var i =0; i< engine.keyTable.length; i++) {
+         var checked = fitsRoootNode.child(i).checked;
+         engine.keyEnabled[i] = checked;
+      }
+      parentDialog.setMinWidth(800);
+      this.dialog.ok();
+   }
+
+   this.sizer2 = new HorizontalSizer;
+   this.sizer2.spacing = 2;
+   this.sizer2.addStretch();
+   this.sizer2.add( this.cancel_Button);
+   this.sizer2.add( this.ok_Button);
+
+
    // Assemble FITS keyword Dialog
    this.sizer = new VerticalSizer;
    this.sizer.margin = 4;
    this.sizer.spacing = 4;
    this.sizer.add( this.file_ComboBox );
    this.sizer.add( this.keyword_TreeBox );
+   this.sizer.add(this.sizer2);
    this.adjustToContents();
 
    // ------------------------------------------------------------
@@ -957,21 +1037,6 @@ function FITSKeysDialog( parentDialog, engine)
       this.setMinSize(700,600);
    }
 
-   //----------------------------------------------------------
-
-   // Save list of selected keywords in parent keyEnabled array
-   this.onHide = function()
-   {
-#ifdef DEBUG
-          debug("file_ComboBox: onHide");
-#endif
-      var fitsRoootNode = this.keyword_TreeBox.child(1);
-      for (var i =0; i<engine.keyTable.length; i++) {
-         var checked = fitsRoootNode.child(i).checked;
-         engine.keyEnabled[i] = checked;
-      }
-      parentDialog.setMinWidth(800);
-   }
 }
 FITSKeysDialog.prototype = new Dialog;
 
