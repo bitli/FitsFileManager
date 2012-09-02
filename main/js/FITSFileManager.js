@@ -69,6 +69,7 @@
 // Allow to open selected files (not required, part of new file manager)
 // Configurable list of transformation, especially for filters (ha, ..)
 // Normalize directory (remove .., redundant /)
+// Ensure that text is stable after update of GUI
 
 // For icons, see http://pixinsight.com/forum/index.php?topic=1953.msg12267#msg12267
 
@@ -457,7 +458,8 @@ function regExpToString(re) {
 
 // Parsing the keywords in the targetFileNamePattern (1 characters will be removed at
 // head (&) and tail (;), this is hard coded and must be modified if required
-var variableRegExp = /&[a-zA-Z0-9]+;/g;
+//var variableRegExp = /&[a-zA-Z0-9]+;/g;
+var variableRegExp = /&[^&]+;/g;
 
 
 
@@ -470,8 +472,69 @@ var shownSyntheticComments = ['Type of image (flat, bias, ...)',
    'Temperature in C',
    'Binning as 1x1, 2x2, ...'];
 
+
+#ifdef DO_NOT_COMPILE
+
+// -- Support to analyze pattern and extract variables info
+function extractVariables(pattern) {
+
+   var variables = [];
+   // We could also use exec, but it seems even more complex
+   // Method to handle replacement of variables in target file name pattern
+   var extractVariable = function(matchedSubstring, index, originalString) {
+      debug("*** matchedSubstrings " + matchedSubstring);
+      var varName = matchedSubstring.substring(1,matchedSubstring.length-1);
+      variables.push(varName);
+      return matchedSubstring;
+   };
+   pattern.replace(variableRegExp,extractVariable);
+
+
+   debug("*** variables " + variables);
+
+   return variables;
+}
+
+function analyzeVariable(variable) {
+   var parts = {};
+   var extractVariableParts = function(matchedSubstring, index, originalString) {
+      debug("*** parts " + matchedSubstring);
+      if (matchedSubstring[0]===':') {
+         parts.trueFormat = matchedSubstring.substring(1);
+      } else if (matchedSubstring[0]==='?') {
+         parts.falseFormat = matchedSubstring.substring(1);
+      } else {
+         parts.name = matchedSubstring.trim();
+      }
+      return matchedSubstring;
+   };
+   variable.replace(/(^|[:?])([^:?]+)/g,extractVariableParts);
+   debug("*** part " + parts.name);
+
+   return parts;
+}
+
+function analyzeVariables(pattern) {
+   var result = [];
+   var variables = extractVariables(pattern);
+   debug("*** analyzeVariables variables " + variables);
+   for (var i = 0; i<variables.length; i++) {
+      result.push(analyzeVariable(variables[i]));
+   }
+   debug("*** analyzeVariables result " + result);
+   return result;
+}
+
+         analyzeVariables(this.text).forEach(
+            function(p) {
+               debug("*** analyzeVariables each " + p.name + " " + p.trueFormat + " "  + p.falseFormat);
+            }
+         );
+
+#endif
+
 // Extract the variables to form group names and file names from the file name, FITS keywords
-function extractVariables(inputFile, keys) {
+function makeSynthethicVariables(inputFile, keys) {
 
    var inputFileName =  File.extractName(inputFile);
 
@@ -585,7 +648,7 @@ function FFM_Engine(guiParameters) {
             var keys = loadFITSKeywords(fileNames[i]);
             this.inputFiles.push(fileNames[i]);
             this.inputKeys.push(keys);
-            var variables = extractVariables(fileNames[i], keys);
+            var variables = makeSynthethicVariables(fileNames[i], keys);
 
             this.inputVariables.push(variables);
             nmbFilesAdded++;
@@ -1225,6 +1288,7 @@ function MainDialog(engine, guiParameters)
       {
          guiParameters.targeFileNamePattern = this.text;
          this.dialog.refreshTargetFiles();
+
       }
 
 
