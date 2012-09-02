@@ -53,7 +53,7 @@ function debug(str) {
 
 
 // TODO
-// keep list of recent patterns used
+// keep list of recent templates used
 // Option for handling of minus and other special characters for form file name being valid PI ids
 // Add FITS keywords as variables, with formatting options
 // Add optional indicator to accept missing values '?' and default value
@@ -62,7 +62,7 @@ function debug(str) {
 // Generate and 'orderBy' column
 // Show sythetic keys in table, only show selected keys
 // Hide common header part of source folders to make file name more visible
-// Add a way to use directory of source file as variable  &filedir, &filedirparent for pattern matching and group names
+// Add a way to use directory of source file as variable  &filedir, &filedirparent for template matching and group names
 // Support date formatting, number formatting
 // Create a log file for record the source files
 // Ensure source is refreshed in case of move
@@ -77,9 +77,9 @@ function debug(str) {
 
 // Select the first sequence without -_. or the whole name in &1; (second group is non capturing)
 #define FFM_DEFAULT_SOURCE_FILENAME_REGEXP /([^-_.]+)(?:[._-]|$)/
-#define FFM_DEFAULT_TARGET_FILENAME_PATTERN "&1;_&binning;_&temp;C_&type;_&exposure;s_&filter;_&count;&extension;"
-// #define FFM_DEFAULT_TARGET_FILENAME_PATTERN "&filename;_AS_&1;_bin_&binning;_filter_&filter;_temp_&temp;_type_&type;_exp_&exposure;s_count_&count;&extension;";
-#define FFM_DEFAULT_GROUP_PATTERN "&targetDir;"
+#define FFM_DEFAULT_TARGET_FILENAME_TEMPLATE "&1;_&binning;_&temp;C_&type;_&exposure;s_&filter;_&count;&extension;"
+// #define FFM_DEFAULT_TARGET_FILENAME_TEMPLATE "&filename;_AS_&1;_bin_&binning;_filter_&filter;_temp_&temp;_type_&type;_exp_&exposure;s_count_&count;&extension;";
+#define FFM_DEFAULT_GROUP_TEMPLATE "&targetDir;"
 
 
 #include "FITSFileManager-helpers.jsh"

@@ -19,7 +19,7 @@
 "h1 {font-family: \"DejaVu Sans\",Verdana,Arial,Helvetica,sans-serif; font-size: 24pt; font-weight: normal; line-height: 1.2em; letter-spacing: -0.5px; margin-top: 1em; margin-bottom: 0.5em; color: #06F;}" +\
 "h3 {clear: both; border-bottom: 1px solid #999; padding-bottom: 0.1em; margin-top: 1.5em; margin-bottom: 1.25em; font-size: 16pt; font-weight: normal; line-height: 1.2em; color: #06F;}"
 
-#define TARGET_PATTERN_TOOLTIP "\
+#define TARGET_TEMPLATE_TOOLTIP "\
 Define how the target file name will be generated. The text is copied \
 <em>as is</em> to the output except for keywords.<br\>\
 Keywords (like  &amp;keyword;) are replaced by values defined from the file information and FITS keywords as follows:\
@@ -32,7 +32,7 @@ Keywords (like  &amp;keyword;) are replaced by values defined from the file info
    <dt>&amp;temp;</dt><dd>The SET-TEMP temperature in C as an integer.<\dd>\
    <dt>&amp;type;</dt><dd>The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'.<\dd>\
    <dt>&amp;FITSKW;</dt><dd>(NOT IMPLEMENTED).<\dd>\
-   <dt>&amp;0; &amp;1;, ... </dt><dd>The corresponding match from the source file name pattern field.<\dd>\
+   <dt>&amp;0; &amp;1;, ... </dt><dd>The corresponding match from the source file name template field.<\dd>\
 </dl>\
 <p>The following keywords are dynamic (their values depends on the file order):\
 <dl>\
@@ -45,14 +45,14 @@ Keywords (like  &amp;keyword;) are replaced by values defined from the file info
 #define SOURCE_FILENAME_REGEXP_TOOLTIP "\
 Define  a regular expression (without the surround slashes) that will be applied to all file names\n\
 without the extension. The 'match' array resulting from the regular expression matching can be used\n\
-in the target file name pattern as &0; (whole expression), &1 (first group), ...\n\
+in the target file name template as &0; (whole expression), &1 (first group), ...\n\
 The default extract the part of the name before the first dash (you can replace the\n\
 two dashes by two underlines for example).\n\
 In case of error the field turns red\n\
 "
 
-#define GROUP_PATTERN_TOOLTIP "\
-Define the pattern to generate a group name used by &count;.\n\
+#define GROUP_TEMPLATE_TOOLTIP "\
+Define the template to generate a group name used by &count;.\n\
 Each group has its own group number starting at 1. You can use the same variables\n\
 as for the target file name, except &count;. In addition you can use:\n\
    &targetDir;    The directory part of the target file name (except that &count; is not replaced).\n\
@@ -68,9 +68,9 @@ and other information\
 
 #define HELP_TEXT ("<style>" + HELP_STYLE + "</style><body>" + \
 "<h1>FITSFileManager</h1>" + BASE_HELP_TEXT + \
-"<h3>Target pattern</h3>" + TARGET_PATTERN_TOOLTIP + \
-"<h3>Source filename pattern</h3>" + SOURCE_FILENAME_REGEXP_TOOLTIP + \
-"<h3>Group pattern</h3>" +  GROUP_PATTERN_TOOLTIP + "</body>")
+"<h3>Target template</h3>" + TARGET_TEMPLATE_TOOLTIP + \
+"<h3>Source filename template</h3>" + SOURCE_FILENAME_REGEXP_TOOLTIP + \
+"<h3>Group template</h3>" +  GROUP_TEMPLATE_TOOLTIP + "</body>")
 
 // ------------------------------------------------------------------------------------------------------------------------
 // User Interface Parameters
@@ -83,14 +83,14 @@ function FFM_GUIParameters() {
    this.reset = function () {
 
       // SETTINGS: Saved latest correct GUI state
-      this.targeFileNamePattern = FFM_DEFAULT_TARGET_FILENAME_PATTERN;
+      this.targeFileNameTemplate = FFM_DEFAULT_TARGET_FILENAME_TEMPLATE;
 
       // Default regular expression to parse file name
       this.sourceFileNameRegExp = FFM_DEFAULT_SOURCE_FILENAME_REGEXP;
 
       this.orderBy = "&rank;" // UNUSED
-      // Default pattern to create groups
-      this.groupByPattern = FFM_DEFAULT_GROUP_PATTERN;
+      // Default template to create groups
+      this.groupByTemplate = FFM_DEFAULT_GROUP_TEMPLATE;
     }
    this.reset();
 
@@ -98,10 +98,10 @@ function FFM_GUIParameters() {
    // For debugging and logging
    this.toString = function() {
       var s = "GUIParameters:\n";
-      s += "  targeFileNamePattern:           " + replaceAmps(this.targeFileNamePattern) + "\n";
+      s += "  targeFileNameTemplate:           " + replaceAmps(this.targeFileNameTemplate) + "\n";
       s += "  sourceFileNameRegExp:           " + replaceAmps(regExpToString(this.sourceFileNameRegExp)) + "\n";
       s += "  orderBy:                        " + replaceAmps(this.orderBy) + "\n";
-      s += "  groupByPattern:                 " + replaceAmps(this.groupByPattern) + "\n";
+      s += "  groupByTemplate:                 " + replaceAmps(this.groupByTemplate) + "\n";
       return s;
    }
 }
@@ -127,8 +127,8 @@ FFM_GUIParameters.prototype.loadSettings = function()
       if (o > VERSION) {
          Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' have version ", o, " later than script version ", VERSION, ", settings ignored");
       } else {
-         if ( (o = load( "targeFileNamePattern",    DataType_String )) !== null ) {
-            this.targeFileNamePattern = o;
+         if ( (o = load( "targeFileNameTemplate",    DataType_String )) !== null ) {
+            this.targeFileNameTemplate = o;
          };
          if ( (o = load( "sourceFileNameRegExp",    DataType_String )) !== null ) {
             try {
@@ -143,8 +143,8 @@ FFM_GUIParameters.prototype.loadSettings = function()
          };
          if ( (o = load( "orderBy",                 DataType_String )) !== null )
             this.orderBy = o;
-         if ( (o = load( "groupByPattern",          DataType_String )) !== null )
-            this.groupByPattern = o;
+         if ( (o = load( "groupByTemplate",          DataType_String )) !== null )
+            this.groupByTemplate = o;
       }
    } else {
       Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' do not have a 'version' key, settings ignored");
@@ -169,10 +169,10 @@ FFM_GUIParameters.prototype.saveSettings = function()
    }
 
    save( "version",                  DataType_Double,  parseFloat(VERSION) );
-   save( "targeFileNamePattern",     DataType_String,  this.targeFileNamePattern );
+   save( "targeFileNameTemplate",     DataType_String,  this.targeFileNameTemplate );
    save( "sourceFileNameRegExp",     DataType_String,  regExpToString(this.sourceFileNameRegExp) );
    save( "orderBy",                  DataType_String,  this.orderBy );
-   save( "groupByPattern",           DataType_String,  this.groupByPattern );
+   save( "groupByTemplate",           DataType_String,  this.groupByTemplate );
 
 }
 
@@ -455,44 +455,44 @@ function MainDialog(engine, guiParameters)
 
 
 
-   // Target pattern --------------------------------------------------------------------------------------
-   this.targetFilePattern_Edit = new Edit( this );
-   this.targetFilePattern_Edit.text = guiParameters.targeFileNamePattern;
-   this.targetFilePattern_Edit.toolTip = TARGET_PATTERN_TOOLTIP;
-   this.targetFilePattern_Edit.enabled = true;
-   this.targetFilePattern_Edit.onTextUpdated = function()
+   // Target template --------------------------------------------------------------------------------------
+   this.targetFileTemplate_Edit = new Edit( this );
+   this.targetFileTemplate_Edit.text = guiParameters.targeFileNameTemplate;
+   this.targetFileTemplate_Edit.toolTip = TARGET_TEMPLATE_TOOLTIP;
+   this.targetFileTemplate_Edit.enabled = true;
+   this.targetFileTemplate_Edit.onTextUpdated = function()
       {
-         guiParameters.targeFileNamePattern = this.text;
+         guiParameters.targeFileNameTemplate = this.text;
          this.dialog.refreshTargetFiles();
 
       }
 
 
-   // Source file name pattern --------------------------------------------------------------------------------------
-   this.sourcePattern_Edit = new Edit( this );
-   this.sourcePattern_Edit.text = regExpToString(guiParameters.sourceFileNameRegExp);
-   this.sourcePattern_Edit.toolTip = SOURCE_FILENAME_REGEXP_TOOLTIP;
-   this.sourcePattern_Edit.enabled = true;
-   this.sourcePattern_Edit.onTextUpdated = function()
+   // Source file name template --------------------------------------------------------------------------------------
+   this.sourceTemplate_Edit = new Edit( this );
+   this.sourceTemplate_Edit.text = regExpToString(guiParameters.sourceFileNameRegExp);
+   this.sourceTemplate_Edit.toolTip = SOURCE_FILENAME_REGEXP_TOOLTIP;
+   this.sourceTemplate_Edit.enabled = true;
+   this.sourceTemplate_Edit.onTextUpdated = function()
       {
          var re = this.text.trim();
          if (re.length === 0) {
             guiParameters.sourceFileNameRegExp = null;
 #ifdef DEBUG
-            debug("sourcePattern_Edit: onTextUpdated:- cancel regexp");
+            debug("sourceTemplate_Edit: onTextUpdated:- cancel regexp");
 #endif
          } else {
             try {
                guiParameters.sourceFileNameRegExp = RegExp(re);
                this.textColor = 0;
 #ifdef DEBUG
-               debug("sourcePattern_Edit: onTextUpdated: regexp: " + guiParameters.sourceFileNameRegExp);
+               debug("sourceTemplate_Edit: onTextUpdated: regexp: " + guiParameters.sourceFileNameRegExp);
 #endif
             } catch (err) {
                guiParameters.sourceFileNameRegExp = null;
                this.textColor = 0xFF0000;
 #ifdef DEBUG
-               debug("sourcePattern_Edit: onTextUpdated:  bad regexp - err: " + err);
+               debug("sourceTemplate_Edit: onTextUpdated:  bad regexp - err: " + err);
 #endif
             }
          }
@@ -501,14 +501,14 @@ function MainDialog(engine, guiParameters)
       }
 
 
-   // Group pattern --------------------------------------------------------------------------------------
-   this.groupPattern_Edit = new Edit( this );
-   this.groupPattern_Edit.text = guiParameters.groupByPattern;
-   this.groupPattern_Edit.toolTip = GROUP_PATTERN_TOOLTIP;
-   this.groupPattern_Edit.enabled = true;
-   this.groupPattern_Edit.onTextUpdated = function()
+   // Group template --------------------------------------------------------------------------------------
+   this.groupTemplate_Edit = new Edit( this );
+   this.groupTemplate_Edit.text = guiParameters.groupByTemplate;
+   this.groupTemplate_Edit.toolTip = GROUP_TEMPLATE_TOOLTIP;
+   this.groupTemplate_Edit.enabled = true;
+   this.groupTemplate_Edit.onTextUpdated = function()
    {
-      guiParameters.groupByPattern = this.text;
+      guiParameters.groupByTemplate = this.text;
       this.dialog.refreshTargetFiles();
    }
 
@@ -538,7 +538,7 @@ function MainDialog(engine, guiParameters)
    }
 
 
-   // Source file name pattern --------------------------------------------------------------------------------------
+   // Source file name template --------------------------------------------------------------------------------------
    this.transform_TextBox = new TextBox( this );
    this.transform_TextBox.text = '';
    this.transform_TextBox.toolTip = "Transformations that will be executed";
@@ -706,40 +706,40 @@ function MainDialog(engine, guiParameters)
    this.inputFiles_GroupBox.sizer.add( this.fileButonSizer );
 
 
-   this.targetFilePattern_Edit_sizer = new HorizontalSizer;
-   this.targetFilePattern_Edit_sizer.margin = 4;
-   this.targetFilePattern_Edit_sizer.spacing = 2;
+   this.targetFileTemplate_Edit_sizer = new HorizontalSizer;
+   this.targetFileTemplate_Edit_sizer.margin = 4;
+   this.targetFileTemplate_Edit_sizer.spacing = 2;
    var label = new Label();
    label.minWidth			= 100;
-   label.text		= "Target file pattern: ";
+   label.text		= "Target file template: ";
    label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
-   this.targetFilePattern_Edit_sizer.add( label );
-   this.targetFilePattern_Edit_sizer.add( this.targetFilePattern_Edit );
+   this.targetFileTemplate_Edit_sizer.add( label );
+   this.targetFileTemplate_Edit_sizer.add( this.targetFileTemplate_Edit );
 
 
-   this.sourcePattern_Edit_sizer = new HorizontalSizer;
-   this.sourcePattern_Edit_sizer.margin = 4;
-   this.sourcePattern_Edit_sizer.spacing = 2;
+   this.sourceTemplate_Edit_sizer = new HorizontalSizer;
+   this.sourceTemplate_Edit_sizer.margin = 4;
+   this.sourceTemplate_Edit_sizer.spacing = 2;
    var label = new Label();
    label.minWidth			= 100;
    label.text		= "File name RegExp: ";
    label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
-   this.sourcePattern_Edit_sizer.add( label );
-   this.sourcePattern_Edit_sizer.add( this.sourcePattern_Edit );
+   this.sourceTemplate_Edit_sizer.add( label );
+   this.sourceTemplate_Edit_sizer.add( this.sourceTemplate_Edit );
 
 
-   this.groupPattern_Edit_sizer = new HorizontalSizer;
-   this.groupPattern_Edit_sizer.margin = 4;
-   this.groupPattern_Edit_sizer.spacing = 2;
+   this.groupTemplate_Edit_sizer = new HorizontalSizer;
+   this.groupTemplate_Edit_sizer.margin = 4;
+   this.groupTemplate_Edit_sizer.spacing = 2;
    var label = new Label();
    label.minWidth			= 100;
-   label.text		= "Group pattern: ";
+   label.text		= "Group template: ";
    label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
-   this.groupPattern_Edit_sizer.add( label );
-   this.groupPattern_Edit_sizer.add( this.groupPattern_Edit );
+   this.groupTemplate_Edit_sizer.add( label );
+   this.groupTemplate_Edit_sizer.add( this.groupTemplate_Edit );
 
 
 
@@ -750,9 +750,9 @@ function MainDialog(engine, guiParameters)
    this.rules_GroupBox.sizer.margin = 6;
    this.rules_GroupBox.sizer.spacing = 4;
 
-   this.rules_GroupBox.sizer.add( this.targetFilePattern_Edit_sizer, 100);
-   this.rules_GroupBox.sizer.add( this.sourcePattern_Edit_sizer );
-   this.rules_GroupBox.sizer.add( this.groupPattern_Edit_sizer );
+   this.rules_GroupBox.sizer.add( this.targetFileTemplate_Edit_sizer, 100);
+   this.rules_GroupBox.sizer.add( this.sourceTemplate_Edit_sizer );
+   this.rules_GroupBox.sizer.add( this.groupTemplate_Edit_sizer );
 
 
 
@@ -792,7 +792,7 @@ function MainDialog(engine, guiParameters)
    helpLabel.wordWrapping = true;
    helpLabel.useRichText = true;
    helpLabel.text = "<b>" + TITLE + " v" + VERSION + "</b> &mdash; Copy or move FITS image " +
-           "files using selected FITS keyword values or original file name pattern " +
+           "files using selected FITS keyword values or original file name template " +
            "to create the target directory/file name.";
 
 

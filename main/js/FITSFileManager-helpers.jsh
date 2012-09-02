@@ -215,7 +215,7 @@ function regExpToString(re) {
    }
 }
 
-// Parsing the keywords in the targetFileNamePattern (1 characters will be removed at
+// Parsing the keywords in the targetFileNameTemplate (1 characters will be removed at
 // head (&) and tail (;), this is hard coded and must be modified if required
 //var variableRegExp = /&[a-zA-Z0-9]+;/g;
 var variableRegExp = /&[^&]+;/g;
@@ -234,19 +234,19 @@ var shownSyntheticComments = ['Type of image (flat, bias, ...)',
 
 #ifdef DO_NOT_COMPILE
 
-// -- Support to analyze pattern and extract variables info
-function extractVariables(pattern) {
+// -- Support to analyze template and extract variables info
+function extractVariables(template) {
 
    var variables = [];
    // We could also use exec, but it seems even more complex
-   // Method to handle replacement of variables in target file name pattern
+   // Method to handle replacement of variables in target file name template
    var extractVariable = function(matchedSubstring, index, originalString) {
       debug("*** matchedSubstrings " + matchedSubstring);
       var varName = matchedSubstring.substring(1,matchedSubstring.length-1);
       variables.push(varName);
       return matchedSubstring;
    };
-   pattern.replace(variableRegExp,extractVariable);
+   template.replace(variableRegExp,extractVariable);
 
 
    debug("*** variables " + variables);
@@ -273,9 +273,9 @@ function analyzeVariable(variable) {
    return parts;
 }
 
-function analyzeVariables(pattern) {
+function analyzeVariables(template) {
    var result = [];
-   var variables = extractVariables(pattern);
+   var variables = extractVariables(template);
    debug("*** analyzeVariables variables " + variables);
    for (var i = 0; i<variables.length; i++) {
       result.push(analyzeVariable(variables[i]));

@@ -94,9 +94,9 @@ function FFM_Engine(guiParameters) {
 
 #ifdef DEBUG
       debug("buildTargetFiles: list of " + listOfFiles.length + " files");
-      debug("buildTargetFiles: targeFileNamePattern = '" + guiParameters.targeFileNamePattern + "'");
+      debug("buildTargetFiles: targeFileNameTemplate = '" + guiParameters.targeFileNameTemplate + "'");
       debug("buildTargetFiles: sourceFileNameRegExp = '" + guiParameters.sourceFileNameRegExp + "'");
-      debug("buildTargetFiles: groupByPattern = '" + guiParameters.groupByPattern + "'");
+      debug("buildTargetFiles: groupByTemplate = '" + guiParameters.groupByTemplate + "'");
 #endif
 
       // Reinitialize the target files indices and mapping
@@ -108,17 +108,17 @@ function FFM_Engine(guiParameters) {
       var countingGroups = {};
 
 
-      // Separate directory from file name part in target pattern
-      var indexOfLastSlash = guiParameters.targeFileNamePattern.lastIndexOf('/');
+      // Separate directory from file name part in target template
+      var indexOfLastSlash = guiParameters.targeFileNameTemplate.lastIndexOf('/');
       if (indexOfLastSlash>0) {
-         var targetDirectoryPattern= guiParameters.targeFileNamePattern.substring(0,indexOfLastSlash);
-         var targetNamePattern= guiParameters.targeFileNamePattern.substring(indexOfLastSlash+1);
+         var targetDirectoryTemplate= guiParameters.targeFileNameTemplate.substring(0,indexOfLastSlash);
+         var targetNameTemplate= guiParameters.targeFileNameTemplate.substring(indexOfLastSlash+1);
       } else {
-         var targetDirectoryPattern = '';
-         var targetNamePattern= guiParameters.targeFileNamePattern;
+         var targetDirectoryTemplate = '';
+         var targetNameTemplate= guiParameters.targeFileNameTemplate;
       }
 #ifdef DEBUG
-      debug("buildTargetFiles: targetDirectoryPattern = '" + targetDirectoryPattern + "', targetNamePattern = '" +  targetNamePattern + "'");
+      debug("buildTargetFiles: targetDirectoryTemplate = '" + targetDirectoryTemplate + "', targetNameTemplate = '" +  targetNameTemplate + "'");
 #endif
 
       // Initialized inside each loop, declared here for clarity
@@ -140,7 +140,7 @@ function FFM_Engine(guiParameters) {
 
             var variables = this.inputVariables[i];
             var missingVariables = [];
-            // Method to handle replacement of variables in target file name pattern
+            // Method to handle replacement of variables in target file name template
             var replaceVariables = function(matchedSubstring, index, originalString) {
                var varName = matchedSubstring.substring(1,matchedSubstring.length-1);
                if (variables.hasOwnProperty(varName) && variables[varName] !== null) {
@@ -178,15 +178,15 @@ function FFM_Engine(guiParameters) {
             // Use only directory part, count should not be used, used to initialize 'targetdir'
             variables['count'] = 'COUNT';
             missingVariables = [];
-            var targetDirectory =  targetDirectoryPattern.replace(variableRegExp,replaceVariables);
+            var targetDirectory =  targetDirectoryTemplate.replace(variableRegExp,replaceVariables);
             variables['targetDir'] = targetDirectory;
 #ifdef DEBUG
             debug("buildTargetFiles: expanded targetDir = " + targetDirectory + ", missing variables: " + missingVariables);
 #endif
 
-            // Expand the groupByPattern to form the id of the counter (targetDir may be used)
+            // Expand the groupByTemplate to form the id of the counter (targetDir may be used)
             missingVariables = [];
-            group = guiParameters.groupByPattern.replace(variableRegExp, replaceVariables);
+            group = guiParameters.groupByTemplate.replace(variableRegExp, replaceVariables);
             count = 0;
             if (countingGroups.hasOwnProperty(group)) {
                count = countingGroups[group];
@@ -202,7 +202,7 @@ function FFM_Engine(guiParameters) {
             variables['targetDir'] = 'TARGETDIR';
             // The resulting name may include directories
             missingVariables = [];
-            var targetString = guiParameters.targeFileNamePattern.replace(variableRegExp,replaceVariables);
+            var targetString = guiParameters.targeFileNameTemplate.replace(variableRegExp,replaceVariables);
 #ifdef DEBUG
             debug("buildTargetFiles: expanded targetString = " + targetString + ", missing variables: " + missingVariables);
 #endif
