@@ -15,27 +15,32 @@
 
 // Help texts
 
+#define HELP_STYLE "body {font-family: \"DejaVu Sans\",Verdana,Arial,Helvetica,sans-serif; font-size:12px;}" +\
+"h1 {font-family: \"DejaVu Sans\",Verdana,Arial,Helvetica,sans-serif; font-size: 24pt; font-weight: normal; line-height: 1.2em; letter-spacing: -0.5px; margin-top: 1em; margin-bottom: 0.5em; color: #06F;}" +\
+"h3 {clear: both; border-bottom: 1px solid #999; padding-bottom: 0.1em; margin-top: 1.5em; margin-bottom: 1.25em; font-size: 16pt; font-weight: normal; line-height: 1.2em; color: #06F;}"
+
 #define TARGET_PATTERN_TOOLTIP "\
-Define how the target file name will be generated. Text is copied\n\
-as is to the output name. Keywords (between & and semicolon) are\n\
-defined from the file information and FITS keywordsas follows:\n\
-   &binning;    Binning from XBINNING and YBINNING as integers, like 2x2.\n\
-   &exposure;   The exposure from EXPOSURE, but as an integer (assume seconds).\n\
-   &extension;  The extension of the source file (with the dot.)\n\
-   &filename;   The file name part of the source file.\n\
-   &filter;     The filter name from FILTER as lower case trimmed normalized name.\n\
-   &temp;       The SET-TEMP temperature in C as an integer.\n\
-   &type;       The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'.\n\
-   &FITSKW;     (NOT IMPLEMENTED).\n\
-   &0; &1;, ... The corresponding match from the source file name pattern field.\n\
-The following keywords are dynamic (they are recalculated in case of reordering)\n\
-   &count;      The number of the file being moved/copied int the current group, padded to COUNT_PAD.\n\
-   &rank;       The number of the file in the order of the input file list, padded to COUNT_PAD.\n\
-The target file name pattern may contain forward slashes that will be used\n\
-as directory separator. Keywords may appear multiple time and may also be part of directory names.\n\
-Unknown keywords are replaced by their name in upper case.\n\
-The default pattern has no directory and use a part of the original file name as a prefix.\n\
+Define how the target file name will be generated. The text is copied \
+<em>as is</em> to the output except for keywords.<br\>\
+Keywords (like  &amp;keyword;) are replaced by values defined from the file information and FITS keywords as follows:\
+<dl>\
+   <dt>&amp;binning;</dt><dd>Binning from XBINNING and YBINNING as integers, like 2x2.</dd>\
+   <dt>&amp;exposure;</dt><dd>The exposure from EXPOSURE, but as an integer (assume seconds).<\dd>\
+   <dt>&amp;extension;</dt><dd>The extension of the source file (with the dot.)<\dd>\
+   <dt>&amp;filename;</dt><dd>The file name part of the source file.<\dd>\
+   <dt>&amp;filter;</dt><dd>The filter name from FILTER as lower case trimmed normalized name.<\dd>\
+   <dt>&amp;temp;</dt><dd>The SET-TEMP temperature in C as an integer.<\dd>\
+   <dt>&amp;type;</dt><dd>The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'.<\dd>\
+   <dt>&amp;FITSKW;</dt><dd>(NOT IMPLEMENTED).<\dd>\
+   <dt>&amp;0; &amp;1;, ... </dt><dd>The corresponding match from the source file name pattern field.<\dd>\
+</dl>\
+<p>The following keywords are dynamic (their values depends on the file order):\
+<dl>\
+   <dt>&amp;count;</dt><dd>The number of the file being moved/copied int the current group, padded to COUNT_PAD.<\dd>\
+   <dt>&amp;rank;</dt><dd>The number of the file in the order of the input file list, padded to COUNT_PAD.<\dd>\
+</dl>\
 "
+
 
 #define SOURCE_FILENAME_REGEXP_TOOLTIP "\
 Define  a regular expression (without the surround slashes) that will be applied to all file names\n\
@@ -55,45 +60,17 @@ Leave blank or use a fixed name to have a single counter. The default &targetDir
 directory. &filter; would count separetely for each filter.\n\
 "
 
-#define HELP_TEXT "<style>body {font-size:12px;}</style>\
-<body><p>DOCUMENTATION IS WORK IN PROGRESS<br/>\
-Define how the target file name will be generated. Text is copied<br/>\
-as is to the output name. Keywords (between &amp; and semicolon) are<br/>\
-defined from the file information and FITS keywordsas follows:\
-<dl>\
-   <dt>&amp;binning;</dt><dd>Binning from XBINNING and YBINNING as integers, like 2x2.</dd>\
-   <dt>&amp;exposure;</dt><dd>The exposure from EXPOSURE, but as an integer (assume seconds).<\dd>\
-   <dt>&amp;extension;</dt><dd>The extension of the source file (with the dot.)<\dd>\
-   <dt>&amp;filename;</dt><dd>The file name part of the source file.<\dd>\
-   <dt>&amp;filter;</dt><dd>The filter name from FILTER as lower case trimmed normalized name.<\dd>\
-   <dt>&amp;temp;</dt><dd>The SET-TEMP temperature in C as an integer.<\dd>\
-   <dt>&amp;type;</dt><dd>The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'.<\dd>\
-   <dt>&amp;FITSKW;</dt><dd>(NOT IMPLEMENTED).<\dd>\
-   <dt>&amp;0; &amp;1;, ... </dt><dd>The corresponding match from the source file name pattern field.<\dd>\
-</dl>\
-The following keywords are dynamic (they are recalculated in case of reordering)\
-<dl>\
-   <dt>&amp;count;</dt><dd>The number of the file being moved/copied int the current group, padded to COUNT_PAD.<\dd>\
-   <dt>&amp;rank;</dt><dd>The number of the file in the order of the input file list, padded to COUNT_PAD.<\dd>\
-</dl>\
-<p>The target file name pattern may contain forward slashes that will be used<br/>\
-as directory separator. Keywords may appear multiple time and may also be part of directory names.<br/>\
-Unknown keywords are replaced by their name in upper case.<br/>\
-The default pattern has no directory and use a part of the original file name as a prefix.</p>\
-<p>Define  a regular expression (without the surround slashes) that will be applied to all file names<br/>\
-without the extension. The 'match' array resulting from the regular expression matching can be used<br/>\
-in the target file name pattern as &amp;0; (whole expression), &amp;1 (first group), ...<br/>\
-The default extract the part of the name before the first dash (you can replace the<br/>\
-two dashes by two underlines for example).<br/>\
-In case of error the field turns red</p>\
-<p>Define the pattern to generate a group name used by &amp;count;.<br/>\
-Each group has its own group number starting at 1. You can use the same variables<br/>\
-as for the target file name, except &amp;count;. In addition you can use:<br/>\
-   &amp;targetDir;    The directory part of the target file name (except that &amp;count; is not replaced).<br/>\
-Leave blank or use a fixed name to have a single counter. The default &amp;targetDir; count in each target<br/>\
-directory. &amp;filter; would count separetely for each filter.</p></body>\
-"
+#define BASE_HELP_TEXT "\
+<p>FITSFileManager allow to copy or move image files to new locations, building the \
+new location from a template and replacement of variables extracted from FITS keys \
+and other information\
+</p>"
 
+#define HELP_TEXT ("<style>" + HELP_STYLE + "</style><body>" + \
+"<h1>FITSFileManager</h1>" + BASE_HELP_TEXT + \
+"<h3>Target pattern</h3>" + TARGET_PATTERN_TOOLTIP + \
+"<h3>Source filename pattern</h3>" + SOURCE_FILENAME_REGEXP_TOOLTIP + \
+"<h3>Group pattern</h3>" +  GROUP_PATTERN_TOOLTIP + "</body>")
 
 // ------------------------------------------------------------------------------------------------------------------------
 // User Interface Parameters
@@ -844,17 +821,26 @@ function HelpDialog( parentDialog, engine)
 {
    this.__base__ = Dialog;
    this.__base__();
-   this.sizer = new VerticalSizer();
-   this.sizer.margin = 5;
+
+
 
    this.windowTitle = "FITSFileManager help";
+
    this.helpLabel = new Label();
    this.helpLabel.width = 600;
    this.helpLabel.useRichText = true;
+   this.helpLabel.wordWrapping = true;
    this.helpLabel.text = HELP_TEXT;
-   this.helpLabel.adjustToContents();
+   // this.helpLabel.adjustToContents();
+   //this.helpLabel.setVariableSize();
+   this.helpLabel.setMinWidth = 800;
+
+   this.sizer = new VerticalSizer();
+   this.sizer.margin = 5;
    this.sizer.add(this.helpLabel);
    this.adjustToContents();
+   //this.setMinWidth = 800;
+   this.setVariableSize();
 
 
 }
