@@ -6,7 +6,7 @@
 
 
 // ------------------------------------------------------------------------------------------------------------------------
-// Utility functions
+// String utility functions
 // ------------------------------------------------------------------------------------------------------------------------
 
 
@@ -35,7 +35,9 @@ function unQuote (s) {
 }
 
 
-// ------- formatting functions
+// ------------------------------------------------------------------------------------------------------------------------
+// Formatting utility functions
+// ------------------------------------------------------------------------------------------------------------------------
 
 // Pad a mumber with leading 0
 Number.prototype.pad = function(size){
@@ -45,7 +47,9 @@ Number.prototype.pad = function(size){
 }
 
 
-// ------- file functions
+// ------------------------------------------------------------------------------------------------------------------------
+// File utility functions
+// ------------------------------------------------------------------------------------------------------------------------
 
 function copyFile( sourceFilePath, targetFilePath ) {
    var f = new File;
@@ -64,8 +68,10 @@ function copyFile( sourceFilePath, targetFilePath ) {
 
 
 
+// ------------------------------------------------------------------------------------------------------------------------
+// FITS keywords utility functions
+// ------------------------------------------------------------------------------------------------------------------------
 
-// ------- FITS utility methods
 // Code from FitsKey and/or other examples
 // Read the fits keywords of a file, return an array FITSKeyword (value is empty string if there is no value)
 function loadFITSKeywords( fitsFilePath )
@@ -159,15 +165,34 @@ function findKeyWord(fitsKeyWordsArray, name) {
 }
 
 
-// ------ Conversion support functions
+// ------------------------------------------------------------------------------------------------------------------------
+// Conversion support functions
+// ------------------------------------------------------------------------------------------------------------------------
+function FFM_Converter() {
+   // array of {regexp, replacement}
+   this.conversions = [];
+}
+
+FFM_Converter.prototype = {
+   convert: function(sourceString) {
+      for (var i=0; i<this.conversions.length; i++) {
+         if ( this.conversions[i].regexp.test(sourceString)) {
+            return sourceString.replace( this.conversions[i].regexp,  this.conversions[i].replacement);
+         }
+      }
+      return null;
+    }
+
+}
+
 
 function convertFilter(rawFilterName) {
    if (rawFilterName === null) { return null}
    var filterConversions = [
-      [/green/i, 'green'],
-      [/red/i, 'red'],
-      [/blue/i, 'blue'],
-      [/clear/i, 'clear'],
+      [/.*green.*/i, 'green'],
+      [/.*red.*/i, 'red'],
+      [/.*blue.*/i, 'blue'],
+      [/.*clear.*/i, 'clear'],
    ];
    var unquotedName = unQuote(rawFilterName);
    for (var i=0; i<filterConversions.length; i++) {
@@ -203,7 +228,9 @@ function convertType(rawTypeName) {
    return unquotedName.toLowerCase();
 }
 
-// --- Pattern matching and RegExp functions
+// ------------------------------------------------------------------------------------------------------------------------
+// RegExp utility functions
+// ------------------------------------------------------------------------------------------------------------------------
 
 function regExpToString(re) {
    if (re === null) {
@@ -214,6 +241,127 @@ function regExpToString(re) {
       return  reString.substring(1, reString.length-1);
    }
 }
+
+
+// ------------------------------------------------------------------------------------------------------------------------
+// Template parsing and execution
+// ------------------------------------------------------------------------------------------------------------------------
+
+// Establish module
+var ffM_template = (function() {
+
+  var templateRegExp = /&[^&;]+;/g;
+  var variableRegExp = /^([^:?]+)(?::([^:?]*))?(?:\?([^:?]*))?/
+
+  // Create a rule that return to parameter literal
+  var makeLiteralRule = function(literal){
+    // TODO Check that literal does not contains & ( ) ;
+    var literalRule = function() {
+      return literal;
+    }
+    literalRule.toString = function() {return "literalRule('" + literal +"')"};
+    return literalRule;
+  }
+
+  // Create a rule that interpolate a variable expression
+  var makeLookupRule = function(expression)  {
+    var variableName, onFoundAction, onMissingAction;
+     // expression has & and ; already removed
+
+     // Parse the expression of variable:present?missing parts, resulting in the corresponding elements in execResult
+    var execResult = expression.match(variableRegExp);
+    if (execResult === null) {
+       throw "Invalid variable expression '" + expression + "'";
+    } else {
+        variableName = execResult[1];
+    }
+
+
+    // Create the handler for the case ':present'
+    if (execResult[2]) {
+        onFoundAction = function(value){
+        return execResult[2]; // TODO SHOULD FORMAT  value
+      }
+      onFoundAction.toString = function(){return "formatValueAs('"+execResult[2]+"')"};
+    } else {
+      onFoundAction = function(value){
+        return value;
+      }
+      onFoundAction.toString = function(){return "copyValue()"};
+    }
+
+    // Create the handler for the case '?missing'
+    if (execResult[3]==='') {
+      onMissingAction = function(){
+        return '';   // Optional value
+      }
+      onMissingAction.toString = function(){return "copyLiteral('')"};
+    } else if (execResult[3]) {
+      onMissingAction = function(){
+        return execResult[3]; // There should be no format
+      }
+      onMissingAction.toString = function(){return "copyLiteral('"+execResult[2]+"')"};
+    } else {
+      onMissingAction = function(){
+        throw "No value for the variable";
+      }
+      onMissingAction.toString = function(){return "reject()"};
+    }
+
+    // The lookup variable rule itself, that will use the handlers above
+    var lookUpRule = function(table) {
+      var value = table[variableName];
+      if (value) {
+        onFoundAction(value);
+      } else {
+        onMissingAction(value);
+      }
+    }
+    lookUpRule.toString = function() { return "lookUpRule('" + variableName + "':[onFound:" + onFoundAction + "]"+ ":[onMissing:" + onMissingAction + "])"; }
+    return lookUpRule;
+  }
+
+
+  // Public interface
+  return {
+    analyzeTemplate: function(template) {
+#ifdef DEBUG_TEMPLATE
+      debug("analyzeTemplate:'" + template + "'");
+#endif
+      // The replacing handler global variables
+      var rules = []; // Invalid if error is not empty
+      var iNext = 0; // next character that will be examined
+      var replaceHandler = function(match, offset, string) {
+        //print ("  rh: ", match, offset, string);
+        if (offset>iNext) {
+          rules.push(makeLiteralRule(string.substring(iNext, offset)));
+        }
+        rules.push(makeLookupRule(match.substring(1,match.length-1)));
+        iNext = offset + match.length;
+        return ''; // replace by nothing, ignored anyhow
+      }
+      // Each match will create the rule for the preceding literal text and the current match
+      // Use 'replace' as it provides the need match information, if the replacement is not really used.
+      template.replace(templateRegExp, replaceHandler);
+      // If required add literal rule for trailing literal text
+      if (template.length>iNext) {
+          rules.push(makeLiteralRule(template.substring(iNext)));
+      }
+      var templateRuleSet = {
+         toString: function() {return rules.toString();}
+      };
+
+      return templateRuleSet;
+    } // analyzeTemplate
+
+  } // ffM_template object
+})();
+
+
+
+
+
+
 
 // Parsing the keywords in the targetFileNameTemplate (1 characters will be removed at
 // head (&) and tail (;), this is hard coded and must be modified if required
@@ -351,7 +499,8 @@ function makeSynthethicVariables(inputFile, keys) {
 
    return variables;
 
-
 }
+
+Console.writeln("aa");
 
 
