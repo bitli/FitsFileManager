@@ -278,8 +278,13 @@ var ffM_template = (function() {
 
 
     // Create the handler for the case ':present'
-    if (execResult[2]) {
-        onFoundAction = function(value){
+    if (execResult[2]==='') {
+      onFoundAction = function(value){
+        return ''
+      }
+      onFoundAction.toString = function(){return "copyLiteral('')"};
+    } else if (execResult[2]) {
+      onFoundAction = function(value){
         return execResult[2]; // TODO SHOULD FORMAT  value
       }
       onFoundAction.toString = function(){return "formatValueAs('"+execResult[2]+"')"};
@@ -309,12 +314,12 @@ var ffM_template = (function() {
     }
 
     // The lookup variable rule itself, that will use the handlers above
-    var lookUpRule = function(table) {
-      var value = table[variableName];
+    var lookUpRule = function(variableResolver) {
+      var value = variableResolver(variableName);
       if (value) {
-        onFoundAction(value);
+        return onFoundAction(value);
       } else {
-        onMissingAction(value);
+        return onMissingAction(value);
       }
     }
     lookUpRule.toString = function() { return "lookUpRule('" + variableName + "':[onFound:" + onFoundAction + "]"+ ":[onMissing:" + onMissingAction + "])"; }
@@ -348,7 +353,16 @@ var ffM_template = (function() {
           rules.push(makeLiteralRule(template.substring(iNext)));
       }
       var templateRuleSet = {
-         toString: function() {return rules.toString();}
+         toString: function() {return rules.toString();},
+         requiredVariables: [], // TODO
+         optionalVariables: [], // TODO
+         expandTemplate: function(variableResolver) {
+            var result = [];
+            for (var i = 0; i<rules.length; i++) {
+               result.push(rules[i](variableResolver));
+            }
+            return result.join('');
+         }
       };
 
       return templateRuleSet;
