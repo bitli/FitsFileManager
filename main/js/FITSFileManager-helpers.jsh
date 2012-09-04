@@ -254,9 +254,9 @@ var ffM_template = (function() {
   var variableRegExp = /^([^:?]+)(?::([^:?]*))?(?:\?([^:?]*))?/
 
   // Create a rule that return to parameter literal
-  var makeLiteralRule = function(literal){
+  var makeLiteralRule = function(templateErrors,literal){
     // TODO Check that literal does not contains & ( ) ;
-    var literalRule = function() {
+    var literalRule = function(errors) {
       return literal;
     }
     literalRule.toString = function() {return "literalRule('" + literal +"')"};
@@ -264,14 +264,15 @@ var ffM_template = (function() {
   }
 
   // Create a rule that interpolate a variable expression
-  var makeLookupRule = function(expression)  {
+  var makeLookupRule = function(templateErrors, expression)  {
     var variableName, onFoundAction, onMissingAction;
      // expression has & and ; already removed
 
      // Parse the expression of variable:present?missing parts, resulting in the corresponding elements in execResult
     var execResult = expression.match(variableRegExp);
     if (execResult === null) {
-       throw "Invalid variable expression '" + expression + "'";
+       errors.push("Invalid variable expression '" + expression + "'");
+       return null;
     } else {
         variableName = execResult[1];
     }
@@ -279,17 +280,17 @@ var ffM_template = (function() {
 
     // Create the handler for the case ':present'
     if (execResult[2]==='') {
-      onFoundAction = function(value){
+      onFoundAction = function(expandErrors,value){
         return ''
       }
       onFoundAction.toString = function(){return "copyLiteral('')"};
     } else if (execResult[2]) {
-      onFoundAction = function(value){
+      onFoundAction = function(expandErrors,value){
         return execResult[2]; // TODO SHOULD FORMAT  value
       }
       onFoundAction.toString = function(){return "formatValueAs('"+execResult[2]+"')"};
     } else {
-      onFoundAction = function(value){
+      onFoundAction = function(expandErrors,value){
         return value;
       }
       onFoundAction.toString = function(){return "copyValue()"};
@@ -297,29 +298,30 @@ var ffM_template = (function() {
 
     // Create the handler for the case '?missing'
     if (execResult[3]==='') {
-      onMissingAction = function(){
-        return '';   // Optional value
+      onMissingAction = function(expandErrors){
+        return '';   // Optional value, return emtpy string if missing
       }
       onMissingAction.toString = function(){return "copyLiteral('')"};
     } else if (execResult[3]) {
-      onMissingAction = function(){
+      onMissingAction = function(expandErrors){
         return execResult[3]; // There should be no format
       }
       onMissingAction.toString = function(){return "copyLiteral('"+execResult[2]+"')"};
     } else {
-      onMissingAction = function(){
-        throw "No value for the variable";
+      onMissingAction = function(expandErrors){
+         expandErrors.push("No value for the variable");
+         return '';
       }
       onMissingAction.toString = function(){return "reject()"};
     }
 
     // The lookup variable rule itself, that will use the handlers above
-    var lookUpRule = function(variableResolver) {
+    var lookUpRule = function(expandErrors,variableResolver) {
       var value = variableResolver(variableName);
       if (value) {
-        return onFoundAction(value);
+        return onFoundAction(expandErrors,value);
       } else {
-        return onMissingAction(value);
+        return onMissingAction(expandErrors,value);
       }
     }
     lookUpRule.toString = function() { return "lookUpRule('" + variableName + "':[onFound:" + onFoundAction + "]"+ ":[onMissing:" + onMissingAction + "])"; }
@@ -333,15 +335,16 @@ var ffM_template = (function() {
 #ifdef DEBUG_TEMPLATE
       debug("analyzeTemplate:'" + template + "'");
 #endif
+      var templateErrors = [];
       // The replacing handler global variables
       var rules = []; // Invalid if error is not empty
       var iNext = 0; // next character that will be examined
       var replaceHandler = function(match, offset, string) {
         //print ("  rh: ", match, offset, string);
         if (offset>iNext) {
-          rules.push(makeLiteralRule(string.substring(iNext, offset)));
+          rules.push(makeLiteralRule(templateErrors,string.substring(iNext, offset)));
         }
-        rules.push(makeLookupRule(match.substring(1,match.length-1)));
+        rules.push(makeLookupRule(templateErrors,match.substring(1,match.length-1)));
         iNext = offset + match.length;
         return ''; // replace by nothing, ignored anyhow
       }
@@ -350,16 +353,16 @@ var ffM_template = (function() {
       template.replace(templateRegExp, replaceHandler);
       // If required add literal rule for trailing literal text
       if (template.length>iNext) {
-          rules.push(makeLiteralRule(template.substring(iNext)));
+          rules.push(makeLiteralRule(templateErrors,template.substring(iNext)));
       }
       var templateRuleSet = {
          toString: function() {return rules.toString();},
          requiredVariables: [], // TODO
          optionalVariables: [], // TODO
-         expandTemplate: function(variableResolver) {
+         expandTemplate: function(expandErrors, variableResolver) {
             var result = [];
             for (var i = 0; i<rules.length; i++) {
-               result.push(rules[i](variableResolver));
+               result.push(rules[i](expandErrors, variableResolver));
             }
             return result.join('');
          }
@@ -394,65 +397,7 @@ var shownSyntheticComments = ['Type of image (flat, bias, ...)',
    'Binning as 1x1, 2x2, ...'];
 
 
-#ifdef DO_NOT_COMPILE
 
-// -- Support to analyze template and extract variables info
-function extractVariables(template) {
-
-   var variables = [];
-   // We could also use exec, but it seems even more complex
-   // Method to handle replacement of variables in target file name template
-   var extractVariable = function(matchedSubstring, index, originalString) {
-      debug("*** matchedSubstrings " + matchedSubstring);
-      var varName = matchedSubstring.substring(1,matchedSubstring.length-1);
-      variables.push(varName);
-      return matchedSubstring;
-   };
-   template.replace(variableRegExp,extractVariable);
-
-
-   debug("*** variables " + variables);
-
-   return variables;
-}
-
-function analyzeVariable(variable) {
-   var parts = {};
-   var extractVariableParts = function(matchedSubstring, index, originalString) {
-      debug("*** parts " + matchedSubstring);
-      if (matchedSubstring[0]===':') {
-         parts.trueFormat = matchedSubstring.substring(1);
-      } else if (matchedSubstring[0]==='?') {
-         parts.falseFormat = matchedSubstring.substring(1);
-      } else {
-         parts.name = matchedSubstring.trim();
-      }
-      return matchedSubstring;
-   };
-   variable.replace(/(^|[:?])([^:?]+)/g,extractVariableParts);
-   debug("*** part " + parts.name);
-
-   return parts;
-}
-
-function analyzeVariables(template) {
-   var result = [];
-   var variables = extractVariables(template);
-   debug("*** analyzeVariables variables " + variables);
-   for (var i = 0; i<variables.length; i++) {
-      result.push(analyzeVariable(variables[i]));
-   }
-   debug("*** analyzeVariables result " + result);
-   return result;
-}
-
-         analyzeVariables(this.text).forEach(
-            function(p) {
-               debug("*** analyzeVariables each " + p.name + " " + p.trueFormat + " "  + p.falseFormat);
-            }
-         );
-
-#endif
 
 // Extract the variables to form group names and file names from the file name, FITS keywords
 function makeSynthethicVariables(inputFile, keys) {

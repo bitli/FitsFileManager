@@ -15,9 +15,9 @@
 
 // Help texts
 
-#define HELP_STYLE "body {font-family: \"DejaVu Sans\",Verdana,Arial,Helvetica,sans-serif; font-size:12px;}" +\
-"h1 {font-family: \"DejaVu Sans\",Verdana,Arial,Helvetica,sans-serif; font-size: 24pt; font-weight: normal; line-height: 1.2em; letter-spacing: -0.5px; margin-top: 1em; margin-bottom: 0.5em; color: #06F;}" +\
-"h3 {clear: both; border-bottom: 1px solid #999; padding-bottom: 0.1em; margin-top: 1.5em; margin-bottom: 1.25em; font-size: 16pt; font-weight: normal; line-height: 1.2em; color: #06F;}"
+// #define HELP_STYLE "body {font-family: \"DejaVu Sans\",Verdana,Arial,Helvetica,sans-serif; font-size:12px;}" +\
+// "h1 {font-family: \"DejaVu Sans\",Verdana,Arial,Helvetica,sans-serif; font-size: 24pt; font-weight: normal; line-height: 1.2em; letter-spacing: -0.5px; margin-top: 1em; margin-bottom: 0.5em; color: #06F;}" +\
+// "h3 {clear: both; border-bottom: 1px solid #999; padding-bottom: 0.1em; margin-top: 1.5em; margin-bottom: 1.25em; font-size: 16pt; font-weight: normal; line-height: 1.2em; color: #06F;}"
 
 #define TARGET_TEMPLATE_TOOLTIP "\
 Define how the target file name will be generated. The text is copied \
@@ -66,11 +66,17 @@ new location from a template and replacement of variables extracted from FITS ke
 and other information\
 </p>"
 
-#define HELP_TEXT ("<style>" + HELP_STYLE + "</style><body>" + \
-"<h1>FITSFileManager</h1>" + BASE_HELP_TEXT + \
-"<h3>Target template</h3>" + TARGET_TEMPLATE_TOOLTIP + \
-"<h3>Source filename template</h3>" + SOURCE_FILENAME_REGEXP_TOOLTIP + \
-"<h3>Group template</h3>" +  GROUP_TEMPLATE_TOOLTIP + "</body>")
+// #define HELP_TEXT ("<style>" + HELP_STYLE + "</style><body>" + \
+// "<h1>FITSFileManager</h1>" + BASE_HELP_TEXT + \
+// "<h3>Target template</h3>" + TARGET_TEMPLATE_TOOLTIP + \
+// "<h3>Source filename template</h3>" + SOURCE_FILENAME_REGEXP_TOOLTIP + \
+// "<h3>Group template</h3>" +  GROUP_TEMPLATE_TOOLTIP + "</body>")
+
+#define HELP_TEXT (\
+"<b>FITSFileManager</b><br/>" + BASE_HELP_TEXT + \
+"<b>Target template</b><br/>" + TARGET_TEMPLATE_TOOLTIP + \
+"<b>Source filename template</b><br/>" + SOURCE_FILENAME_REGEXP_TOOLTIP + \
+"<b>Group template</b><br/>" +  GROUP_TEMPLATE_TOOLTIP )
 
 // ------------------------------------------------------------------------------------------------------------------------
 // User Interface Parameters
@@ -817,34 +823,33 @@ MainDialog.prototype = new Dialog;
 // ------------------------------------------------------------------------------------------------------------------------
 // Documentation dialog
 // ------------------------------------------------------------------------------------------------------------------------
-function HelpDialog( parentDialog, engine)
+
+
+// See http://pixinsight.com/developer/pcl/doc/20120901/html/classpcl_1_1Console.html
+// for formatting instructions
+
+function HelpDialog( parentDialog, engine )
 {
    this.__base__ = Dialog;
    this.__base__();
 
+   this.windowTitle = "FITSFileManager Help";
 
+   this.helpBox = new TextBox( this );
+   this.helpBox.readOnly = true;
+   this.helpBox.text = HELP_TEXT;
+   this.helpBox.setMinSize( 600, 200 );
 
-   this.windowTitle = "FITSFileManager help";
-
-   this.helpLabel = new Label();
-   this.helpLabel.width = 600;
-   this.helpLabel.useRichText = true;
-   this.helpLabel.wordWrapping = true;
-   this.helpLabel.text = HELP_TEXT;
-   // this.helpLabel.adjustToContents();
-   //this.helpLabel.setVariableSize();
-   this.helpLabel.setMinWidth = 800;
-
-   this.sizer = new VerticalSizer();
-   this.sizer.margin = 5;
-   this.sizer.add(this.helpLabel);
-   this.adjustToContents();
-   //this.setMinWidth = 800;
+   this.sizer = new HorizontalSizer;
+   this.sizer.margin = 6;
+   this.sizer.add( this.helpBox );
    this.setVariableSize();
-
-
+   this.adjustToContents();
 }
+
 HelpDialog.prototype = new Dialog;
+
+
 
 
 // ------------------------------------------------------------------------------------------------------------------------

@@ -7,11 +7,19 @@
 
 #include <pjsr/DataType.jsh>
 
-#define VERSION "1.0"
-#define ROOT_FILE "C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/main/js/FITSFileManager.js"
-#define TARGET_FILE_DIR "C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/releases"
+#define VERSION "0.5"
+#define ROOT_FILE_NAME "FITSFileManager.js"
+#define ROOT_FILE_DIR "../../main/js"
+#define TARGET_FILE_DIR "../../../releases"
 
-(function (rootFilePath, version, targetDirectory) {
+(function (version, rootFileName) {
+   // Directories are relative to the script directory
+   var scriptFileName = #__FILE__ ;
+   var scriptFileDir = File.extractDrive(scriptFileName)+File.extractDirectory(scriptFileName);
+
+   var rootFileDirectory = scriptFileDir + "/" + ROOT_FILE_DIR;
+   var rootFilePath = rootFileDirectory + "/" + rootFileName;
+   var targetDirectory = scriptFileDir + "/" + TARGET_FILE_DIR;
 
    // Read a file, return it as a list of lines
    var readTextFile = function(filePath) {
@@ -32,10 +40,10 @@
       throw "Target directory not found: " +  File.fullPath(targetDirectory);
    }
    var rootFileDirectory = File.extractDrive(rootFilePath) + File.extractDirectory(rootFilePath);
-   var rootFileName = File.extractName(rootFilePath); // Name without extension
+   var rootFileNameOnly = File.extractName(rootFilePath); // Name without extension
    var rootFileExtension = File.extractExtension(rootFilePath);
 
-   var targetFileName = rootFileName + "-" + version + rootFileExtension;
+   var targetFileName = rootFileNameOnly + "-" + version + rootFileExtension;
    var targetFilePath = targetDirectory + "/" + targetFileName;
    Console.writeln("  Target directory: " + targetDirectory);
    Console.writeln("  Target file name: " + targetFileName);
@@ -47,7 +55,7 @@
    var targetFile = new File;
    targetFile.createForWriting(targetFilePath);
 
-   var includeRegExp = new RegExp("#include[ \\t]\"+(" + rootFileName + "-.+)\"");
+   var includeRegExp = new RegExp("#include[ \\t]\"+(" + rootFileNameOnly + "-.+)\"");
    // var includeRegExp = /#include[ \t]"+(VaryParams-.+)"/;
    Console.writeln("  looking up include as " + includeRegExp);
 
@@ -85,7 +93,5 @@
    Console.writeln("File '" + targetFilePath + "' created.");
 
 
-
-
-})(ROOT_FILE, VERSION, TARGET_FILE_DIR);
+})(VERSION, ROOT_FILE_NAME);
 
