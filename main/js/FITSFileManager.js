@@ -41,7 +41,7 @@ function debug(str) {
 
 // Change log
 // 2012-08-27 - 0.1 - Initial Version
-// 2012-xx-xx - 0.2 - Enhancements and speedup
+// 2012-xx-xx - 0.3 - Enhancements and speedup
 //     Code refactoring, speedups
 //     Save/restore parameters
 //     Corrected mapping of files in tree and list if not sorted as loaded,
@@ -49,6 +49,7 @@ function debug(str) {
 //     default sort is ascending on FileName
 //     Added button remove all
 //     Added help label
+//     Use SectionBar
 
 
 

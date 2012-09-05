@@ -10,14 +10,20 @@
 #include <pjsr/FrameStyle.jsh>
 #include <pjsr/Color.jsh>
 
+#include <pjsr/ButtonCodes.jsh>
+#include <pjsr/FocusStyle.jsh>
+
+
 
 // For icons, see http://pixinsight.com/forum/index.php?topic=1953.msg12267#msg12267
+// For Help see http://pixinsight.com/forum/index.php?topic=4598.msg31979#msg31979
+//  It should support html 4 and some css
 
 // Help texts
 
-// #define HELP_STYLE "body {font-family: \"DejaVu Sans\",Verdana,Arial,Helvetica,sans-serif; font-size:12px;}" +\
-// "h1 {font-family: \"DejaVu Sans\",Verdana,Arial,Helvetica,sans-serif; font-size: 24pt; font-weight: normal; line-height: 1.2em; letter-spacing: -0.5px; margin-top: 1em; margin-bottom: 0.5em; color: #06F;}" +\
-// "h3 {clear: both; border-bottom: 1px solid #999; padding-bottom: 0.1em; margin-top: 1.5em; margin-bottom: 1.25em; font-size: 16pt; font-weight: normal; line-height: 1.2em; color: #06F;}"
+//#define HELP_STYLE "<style>{font-family: \"DejaVu Sans\",Verdana,Arial,Helvetica,sans-serif; font-size:12px;}" +\
+//"h1 {font-family: \"DejaVu Sans\",Verdana,Arial,Helvetica,sans-serif; font-size: 24pt; font-weight: normal; line-height: 1.2em; letter-spacing: -0.5px; margin-top: 1em; margin-bottom: 0.5em; color: #06F;}" +\
+//"h3 {clear: both; border-bottom: 1px solid #999; padding-bottom: 0.1em; margin-top: 1.5em; margin-bottom: 1.25em; font-size: 16pt; font-weight: normal; line-height: 1.2em; color: #06F;}</style>"
 
 #define TARGET_TEMPLATE_TOOLTIP "\
 Define how the target file name will be generated. The text is copied \
@@ -72,11 +78,12 @@ and other information\
 // "<h3>Source filename template</h3>" + SOURCE_FILENAME_REGEXP_TOOLTIP + \
 // "<h3>Group template</h3>" +  GROUP_TEMPLATE_TOOLTIP + "</body>")
 
-#define HELP_TEXT (\
-"<b>FITSFileManager</b><br/>" + BASE_HELP_TEXT + \
-"<b>Target template</b><br/>" + TARGET_TEMPLATE_TOOLTIP + \
-"<b>Source filename template</b><br/>" + SOURCE_FILENAME_REGEXP_TOOLTIP + \
-"<b>Group template</b><br/>" +  GROUP_TEMPLATE_TOOLTIP )
+#define HELP_TEXT ("<html>" + \
+"<h1><font color=\"#06F\">FITSFileManager</font></h1>" + BASE_HELP_TEXT + \
+"<h3><font color=\"#06F\">Target template</font></h3/>" + TARGET_TEMPLATE_TOOLTIP + \
+"<h3><font color=\"#06F\">Source filename template</font></h3>" + SOURCE_FILENAME_REGEXP_TOOLTIP + \
+"<h3><font color=\"#06F\">Group template</font></h3>" +  GROUP_TEMPLATE_TOOLTIP + \
+"</html>")
 
 // ------------------------------------------------------------------------------------------------------------------------
 // User Interface Parameters
@@ -182,6 +189,120 @@ FFM_GUIParameters.prototype.saveSettings = function()
 
 }
 
+// ------------------------------------------------------------------------------------------------------------------------
+// ControlBar fro Juan: http://pixinsight.com/forum/index.php?topic=4610.msg32012#msg32012
+// ------------------------------------------------------------------------------------------------------------------------
+
+
+
+#define contract_icon   new Bitmap( ":/images/icons/contract_v.png" )
+#define expand_icon     new Bitmap( ":/images/icons/expand_v.png" )
+
+function SectionBar( parent )
+{
+   this.__base__ = Control;
+   if ( parent )
+      this.__base__( parent );
+   else
+      this.__base__();
+
+   this.section = null;
+
+#ifgteq __PI_BUILD__ 854
+   var bgColor = Settings.readGlobal( "InterfaceWindow/SectionBarColor", DataType_UInt32 );
+   var fgColor = Settings.readGlobal( "InterfaceWindow/SectionBarTextColor", DataType_UInt32 );
+#else
+   // PJSR access to global settings is broken in PI 1.7
+   var bgColor = Color.rgbaColor( 192, 192, 168, 255 );
+   var fgColor = Color.rgbaColor(   0,   0, 255, 255 );
+#endif
+
+   this.backgroundColor = bgColor;
+   this.focusStyle = FocusStyle_NoFocus;
+
+   this.label = new Label( this );
+   this.label.textAlignment = TextAlign_Left|TextAlign_VertCenter;
+   this.label.styleSheet =
+      "QLabel { color: " + Color.rgbColorToHexString( fgColor ) + "; " +
+               "background: " + Color.rgbColorToHexString( bgColor ) + "; }" +
+      "QLabel:disabled { color: gray; }";
+
+   this.button = new ToolButton( this );
+   this.button.icon = contract_icon;
+   this.button.setFixedSize( 17, 17 );
+   this.button.focusStyle = FocusStyle_NoFocus;
+   this.button.onClick = function()
+   {
+      this.parent.toggleSection();
+   };
+
+   var hSizer = new HorizontalSizer;
+   hSizer.addSpacing( 4 );
+   hSizer.add( this.label );
+   hSizer.addStretch();
+   hSizer.add( this.button );
+   hSizer.addSpacing( 4 );
+
+   this.sizer = new VerticalSizer;
+   this.sizer.addSpacing( 1 );
+   this.sizer.add( hSizer );
+   this.sizer.addSpacing( 1 );
+
+   this.adjustToContents();
+   this.setFixedHeight();
+
+   this.onMousePress = function( x, y, button, buttonState, modifiers )
+   {
+      if ( button == MouseButton_Left )
+         this.button.onClick();
+   };
+
+   this.onShow = function()
+   {
+      this.updateIcon();
+   };
+
+   this.toggleSection = function()
+   {
+      if ( this.section )
+      {
+         this.setFixedWidth();
+
+         if ( this.section.visible )
+            this.section.hide();
+         else
+            this.section.show();
+
+         this.updateIcon();
+         this.dialog.adjustToContents();
+         this.setVariableWidth();
+      }
+   };
+
+   this.updateIcon = function()
+   {
+      if ( this.section )
+         if ( this.section.visible )
+            this.button.icon = contract_icon;
+         else
+            this.button.icon = expand_icon;
+   };
+
+   // Public interface
+
+   this.setTitle = function( title )
+   {
+      this.label.text = title;
+   };
+
+   this.setSection = function( section )
+   {
+      this.section = section;
+      this.updateIcon();
+   };
+}
+
+SectionBar.prototype = new Control;
 
 
 // ------------------------------------------------------------------------------------------------------------------------
@@ -229,7 +350,7 @@ function MainDialog(engine, guiParameters)
       this.filesTreeBox.setHeaderText(0, "Filename");
       this.filesTreeBox.sort(0,true);
 
-      this.filesTreeBox.setMinSize( 400, 200 );
+      this.filesTreeBox.setMinSize( 600, 200 );
 
       // Assume that 'check' is the only operation that update the nodes,
       // this may not be true...
@@ -546,10 +667,16 @@ function MainDialog(engine, guiParameters)
 
    // Source file name template --------------------------------------------------------------------------------------
    this.transform_TextBox = new TextBox( this );
+   this.transform_TextBox.frameStyle = FrameStyle_Box;
    this.transform_TextBox.text = '';
    this.transform_TextBox.toolTip = "Transformations that will be executed";
    this.transform_TextBox.enabled = true;
    this.transform_TextBox.readOnly = true;
+
+   this.bar2 = new SectionBar( this );
+   this.bar2.setTitle( "Resulting operations" );
+   this.bar2.setSection( this.transform_TextBox );
+
 
 
    // ===================================================================================
@@ -686,6 +813,14 @@ function MainDialog(engine, guiParameters)
       this.parent.engine.exportFITSKeyWords();
    }
 
+   this.helpButton = new ToolButton( this );
+   this.helpButton.icon = new Bitmap( ":/images/interface/browseDocumentationButton.png" );
+   this.helpButton.toolTip = "Browse Documentation";
+   this.helpDialog = new HelpDialog(this);
+   this.helpButton.onClick = function() {
+      this.dialog.helpDialog.execute();
+   }
+
 
 
 
@@ -760,7 +895,9 @@ function MainDialog(engine, guiParameters)
    this.rules_GroupBox.sizer.add( this.sourceTemplate_Edit_sizer );
    this.rules_GroupBox.sizer.add( this.groupTemplate_Edit_sizer );
 
-
+   this.bar1 = new SectionBar( this );
+   this.bar1.setTitle( "Rules" );
+   this.bar1.setSection( this.rules_GroupBox );
 
    this.outputDir_GroupBox = new GroupBox( this );
    this.outputDir_GroupBox.title = "Output base directory";
@@ -770,25 +907,17 @@ function MainDialog(engine, guiParameters)
    this.outputDir_GroupBox.sizer.add( this.outputDir_Edit, 100 );
    this.outputDir_GroupBox.sizer.add( this.outputDirSelect_Button );
 
-   this.helpButton = new ToolButton( this );
-   this.helpButton.icon = new Bitmap( ":/images/interface/browseDocumentationButton.png" );
-   this.helpButton.toolTip = "Browse Documentation";
-   this.helpDialog = new HelpDialog(this);
-   this.helpButton.onClick = function() {
-      this.dialog.helpDialog.execute();
-   }
 
 
-
-   this.sizer2 = new HorizontalSizer;
-   this.sizer2.spacing = 2;
-   this.sizer2.add( this.refresh_Button);
-   this.sizer2.add( this.check_Button);
-   this.sizer2.add( this.move_Button);
-   this.sizer2.add( this.copy_Button);
-   this.sizer2.add( this.txt_Button);
-   this.sizer2.add( this.helpButton);
-   this.sizer2.addStretch();
+   this.buttonSizer = new HorizontalSizer;
+   this.buttonSizer.spacing = 2;
+   this.buttonSizer.add( this.refresh_Button);
+   this.buttonSizer.add( this.check_Button);
+   this.buttonSizer.add( this.move_Button);
+   this.buttonSizer.add( this.copy_Button);
+   this.buttonSizer.add( this.txt_Button);
+   this.buttonSizer.addStretch();
+   this.buttonSizer.add( this.helpButton);
 
 
    // -- HelpLabel
@@ -809,10 +938,12 @@ function MainDialog(engine, guiParameters)
    this.sizer.spacing = 2;
    this.sizer.add( helpLabel );
    this.sizer.add( this.inputFiles_GroupBox,50 );
+   this.sizer.add(this.bar1);
    this.sizer.add(this.rules_GroupBox);
    this.sizer.add( this.outputDir_GroupBox );
+   this.sizer.add(this.bar2);
    this.sizer.add(this.transform_TextBox,50);
-   this.sizer.add( this.sizer2 );
+   this.sizer.add( this.buttonSizer );
 
    //this.move(50,100); // move dialog to up-left corner
 
@@ -838,7 +969,8 @@ function HelpDialog( parentDialog, engine )
    this.helpBox = new TextBox( this );
    this.helpBox.readOnly = true;
    this.helpBox.text = HELP_TEXT;
-   this.helpBox.setMinSize( 600, 200 );
+   this.helpBox.setMinSize( 800, 400 );
+   this.helpBox.caretPosition = 0;
 
    this.sizer = new HorizontalSizer;
    this.sizer.margin = 6;
