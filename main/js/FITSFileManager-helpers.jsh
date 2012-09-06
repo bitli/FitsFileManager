@@ -460,6 +460,5 @@ function makeSynthethicVariables(inputFile, keys) {
 
 }
 
-Console.writeln("aa");
 
 
