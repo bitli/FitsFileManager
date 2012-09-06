@@ -1,5 +1,7 @@
 // FITSFileManager-gui.js
 
+// This file is part of FITSFileManager, see copyrigh in FITSFileManager.js
+
 
 #include <pjsr/DataType.jsh>
 #include <pjsr/Sizer.jsh>

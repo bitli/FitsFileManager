@@ -57,7 +57,7 @@
 // Set to false when doing hasardous developments...
 #define EXECUTE_COMMANDS false
 // Tracing - define DEBUG if you define any other
-//#define DEBUG
+#define DEBUG
 //#define DEBUG_EVENTS
 //#define DEBUG_FITS
 //#define DEBUG_VARS
@@ -71,9 +71,9 @@ function debug(str) {
    //processEvents();  // This may interfere with event processing order
 }
 #endif
-// --- Debugging control ----------------
 
 
+// Padding format
 #define FFM_COUNT_PAD 4
 
 #define FFM_SETTINGS_KEY_BASE  "FITSFileManager/"

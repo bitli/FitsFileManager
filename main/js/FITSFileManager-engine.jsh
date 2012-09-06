@@ -1,14 +1,7 @@
 // FITSFileMannager-engine.js
 
 
-
-// This file is part of FITSFileManager
-
-
-// ------------------------------------------------------------------------------------------------------------------------
-// Utility functions
-// ------------------------------------------------------------------------------------------------------------------------
-
+// This file is part of FITSFileManager, see copyrigh in FITSFileManager.js
 
 
 // ------------------------------------------------------------------------------------------------------------------------
@@ -99,6 +92,8 @@ function FFM_Engine(guiParameters) {
       debug("buildTargetFiles: groupByTemplate = '" + guiParameters.groupByTemplate + "'");
 #endif
 
+
+
       // Reinitialize the target files indices and mapping
       this.targetFilesIndices = [];
       this.targetFiles = [];
@@ -121,6 +116,18 @@ function FFM_Engine(guiParameters) {
       debug("buildTargetFiles: targetDirectoryTemplate = '" + targetDirectoryTemplate + "', targetNameTemplate = '" +  targetNameTemplate + "'");
 #endif
 
+      // Compile templates
+      var targetDirectoryCompiledTemplate = ffM_template.analyzeTemplate(targetDirectoryTemplate);
+      var groupByCompiledTemplate = ffM_template.analyzeTemplate(guiParameters.groupByTemplate);
+      var targetFileNameCompiledTemplate = ffM_template.analyzeTemplate(guiParameters.targeFileNameTemplate);
+
+#ifdef DEBUG
+      debug("buildTargetFiles: targetDirectoryCompiledTemplate = " + targetDirectoryCompiledTemplate);
+      debug("buildTargetFiles: groupByCompiledTemplate = " + groupByCompiledTemplate);
+      debug("buildTargetFiles: targetFileNameCompiledTemplate = " + targetFileNameCompiledTemplate);
+#endif
+
+
       // Initialized inside each loop, declared here for clarity
       var count = 0;
       var group = '';
@@ -139,23 +146,15 @@ function FFM_Engine(guiParameters) {
             var inputFileName =  File.extractName(inputFile);
 
             var variables = this.inputVariables[i];
-            var missingVariables = [];
-            // Method to handle replacement of variables in target file name template
-            var replaceVariables = function(matchedSubstring, index, originalString) {
-               var varName = matchedSubstring.substring(1,matchedSubstring.length-1);
-               if (variables.hasOwnProperty(varName) && variables[varName] !== null) {
-#ifdef DEBUG_VARS
-                  debug("replaceVariables: match '" + matchedSubstring + "' '" + index + "' '" +  originalString + "' '" + varName + "' by '" + variables[varName] + "'");
-#endif
-                  return variables[varName];
+
+            var variableResolver = function(v) {
+               if (variables.hasOwnProperty(v)) {
+                  return variables[v];
                } else {
-#ifdef DEBUG_VARS
-                  debug("replaceVariables: match '" + matchedSubstring + "' '" + index + "' '" +  originalString + "' '" + varName + "' not found");
-#endif
-                  missingVariables.push(varName);
-                  return  varName.toUpperCase();
+                  return null;
                }
-            };
+            }
+
 
             //   &rank;      The rank in the list of files of the file being moved/copied, padded to COUNT_PAD.
             variables['rank'] = i.pad(FFM_COUNT_PAD);
@@ -177,16 +176,21 @@ function FFM_Engine(guiParameters) {
 
             // Use only directory part, count should not be used, used to initialize 'targetdir'
             variables['count'] = 'COUNT';
-            missingVariables = [];
-            var targetDirectory =  targetDirectoryTemplate.replace(variableRegExp,replaceVariables);
-            variables['targetDir'] = targetDirectory;
+
+
+            var expansionErrors = [];
+            var targetDirectory = targetDirectoryCompiledTemplate.expandTemplate(expansionErrors,variableResolver);
 #ifdef DEBUG
-            debug("buildTargetFiles: expanded targetDir = " + targetDirectory + ", missing variables: " + missingVariables);
+            debug("buildTargetFiles: expanded targetDirectory = " + targetDirectory + ", errors = " + expansionErrors);
 #endif
+            variables['targetDir'] = targetDirectory;
 
             // Expand the groupByTemplate to form the id of the counter (targetDir may be used)
-            missingVariables = [];
-            group = guiParameters.groupByTemplate.replace(variableRegExp, replaceVariables);
+            var expansionErrors = [];
+            group = groupByCompiledTemplate.expandTemplate(expansionErrors,variableResolver);
+#ifdef DEBUG
+            debug("buildTargetFiles: expanded group = " + group + ", errors: " + expansionErrors.join(","));
+#endif
             count = 0;
             if (countingGroups.hasOwnProperty(group)) {
                count = countingGroups[group];
@@ -195,18 +199,18 @@ function FFM_Engine(guiParameters) {
             countingGroups[group] = count;
             variables['count'] = count.pad(FFM_COUNT_PAD);
 #ifdef DEBUG
-            debug("buildTargetFiles: expanded group = " + group + ", count = " + count + ", missing variables: " + missingVariables);
+            debug("buildTargetFiles: for group = " + group + ", count = " + variables['count']);
 #endif
 
             // We should not use 'targetDir' in the expansion of the file name
             variables['targetDir'] = 'TARGETDIR';
             // The resulting name may include directories
-            missingVariables = [];
-            var targetString = guiParameters.targeFileNameTemplate.replace(variableRegExp,replaceVariables);
-#ifdef DEBUG
-            debug("buildTargetFiles: expanded targetString = " + targetString + ", missing variables: " + missingVariables);
-#endif
 
+            var expansionErrors = [];
+            var targetString = targetFileNameCompiledTemplate.expandTemplate(expansionErrors,variableResolver);
+#ifdef DEBUG
+            debug("buildTargetFiles: expanded targetString = " + targetString + ", errors: " + expansionErrors.join(","));
+#endif
 
             // Target file but without the output directory
             this.targetFilesIndices.push(inputFileIndex);

@@ -3,7 +3,7 @@
 // FITSFileManager-tests
 
 
-// Copyright (c) 2012 Jean-Marc Lugrin
+// This file is part of FITSFileManager, see copyrigh in FITSFileManager.js
 
 
 #include "PJSR-unit-tests-support.jsh"
@@ -11,16 +11,11 @@
 #define DEBUG true
 
 
-#define VERSION "0.3"
+#define VERSION "0.3-tests"
 
 #include "../../main/js/FITSFileManager-helpers.jsh"
 #include "../../main/js/FITSFileManager-engine.jsh"
 #include "../../main/js/FITSFileManager-gui.jsh"
-
-
-// ---------------------------------------------------------------------------------------------------------
-// Check environment for tests
-// ---------------------------------------------------------------------------------------------------------
 
 
 
@@ -28,10 +23,15 @@
 // Unit tests
 // ---------------------------------------------------------------------------------------------------------
 
-
+// Variable resolver factory for a resolver using a single object
 var ffM_rv = function(obj) {
    return (function(v) {
-      return obj[v];
+      if (obj.hasOwnProperty(v)) {
+         return obj[v];
+      } else {
+         // do not use 'undefined' to be 'use strict' friendly
+         return null;
+      }
    });
 }
 
@@ -40,7 +40,7 @@ var ffM_allTests = {
       pT_assertEquals("toto", ffM_rv({titi: "toto"})("titi"));
    },
    test_ffM_rv_not_found: function() {
-      pT_assertUndefined(ffM_rv({titi: "toto"})("toto"));
+      pT_assertNull(ffM_rv({titi: "toto"})("toto"));
    },
 
    // ---------------------------------------------------------------------------------------------------------
@@ -206,7 +206,7 @@ var ffM_allTests = {
       var errors = [];
       var t = ffM_template.analyzeTemplate("abc&required;def");
       t.expandTemplate(errors,ffM_rv({v1:'v1val', v2:'NO', v5:'v5val'}));
-      pT_assertEquals("", errors.join(""));
+      pT_assertEquals("No value for the variable", errors.join(""));
    },
 
 

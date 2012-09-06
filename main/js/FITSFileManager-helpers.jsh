@@ -1,6 +1,6 @@
 // FITSFileManager-help.js
 
-// This file is part of FITSFileManager
+// This file is part of FITSFileManager, see copyrigh in FITSFileManager.js
 
 #include <pjsr/DataType.jsh>
 
@@ -255,7 +255,7 @@ var ffM_template = (function() {
 
   // Create a rule that return to parameter literal
   var makeLiteralRule = function(templateErrors,literal){
-    // TODO Check that literal does not contains & ( ) ;
+    // TODO Check that literal does not contains & ( ) ; < > (and % unless formatting is implemented)
     var literalRule = function(errors) {
       return literal;
     }
@@ -318,7 +318,8 @@ var ffM_template = (function() {
     // The lookup variable rule itself, that will use the handlers above
     var lookUpRule = function(expandErrors,variableResolver) {
       var value = variableResolver(variableName);
-      if (value) {
+      // do not use 'undefined' to be 'use strict' friendly
+      if (value !== null) {
         return onFoundAction(expandErrors,value);
       } else {
         return onMissingAction(expandErrors,value);
@@ -355,11 +356,19 @@ var ffM_template = (function() {
       if (template.length>iNext) {
           rules.push(makeLiteralRule(templateErrors,template.substring(iNext)));
       }
+
+      // This objects is returned when a template has been analyzed (it is like a compiled regexp,
+      // although it is for generating text rather than parsing it).
       var templateRuleSet = {
          toString: function() {return rules.toString();},
          requiredVariables: [], // TODO
          optionalVariables: [], // TODO
+         // Method to expand the template using the variables returned by the variableResolver,
+         // return the exanded string
+         // The expandErrors must be an array, errors will be pushed to that array.
+         // If any error is pushed, the returned value is meaningless
          expandTemplate: function(expandErrors, variableResolver) {
+            // Execute the rules one by one, pushing the result
             var result = [];
             for (var i = 0; i<rules.length; i++) {
                result.push(rules[i](expandErrors, variableResolver));
@@ -399,7 +408,7 @@ var shownSyntheticComments = ['Type of image (flat, bias, ...)',
 
 
 
-// Extract the variables to form group names and file names from the file name, FITS keywords
+// Extract the variables to form group names and file names from the file name and the FITS keywords
 function makeSynthethicVariables(inputFile, keys) {
 
    var inputFileName =  File.extractName(inputFile);

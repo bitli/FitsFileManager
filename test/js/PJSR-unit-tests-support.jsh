@@ -1,7 +1,7 @@
 // PJSR-unit-tests-support.jsh
 
 
-// Copyright (c) 2012 Jean-Marc Lugrin
+// This file is part of FITSFileManager, see copyrigh in FITSFileManager.js
 
 
 #define PT_TEST_OK "OK"
