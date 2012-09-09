@@ -780,7 +780,6 @@ function MainDialog(engine, guiParameters)
    this.refresh_Button = new PushButton( this );
    this.refresh_Button.text = "Refresh list";
    this.refresh_Button.toolTip = "Refresh the list of operations\nrequired after a sort on an header (there is on onSort event)";
-   this.refresh_Button.default = true;
    this.refresh_Button.enabled = true;
    this.refresh_Button.onClick = function()
       {
@@ -861,7 +860,6 @@ function MainDialog(engine, guiParameters)
    this.sizer.add(this.transform_TextBox,50);
    this.sizer.add( this.buttonSizer );
 
-   //this.move(50,100); // move dialog to up-left corner
 
 
 
@@ -937,7 +935,7 @@ function MainDialog(engine, guiParameters)
    }
 
 
-   //enable/disable buttons
+   // enable/disable operation buttons
    this.updateButtonState = function()
    {
       var enabled = this.dialog.engine.canDoOperation();
@@ -946,7 +944,7 @@ function MainDialog(engine, guiParameters)
       this.dialog.txt_Button.enabled = enabled;
    }
 
-   //--  Add a list of files to the TreeBox (remove duplicates)
+   // Add a list of files to the TreeBox (remove duplicates)
    this.addFilesAction = function (fileNames)
    {
       this.engine.addFiles(fileNames);
@@ -961,6 +959,7 @@ function MainDialog(engine, guiParameters)
       //this.hideKey(); // *** TEST
    }
 
+   // update the input file list total after each add/remove/check toogle
    this.updateTotal = function() {
       // Should be same as this.engine.inputFiles.length
       var countTotal = this.filesTreeBox.numberOfChildren;
@@ -982,6 +981,7 @@ function MainDialog(engine, guiParameters)
       this.bar1.setCollapsedTitle("Input - " + countText);
    }
 
+
    this.makeListOfCheckedFiles = function() {
       var listOfFiles = [];
 
@@ -997,7 +997,7 @@ function MainDialog(engine, guiParameters)
       return listOfFiles;
    }
 
-
+   // Update the output operations indications
    this.refreshTargetFiles = function() {
 
 #ifdef DEBUG
@@ -1012,14 +1012,20 @@ function MainDialog(engine, guiParameters)
       var listOfTransforms = this.engine.makeListOfTransforms();
       this.transform_TextBox.text = listOfTransforms.join("");
 
+      this.bar4.setCollapsedTitle("Resulting operation - " + listOfTransforms.length + " operations");
+
     }
 
+
+    // -- Support for refresh and move, remove all input files that are not present anymore
     this.removeDeletedFiles = function() {
       for ( var iTreeBox = this.dialog.filesTreeBox.numberOfChildren; --iTreeBox >= 0; ) {
 
          var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).text(0);
          if (!File.exists(nameInTreeBox)) {
-
+#ifdef DEBUG
+            debug("File '" + nameInTreeBox + "' removed from input list as not present on file system anymore.";
+#endif
             this.dialog.engine.removeFiles(nameInTreeBox);
             this.dialog.filesTreeBox.remove( iTreeBox );
          }
@@ -1079,17 +1085,6 @@ function FITSKeysDialog( parentDialog, engine)
    this.__base__();
    this.windowTitle = "Select FITS keywords for report";
 
-   // TreeBox to display list of FITS keywords
-   this.keyword_TreeBox = new TreeBox( this );
-   this.keyword_TreeBox.toolTip = "Check mark to include in report\nname in red of keyword not in current file";
-   this.keyword_TreeBox.rootDecoration = false;
-   this.keyword_TreeBox.numberOfColumns = 3;
-   this.keyword_TreeBox.setHeaderText(0, "name");
-   this.keyword_TreeBox.setHeaderText(1, "value");
-   this.keyword_TreeBox.setHeaderText(2, "comment");
-   this.keyword_TreeBox.setColumnWidth(0,150);
-   this.keyword_TreeBox.setColumnWidth(1,200);
-   this.keyword_TreeBox.setColumnWidth(2,600);
 
    // ComboBox to select the file to display values
    this.file_ComboBox = new ComboBox( this );
@@ -1152,6 +1147,18 @@ function FITSKeysDialog( parentDialog, engine)
 
    }
 
+   // TreeBox to display list of FITS keywords
+   this.keyword_TreeBox = new TreeBox( this );
+   this.keyword_TreeBox.toolTip = "Check mark to include in report\nname in red of keyword not in current file";
+   this.keyword_TreeBox.rootDecoration = false;
+   this.keyword_TreeBox.numberOfColumns = 3;
+   this.keyword_TreeBox.setHeaderText(0, "name");
+   this.keyword_TreeBox.setHeaderText(1, "value");
+   this.keyword_TreeBox.setHeaderText(2, "comment");
+   this.keyword_TreeBox.setColumnWidth(0,150);
+   this.keyword_TreeBox.setColumnWidth(1,200);
+   this.keyword_TreeBox.setColumnWidth(2,600);
+
 
    // Export selected fits keywords for checked files
    this.cancel_Button = new PushButton( this );
@@ -1176,31 +1183,33 @@ function FITSKeysDialog( parentDialog, engine)
       this.dialog.ok();
    }
 
-   this.sizer2 = new HorizontalSizer;
-   this.sizer2.spacing = 2;
-   this.sizer2.addStretch();
-   this.sizer2.add( this.cancel_Button);
-   this.sizer2.add( this.ok_Button);
+   this.buttonsSizer = new HorizontalSizer;
+   this.buttonsSizer.spacing = 2;
+   this.buttonsSizer.addStretch();
+   this.buttonsSizer.add( this.cancel_Button);
+   this.buttonsSizer.add( this.ok_Button);
 
 
    // Assemble FITS keyword Dialog
-   this.sizer = new VerticalSizer;
-   this.sizer.margin = 4;
-   this.sizer.spacing = 4;
-   this.sizer.add( this.file_ComboBox );
-   this.sizer.add( this.keyword_TreeBox );
-   this.sizer.add(this.sizer2);
+   this.dialogSizer = new VerticalSizer;
+   this.dialogSizer.margin = 4;
+   this.dialogSizer.spacing = 4;
+   this.dialogSizer.add( this.file_ComboBox );
+   this.dialogSizer.add( this.keyword_TreeBox );
+   this.dialogSizer.add(this.buttonsSizer);
    this.adjustToContents();
 
    // ------------------------------------------------------------
    // Recreate the content (key names and list of files) when the dialog is showns
    this.onShow = function()
    {
+      // -- Locate dialog
       var p = new Point( parentDialog.position );
       p.moveBy( 16,16 );
       this.position = p;
 
-      // Rebuild the list of FITS keywords
+
+      // -- Rebuild the list of FITS keywords
 
       this.keyword_TreeBox.clear();
 
@@ -1231,7 +1240,7 @@ function FITSKeysDialog( parentDialog, engine)
       }
 
 
-      // Update the DropDown box - Fill list of files from parent list of files
+      // -- Update the DropDown box - Fill list of files from parent list of files
       this.file_ComboBox.clear();
       for (i = 0; i< engine.inputFiles.length; i++) {
          this.file_ComboBox.addItem(engine.inputFiles[i]);
