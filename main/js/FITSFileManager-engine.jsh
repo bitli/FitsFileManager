@@ -69,7 +69,7 @@ function FFM_Engine(guiParameters) {
 
    }
 
-   // -- remove a file by name ----------------------------------------------------------
+   // -- Remove a file by name
    this.removeFiles = function (fileName) {
       var index = this.inputFiles.indexOf(fileName);
       if (index < 0) {
@@ -82,14 +82,14 @@ function FFM_Engine(guiParameters) {
 
 
 
-   // --  Build the list of target files for the selected input files -------------------
+   // --  Build the list of target files for the selected input files
    this.buildTargetFiles = function(listOfFiles) {
 
 #ifdef DEBUG
       debug("buildTargetFiles: list of " + listOfFiles.length + " files");
-      debug("buildTargetFiles: targeFileNameTemplate = '" + guiParameters.targeFileNameTemplate + "'");
+      debug("buildTargetFiles: targetFileNameTemplate = '" + guiParameters.targetFileNameCompiledTemplate.templateString  + "'");
       debug("buildTargetFiles: sourceFileNameRegExp = '" + guiParameters.sourceFileNameRegExp + "'");
-      debug("buildTargetFiles: groupByTemplate = '" + guiParameters.groupByTemplate + "'");
+      debug("buildTargetFiles: groupByTemplate = '" + guiParameters.groupByCompiledTemplate.templateString  + "'");
 #endif
 
 
@@ -104,13 +104,14 @@ function FFM_Engine(guiParameters) {
 
 
       // Separate directory from file name part in target template
-      var indexOfLastSlash = guiParameters.targeFileNameTemplate.lastIndexOf('/');
+      var targetFileNameTemplateString = guiParameters.targetFileNameCompiledTemplate.templateString;
+      var indexOfLastSlash = targetFileNameTemplateString.lastIndexOf('/');
       if (indexOfLastSlash>0) {
-         var targetDirectoryTemplate= guiParameters.targeFileNameTemplate.substring(0,indexOfLastSlash);
-         var targetNameTemplate= guiParameters.targeFileNameTemplate.substring(indexOfLastSlash+1);
+         var targetDirectoryTemplate= targetFileNameTemplateString.substring(0,indexOfLastSlash);
+         var targetNameTemplate= targetFileNameTemplateString.substring(indexOfLastSlash+1);
       } else {
          var targetDirectoryTemplate = '';
-         var targetNameTemplate= guiParameters.targeFileNameTemplate;
+         var targetNameTemplate= targetFileNameTemplateString;
       }
 #ifdef DEBUG
       debug("buildTargetFiles: targetDirectoryTemplate = '" + targetDirectoryTemplate + "', targetNameTemplate = '" +  targetNameTemplate + "'");
@@ -118,8 +119,8 @@ function FFM_Engine(guiParameters) {
 
       // Compile templates
       var targetDirectoryCompiledTemplate = ffM_template.analyzeTemplate(targetDirectoryTemplate);
-      var groupByCompiledTemplate = ffM_template.analyzeTemplate(guiParameters.groupByTemplate);
-      var targetFileNameCompiledTemplate = ffM_template.analyzeTemplate(guiParameters.targeFileNameTemplate);
+      var groupByCompiledTemplate = guiParameters.groupByCompiledTemplate;
+      var targetFileNameCompiledTemplate = guiParameters.targetFileNameCompiledTemplate;
 
 #ifdef DEBUG
       debug("buildTargetFiles: targetDirectoryCompiledTemplate = " + targetDirectoryCompiledTemplate);
@@ -128,7 +129,7 @@ function FFM_Engine(guiParameters) {
 #endif
 
 
-      // Initialized inside each loop, declared here for clarity
+      // Count and gourp are initialized inside each loop, declared here for clarity
       var count = 0;
       var group = '';
       for (var i = 0; i < listOfFiles.length; ++i) {

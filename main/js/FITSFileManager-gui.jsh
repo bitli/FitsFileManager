@@ -100,7 +100,7 @@ function FFM_GUIParameters() {
    this.reset = function () {
 
       // SETTINGS: Saved latest correct GUI state
-      this.targeFileNameTemplate = FFM_DEFAULT_TARGET_FILENAME_TEMPLATE;
+      this.targetFileNameTemplate = FFM_DEFAULT_TARGET_FILENAME_TEMPLATE;
 
       // Default regular expression to parse file name
       this.sourceFileNameRegExp = FFM_DEFAULT_SOURCE_FILENAME_REGEXP;
@@ -108,6 +108,10 @@ function FFM_GUIParameters() {
       this.orderBy = "&rank;" // UNUSED
       // Default template to create groups
       this.groupByTemplate = FFM_DEFAULT_GROUP_TEMPLATE;
+
+      this.targetFileNameCompiledTemplate = ffM_template.analyzeTemplate(FFM_DEFAULT_TARGET_FILENAME_TEMPLATE);
+      this.groupByCompiledTemplate = ffM_template.analyzeTemplate(FFM_DEFAULT_GROUP_TEMPLATE);
+
     }
    this.reset();
 
@@ -115,10 +119,10 @@ function FFM_GUIParameters() {
    // For debugging and logging
    this.toString = function() {
       var s = "GUIParameters:\n";
-      s += "  targeFileNameTemplate:           " + replaceAmps(this.targeFileNameTemplate) + "\n";
+      s += "  targetFileNameTemplate:           " + replaceAmps(this.targetFileNameCompiledTemplate.templateString) + "\n";
       s += "  sourceFileNameRegExp:           " + replaceAmps(regExpToString(this.sourceFileNameRegExp)) + "\n";
       s += "  orderBy:                        " + replaceAmps(this.orderBy) + "\n";
-      s += "  groupByTemplate:                 " + replaceAmps(this.groupByTemplate) + "\n";
+      s += "  groupByTemplate:                 " + replaceAmps(this.groupByCompiledTemplate.templateString) + "\n";
       return s;
    }
 }
@@ -144,8 +148,8 @@ FFM_GUIParameters.prototype.loadSettings = function()
       if (o > VERSION) {
          Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' have version ", o, " later than script version ", VERSION, ", settings ignored");
       } else {
-         if ( (o = load( "targeFileNameTemplate",    DataType_String )) !== null ) {
-            this.targeFileNameTemplate = o;
+         if ( (o = load( "targetFileNameTemplate",    DataType_String )) !== null ) {
+            this.targetFileNameCompiledTemplate =  this.targetFileNameCompiledTemplate = ffM_template.analyzeTemplate(o);
          };
          if ( (o = load( "sourceFileNameRegExp",    DataType_String )) !== null ) {
             try {
@@ -161,7 +165,7 @@ FFM_GUIParameters.prototype.loadSettings = function()
          if ( (o = load( "orderBy",                 DataType_String )) !== null )
             this.orderBy = o;
          if ( (o = load( "groupByTemplate",          DataType_String )) !== null )
-            this.groupByTemplate = o;
+            this.groupByCompiledTemplate = ffM_template.analyzeTemplate(o);
       }
    } else {
       Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' do not have a 'version' key, settings ignored");
@@ -187,10 +191,10 @@ FFM_GUIParameters.prototype.saveSettings = function()
    }
 
    save( "version",                  DataType_Double,  parseFloat(VERSION) );
-   save( "targeFileNameTemplate",     DataType_String,  this.targeFileNameTemplate );
+   save( "targetFileNameTemplate",     DataType_String,  this.targetFileNameCompiledTemplate.templateString );
    save( "sourceFileNameRegExp",     DataType_String,  regExpToString(this.sourceFileNameRegExp) );
    save( "orderBy",                  DataType_String,  this.orderBy );
-   save( "groupByTemplate",           DataType_String,  this.groupByTemplate );
+   save( "groupByTemplate",           DataType_String,  this.groupByCompiledTemplate.templateString );
 
 }
 
@@ -567,12 +571,15 @@ function MainDialog(engine, guiParameters)
 
    // Target template --------------------------------------------------------------------------------------
    this.targetFileTemplate_Edit = new Edit( this );
-   this.targetFileTemplate_Edit.text = guiParameters.targeFileNameTemplate;
+   this.targetFileTemplate_Edit.text = guiParameters.targetFileNameCompiledTemplate.templateString;
    this.targetFileTemplate_Edit.toolTip = TARGET_TEMPLATE_TOOLTIP;
    this.targetFileTemplate_Edit.enabled = true;
    this.targetFileTemplate_Edit.onTextUpdated = function()
       {
-         guiParameters.targeFileNameTemplate = this.text;
+         guiParameters.targetFileNameCompiledTemplate = ffM_template.analyzeTemplate(this.text);
+#ifdef DEBUG
+         debug("targetFileTemplate_Edit: onTextUpdated " + this.text);
+#endif
          this.dialog.refreshTargetFiles();
 
       }
@@ -613,12 +620,12 @@ function MainDialog(engine, guiParameters)
 
    // Group template --------------------------------------------------------------------------------------
    this.groupTemplate_Edit = new Edit( this );
-   this.groupTemplate_Edit.text = guiParameters.groupByTemplate;
+   this.groupTemplate_Edit.text = guiParameters.groupByCompiledTemplate.templateString;
    this.groupTemplate_Edit.toolTip = GROUP_TEMPLATE_TOOLTIP;
    this.groupTemplate_Edit.enabled = true;
    this.groupTemplate_Edit.onTextUpdated = function()
    {
-      guiParameters.groupByTemplate = this.text;
+      guiParameters.groupByCompileTemplate = ffM_template.analyzeTemplate(this.text);
       this.dialog.refreshTargetFiles();
    }
 
@@ -1024,7 +1031,7 @@ function MainDialog(engine, guiParameters)
          var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).text(0);
          if (!File.exists(nameInTreeBox)) {
 #ifdef DEBUG
-            debug("File '" + nameInTreeBox + "' removed from input list as not present on file system anymore.";
+            debug("File '" + nameInTreeBox + "' removed from input list as not present on file system anymore.");
 #endif
             this.dialog.engine.removeFiles(nameInTreeBox);
             this.dialog.filesTreeBox.remove( iTreeBox );

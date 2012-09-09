@@ -357,10 +357,14 @@ var ffM_template = (function() {
           rules.push(makeLiteralRule(templateErrors,template.substring(iNext)));
       }
 
+      // -- Defines the compiled Template
       // This objects is returned when a template has been analyzed (it is like a compiled regexp,
       // although it is for generating text rather than parsing it).
       var templateRuleSet = {
+         // toString for debugging
          toString: function() {return rules.toString();},
+         // Original string as a property
+         templateString: template,
          requiredVariables: [], // TODO
          optionalVariables: [], // TODO
          // Method to expand the template using the variables returned by the variableResolver,
