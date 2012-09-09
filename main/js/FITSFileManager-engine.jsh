@@ -92,8 +92,6 @@ function FFM_Engine(guiParameters) {
       debug("buildTargetFiles: groupByTemplate = '" + guiParameters.groupByCompiledTemplate.templateString  + "'");
 #endif
 
-
-
       // Reinitialize the target files indices and mapping
       this.targetFilesIndices = [];
       this.targetFiles = [];
@@ -117,7 +115,7 @@ function FFM_Engine(guiParameters) {
       debug("buildTargetFiles: targetDirectoryTemplate = '" + targetDirectoryTemplate + "', targetNameTemplate = '" +  targetNameTemplate + "'");
 #endif
 
-      // Compile templates
+      // Compile directory template (copy others)
       var targetDirectoryCompiledTemplate = ffM_template.analyzeTemplate(targetDirectoryTemplate);
       var groupByCompiledTemplate = guiParameters.groupByCompiledTemplate;
       var targetFileNameCompiledTemplate = guiParameters.targetFileNameCompiledTemplate;
@@ -129,7 +127,7 @@ function FFM_Engine(guiParameters) {
 #endif
 
 
-      // Count and gourp are initialized inside each loop, declared here for clarity
+      // Count and groups are initialized inside each loop, declared here for clarity
       var count = 0;
       var group = '';
       for (var i = 0; i < listOfFiles.length; ++i) {
@@ -146,7 +144,7 @@ function FFM_Engine(guiParameters) {
 
             var inputFileName =  File.extractName(inputFile);
 
-            var variables = this.inputVariables[i];
+            var variables = this.inputVariables[inputFileIndex];
 
             var variableResolver = function(v) {
                if (variables.hasOwnProperty(v)) {

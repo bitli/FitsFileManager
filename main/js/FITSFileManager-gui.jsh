@@ -1198,12 +1198,12 @@ function FITSKeysDialog( parentDialog, engine)
 
 
    // Assemble FITS keyword Dialog
-   this.dialogSizer = new VerticalSizer;
-   this.dialogSizer.margin = 4;
-   this.dialogSizer.spacing = 4;
-   this.dialogSizer.add( this.file_ComboBox );
-   this.dialogSizer.add( this.keyword_TreeBox );
-   this.dialogSizer.add(this.buttonsSizer);
+   this.sizer = new VerticalSizer;
+   this.sizer.margin = 4;
+   this.sizer.spacing = 4;
+   this.sizer.add( this.file_ComboBox );
+   this.sizer.add( this.keyword_TreeBox );
+   this.sizer.add(this.buttonsSizer);
    this.adjustToContents();
 
    // ------------------------------------------------------------
