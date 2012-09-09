@@ -192,10 +192,8 @@ FFM_GUIParameters.prototype.saveSettings = function()
 }
 
 // ------------------------------------------------------------------------------------------------------------------------
-// ControlBar fro Juan: http://pixinsight.com/forum/index.php?topic=4610.msg32012#msg32012
+// SectionBar from Juan: http://pixinsight.com/forum/index.php?topic=4610.msg32012#msg32012
 // ------------------------------------------------------------------------------------------------------------------------
-
-
 
 #define contract_icon   new Bitmap( ":/images/icons/contract_v.png" )
 #define expand_icon     new Bitmap( ":/images/icons/expand_v.png" )
@@ -209,6 +207,8 @@ function SectionBar( parent )
       this.__base__();
 
    this.section = null;
+   this.collapedTitle = "";
+   this.expandedTitle = "";
 
 #ifgteq __PI_BUILD__ 854
    var bgColor = Settings.readGlobal( "InterfaceWindow/SectionBarColor", DataType_UInt32 );
@@ -261,6 +261,7 @@ function SectionBar( parent )
 
    this.onShow = function()
    {
+      this.updateTitle();
       this.updateIcon();
    };
 
@@ -270,16 +271,25 @@ function SectionBar( parent )
       {
          this.setFixedWidth();
 
-         if ( this.section.visible )
+         if ( this.section.visible ) {
             this.section.hide();
-         else
+         } else {
             this.section.show();
-
+         }
+         this.updateTitle();
          this.updateIcon();
          this.dialog.adjustToContents();
          this.setVariableWidth();
       }
    };
+
+   this.updateTitle = function() {
+      if ( this.section &&  this.section.visible ) {
+         this.label.text = this.expandedTitle;
+      } else {
+         this.label.text = this.collapsedTitle;
+      }
+   }
 
    this.updateIcon = function()
    {
@@ -294,7 +304,19 @@ function SectionBar( parent )
 
    this.setTitle = function( title )
    {
-      this.label.text = title;
+      this.expandedTitle = title;
+      this.collapsedTitle = title;
+      this.updateTitle();
+   };
+   this.setExpandedTitle = function( title )
+   {
+      this.expandedTitle = title;
+      this.updateTitle();
+   };
+   this.setCollapsedTitle = function( title )
+   {
+      this.collapsedTitle = title;
+      this.updateTitle();
    };
 
    this.setSection = function( section )
@@ -367,6 +389,7 @@ function MainDialog(engine, guiParameters)
             if ( node === this.selectedNodes[i] ) continue; // skip curent clicked node, because it will inverted automaticaly
             this.selectedNodes[i].checked = !this.selectedNodes[i].checked;
          }
+         this.dialog.updateTotal();
          this.dialog.refreshTargetFiles();
       };
 #ifdef DEBUG_EVENTS
@@ -465,10 +488,10 @@ function MainDialog(engine, guiParameters)
       this.engine.addFiles(fileNames);
 
       this.rebuildFilesTreeBox();
-      this.QTY.text = "Total files: " + this.engine.inputFiles.length;
       this.setMinWidth(800);
       this.adjustToContents();
       this.dialog.updateButtonState();
+      this.dialog.updateTotal();
 
       this.refreshTargetFiles();
       //this.hideKey(); // *** TEST
@@ -551,7 +574,7 @@ function MainDialog(engine, guiParameters)
                this.dialog.filesTreeBox.remove( iTreeBox );
             }
          }
-         this.dialog.QTY.text = "Total files: " + this.dialog.engine.inputFiles.length;
+         this.dialog.updateTotal();
          this.dialog.updateButtonState();
          // Refresh the generated files
          this.dialog.refreshTargetFiles();
@@ -575,6 +598,7 @@ function MainDialog(engine, guiParameters)
                this.dialog.filesTreeBox.remove( i );
          }
          this.dialog.engine.reset();
+         this.dialog.updateTotal();
          this.dialog.updateButtonState();
          // Refresh the generated files
          this.dialog.refreshTargetFiles();
@@ -657,7 +681,7 @@ function MainDialog(engine, guiParameters)
    this.outputDirSelect_Button.toolTip = "Select output directory";
    this.outputDirSelect_Button.onClick = function() {
       var gdd = new GetDirectoryDialog;
-      gdd.initialPath = this.parent.engine.outputDirectory;
+      gdd.initialPath = engine.outputDirectory;
       gdd.caption = "Select Output Directory";
       if ( gdd.execute() ) {
          this.dialog.engine.outputDirectory = gdd.directory;
@@ -666,8 +690,20 @@ function MainDialog(engine, guiParameters)
       }
    }
 
+   this.outputDir_GroupBox = new GroupBox( this );
+   this.outputDir_GroupBox.sizer = new HorizontalSizer;
+   this.outputDir_GroupBox.sizer.margin = 6;
+   this.outputDir_GroupBox.sizer.spacing = 4;
+   this.outputDir_GroupBox.sizer.add( this.outputDir_Edit, 100 );
+   this.outputDir_GroupBox.sizer.add( this.outputDirSelect_Button );
 
-   // Source file name template --------------------------------------------------------------------------------------
+   this.bar3 = new SectionBar( this );
+   this.bar3.setTitle( "Output base directory" );
+   this.bar3.setSection( this.outputDir_GroupBox );
+
+
+
+   // Result operations --------------------------------------------------------------------------------------
    this.transform_TextBox = new TextBox( this );
    this.transform_TextBox.frameStyle = FrameStyle_Box;
    this.transform_TextBox.text = '';
@@ -675,14 +711,35 @@ function MainDialog(engine, guiParameters)
    this.transform_TextBox.enabled = true;
    this.transform_TextBox.readOnly = true;
 
-   this.bar2 = new SectionBar( this );
-   this.bar2.setTitle( "Resulting operations" );
-   this.bar2.setSection( this.transform_TextBox );
+   this.bar4 = new SectionBar( this );
+   this.bar4.setTitle( "Resulting operations" );
+   this.bar4.setSection( this.transform_TextBox );
 
 
 
    // ===================================================================================
-   //
+   // Support funtions
+
+   this.updateTotal = function() {
+      // Should be same as this.engine.inputFiles.length
+      var countTotal = this.filesTreeBox.numberOfChildren;
+      var countChecked = 0;
+      for (var iTreeBox = 0; iTreeBox < this.filesTreeBox.numberOfChildren; ++iTreeBox) {
+         if ( this.filesTreeBox.child(iTreeBox).checked ) {
+            countChecked += 1;
+         }
+      }
+      var countText;
+      if (countTotal === 0 && countChecked ===0) {
+        countText = "No file";
+      } else if (countChecked===0) {
+         countText = "No checked files / " + countTotal + " file(s)";
+      } else {
+         countText = "" + countChecked + " checked file(s) / " + countTotal + " file(s)";
+      }
+      this.QTY.text =countText;
+      this.bar1.setCollapsedTitle("Input - " + countText);
+   }
 
    this.makeListOfCheckedFiles = function() {
       var listOfFiles = [];
@@ -726,7 +783,7 @@ function MainDialog(engine, guiParameters)
             this.dialog.filesTreeBox.remove( iTreeBox );
          }
 
-         this.dialog.QTY.text = "Total files: " + this.dialog.engine.inputFiles.length;
+         this.dialog.updateTotal();
          this.dialog.updateButtonState();
          // Caller must refresh the generated files
        }
@@ -841,12 +898,17 @@ function MainDialog(engine, guiParameters)
 
 
    this.inputFiles_GroupBox = new GroupBox( this );
-   this.inputFiles_GroupBox.title = "Input";
    this.inputFiles_GroupBox.sizer = new VerticalSizer;
    this.inputFiles_GroupBox.sizer.margin = 6;
    this.inputFiles_GroupBox.sizer.spacing = 4;
    this.inputFiles_GroupBox.sizer.add( this.filesTreeBox,100 );
    this.inputFiles_GroupBox.sizer.add( this.fileButonSizer );
+
+
+   this.bar1 = new SectionBar( this );
+   this.bar1.setTitle( "Input" );
+   this.bar1.setCollapsedTitle( "Input - No file" );
+   this.bar1.setSection( this.inputFiles_GroupBox );
 
 
    this.targetFileTemplate_Edit_sizer = new HorizontalSizer;
@@ -887,7 +949,6 @@ function MainDialog(engine, guiParameters)
 
 
    this.rules_GroupBox = new GroupBox( this );
-   this.rules_GroupBox.title = "Rules";
 
    this.rules_GroupBox.sizer = new VerticalSizer;
    this.rules_GroupBox.sizer.margin = 6;
@@ -897,17 +958,10 @@ function MainDialog(engine, guiParameters)
    this.rules_GroupBox.sizer.add( this.sourceTemplate_Edit_sizer );
    this.rules_GroupBox.sizer.add( this.groupTemplate_Edit_sizer );
 
-   this.bar1 = new SectionBar( this );
-   this.bar1.setTitle( "Rules" );
-   this.bar1.setSection( this.rules_GroupBox );
+   this.bar2 = new SectionBar( this );
+   this.bar2.setTitle( "Rules" );
+   this.bar2.setSection( this.rules_GroupBox );
 
-   this.outputDir_GroupBox = new GroupBox( this );
-   this.outputDir_GroupBox.title = "Output base directory";
-   this.outputDir_GroupBox.sizer = new HorizontalSizer;
-   this.outputDir_GroupBox.sizer.margin = 6;
-   this.outputDir_GroupBox.sizer.spacing = 4;
-   this.outputDir_GroupBox.sizer.add( this.outputDir_Edit, 100 );
-   this.outputDir_GroupBox.sizer.add( this.outputDirSelect_Button );
 
 
 
@@ -939,11 +993,13 @@ function MainDialog(engine, guiParameters)
    this.sizer.margin = 2;
    this.sizer.spacing = 2;
    this.sizer.add( helpLabel );
-   this.sizer.add( this.inputFiles_GroupBox,50 );
    this.sizer.add(this.bar1);
-   this.sizer.add(this.rules_GroupBox);
-   this.sizer.add( this.outputDir_GroupBox );
+   this.sizer.add( this.inputFiles_GroupBox,50 );
    this.sizer.add(this.bar2);
+   this.sizer.add(this.rules_GroupBox);
+   this.sizer.add(this.bar3);
+   this.sizer.add( this.outputDir_GroupBox );
+   this.sizer.add(this.bar4);
    this.sizer.add(this.transform_TextBox,50);
    this.sizer.add( this.buttonSizer );
 
