@@ -575,8 +575,7 @@ function MainDialog(engine, guiParameters)
    this.targetFileTemplate_Edit.text = guiParameters.targetFileNameCompiledTemplate.templateString;
    this.targetFileTemplate_Edit.toolTip = TARGET_TEMPLATE_TOOLTIP;
    this.targetFileTemplate_Edit.enabled = true;
-   this.targetFileTemplate_Edit.onTextUpdated = function()
-      {
+   this.targetFileTemplate_Edit.onTextUpdated = function() {
          guiParameters.targetFileNameCompiledTemplate = ffM_template.analyzeTemplate(this.text);
 #ifdef DEBUG
          debug("targetFileTemplate_Edit: onTextUpdated " + this.text);
@@ -591,8 +590,7 @@ function MainDialog(engine, guiParameters)
    this.sourceTemplate_Edit.text = regExpToString(guiParameters.sourceFileNameRegExp);
    this.sourceTemplate_Edit.toolTip = SOURCE_FILENAME_REGEXP_TOOLTIP;
    this.sourceTemplate_Edit.enabled = true;
-   this.sourceTemplate_Edit.onTextUpdated = function()
-      {
+   this.sourceTemplate_Edit.onTextUpdated = function() {
          var re = this.text.trim();
          if (re.length === 0) {
             guiParameters.sourceFileNameRegExp = null;
@@ -626,7 +624,10 @@ function MainDialog(engine, guiParameters)
    this.groupTemplate_Edit.enabled = true;
    this.groupTemplate_Edit.onTextUpdated = function()
    {
-      guiParameters.groupByCompileTemplate = ffM_template.analyzeTemplate(this.text);
+#ifdef DEBUG
+      debug("groupTemplate_Edit: onTextUpdated " + this.text);
+#endif
+      guiParameters.groupByCompiledTemplate = ffM_template.analyzeTemplate(this.text);
       this.dialog.refreshTargetFiles();
    }
 

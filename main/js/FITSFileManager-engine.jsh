@@ -209,7 +209,6 @@ function FFM_Engine(guiParameters) {
 
 
             // The file name part is calculated at each scan as the regxep may have been changed
-            // TODO Optimize this maybe, clear the numbered variables of a previous scan
             //   &1; &2;, ... The corresponding match from the sourceFileNameRegExp
             var regexpVariables = [];
             if (guiParameters.sourceFileNameRegExp !== null) {
@@ -227,39 +226,38 @@ function FFM_Engine(guiParameters) {
             rankString = inputOrderIndex.pad(FFM_COUNT_PAD);
 
 
-            // TODO Handle case of error and case of empty
             expansionErrors = [];
             var targetDirectory = targetDirectoryCompiledTemplate.expandTemplate(expansionErrors,targetDirectoryVariableResolver);
 #ifdef DEBUG
             debug("buildTargetFiles: expanded targetDirectory = " + targetDirectory + ", errors = " + expansionErrors);
 #endif
 
-
+            if (expansionErrors.length ===0) {
             // Expand the groupByTemplate to form the id of the counter (targetDir may be used)
-            // TODO Handle case of error
-            expansionErrors = [];
-            group = groupByCompiledTemplate.expandTemplate(expansionErrors,groupByVariableResolver);
+               group = groupByCompiledTemplate.expandTemplate(expansionErrors,groupByVariableResolver);
 #ifdef DEBUG
-            debug("buildTargetFiles: expanded group = " + group + ", errors: " + expansionErrors.join(","));
+               debug("buildTargetFiles: expanded group = " + group + ", errors: " + expansionErrors.join(","));
 #endif
-            count = 0;
-            if (countingGroups.hasOwnProperty(group)) {
-               count = countingGroups[group];
+               if (expansionErrors.length === 0) {
+
+                  //   &count;    The number of file in the same group
+                  count = 0;
+                  if (countingGroups.hasOwnProperty(group)) {
+                   count = countingGroups[group];
+                  }
+                  count ++;
+                  countingGroups[group] = count;
+                  countString = count.pad(FFM_COUNT_PAD);
+#ifdef DEBUG
+                  debug("buildTargetFiles: for group = " + group + ", count = " + countString);
+#endif
+
+                  var targetString = targetFileNameCompiledTemplate.expandTemplate(expansionErrors,targetFileVariableResolver);
+#ifdef DEBUG
+                  debug("buildTargetFiles: expanded targetString = " + targetString + ", errors: " + expansionErrors.join(","));
+#endif
+               }
             }
-            count ++;
-            countingGroups[group] = count;
-            countString = count.pad(FFM_COUNT_PAD);
-#ifdef DEBUG
-            debug("buildTargetFiles: for group = " + group + ", count = " + countString);
-#endif
-
-            // The resulting name may include directories
-
-            expansionErrors = [];
-            var targetString = targetFileNameCompiledTemplate.expandTemplate(expansionErrors,targetFileVariableResolver);
-#ifdef DEBUG
-            debug("buildTargetFiles: expanded targetString = " + targetString + ", errors: " + expansionErrors.join(","));
-#endif
 
             this.targetFilesIndices.push(inputFileIndex);
             if (expansionErrors.length>0) {
