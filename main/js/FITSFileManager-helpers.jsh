@@ -279,24 +279,26 @@ var ffM_template = (function() {
 
 
     // Create the handler for the case ':present'
+    // execResult[3] is the :part
     if (execResult[2]==='') {
-      onFoundAction = function(expandErrors,value){
+      onFoundAction = function(expandErrors, variableName, value){
         return ''
       }
       onFoundAction.toString = function(){return "copyLiteral('')"};
     } else if (execResult[2]) {
-      onFoundAction = function(expandErrors,value){
+      onFoundAction = function(expandErrors, variableName, value){
         return execResult[2]; // TODO SHOULD FORMAT  value
       }
       onFoundAction.toString = function(){return "formatValueAs('"+execResult[2]+"')"};
     } else {
-      onFoundAction = function(expandErrors,value){
+      onFoundAction = function(expandErrors, variableName, value){
         return value;
       }
       onFoundAction.toString = function(){return "copyValue()"};
     }
 
     // Create the handler for the case '?missing'
+    // execResult[3] is the ?part
     if (execResult[3]==='') {
       onMissingAction = function(expandErrors){
         return '';   // Optional value, return emtpy string if missing
@@ -308,8 +310,8 @@ var ffM_template = (function() {
       }
       onMissingAction.toString = function(){return "copyLiteral('"+execResult[2]+"')"};
     } else {
-      onMissingAction = function(expandErrors){
-         expandErrors.push("No value for the variable");
+      onMissingAction = function(expandErrors, variableName){
+         expandErrors.push("No value for the variable '" + variableName + "'");
          return '';
       }
       onMissingAction.toString = function(){return "reject()"};
@@ -320,9 +322,9 @@ var ffM_template = (function() {
       var value = variableResolver(variableName);
       // do not use 'undefined' to be 'use strict' friendly
       if (value !== null) {
-        return onFoundAction(expandErrors,value);
+        return onFoundAction(expandErrors, variableName, value);
       } else {
-        return onMissingAction(expandErrors,value);
+        return onMissingAction(expandErrors, variableName, value);
       }
     }
     lookUpRule.toString = function() { return "lookUpRule('" + variableName + "':[onFound:" + onFoundAction + "]"+ ":[onMissing:" + onMissingAction + "])"; }
@@ -367,8 +369,9 @@ var ffM_template = (function() {
          templateString: template,
          requiredVariables: [], // TODO
          optionalVariables: [], // TODO
+
          // Method to expand the template using the variables returned by the variableResolver,
-         // return the exanded string
+         // return the exanded string, null in case of error
          // The expandErrors must be an array, errors will be pushed to that array.
          // If any error is pushed, the returned value is meaningless
          expandTemplate: function(expandErrors, variableResolver) {

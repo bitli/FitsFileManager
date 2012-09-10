@@ -31,12 +31,24 @@ function FFM_Engine(guiParameters) {
       this.keyTable = [];   //accumulated names of keywords from all files
       this.keyEnabled = []; //true === selected keywords
 
+      this.resetTarget();
+    };
+
+    this.resetTarget = function () {
       // Target files is a subset of the inputFiles, each file is defined by an index
       // in input file and the corresponding new file name. Unchecked files are not
-      // present in the list. Initially empty. 2 parallel arrays.
+      // present in the list (the values are undefined).
+      // The targetFilesIndices is in the order of the TreeBox and contain the index in the inputFiles
+      // The targetFiles and errorPerFile are in the order of the inputFiles.
+      // The targetFiles contains the file name without the base directory (common to all files) or null in case of error.
+      // The errorPerFile contains the errors String or null if no error,
       this.targetFilesIndices = [];
       this.targetFiles = [];
-    }
+      this.errorPerFile = [];
+      this.nmbFilesTransformed = 0;
+      this.nmbFilesInError = 0;
+      this.nmbFilesSkipped = 0;
+    };
 
    // -- Add a list of files
    this.addFiles = function (fileNames) {
@@ -82,7 +94,7 @@ function FFM_Engine(guiParameters) {
 
 
 
-   // --  Build the list of target files for the selected input files
+   // --  Build the list of target files for the checked input files, result stored in object variables
    this.buildTargetFiles = function(listOfFiles) {
 
 #ifdef DEBUG
@@ -92,10 +104,7 @@ function FFM_Engine(guiParameters) {
       debug("buildTargetFiles: groupByTemplate = '" + guiParameters.groupByCompiledTemplate.templateString  + "'");
 #endif
 
-      // Reinitialize the target files indices and mapping
-      this.targetFilesIndices = [];
-      this.targetFiles = [];
-
+      this.resetTarget();
 
       // A map of group count values
       var countingGroups = {};
@@ -130,16 +139,16 @@ function FFM_Engine(guiParameters) {
       // Count and groups are initialized inside each loop, declared here for clarity
       var count = 0;
       var group = '';
-      for (var i = 0; i < listOfFiles.length; ++i) {
+      for (var inputOrderIndex = 0; inputOrderIndex < listOfFiles.length; ++inputOrderIndex) {
 
-            var inputFile = listOfFiles[i];
+            var inputFile = listOfFiles[inputOrderIndex];
 
             var inputFileIndex = this.inputFiles.indexOf(inputFile);
             if (inputFileIndex < 0) {
-               throw ("SCRIPT ERROR : buildTargetFiles: file not in inputFiles: " + inputFile + " (" + i + ")");
+               throw ("SCRIPT ERROR : buildTargetFiles: file not in inputFiles: " + inputFile + " (" + inputOrderIndex + ")");
             }
 #ifdef DEBUG
-            debug("buildTargetFiles: " + i + ": processing inputFile[" + inputFileIndex + "] = " + inputFile);
+            debug("buildTargetFiles: " + inputOrderIndex + ": processing inputFile[" + inputFileIndex + "] = " + inputFile);
 #endif
 
             var inputFileName =  File.extractName(inputFile);
@@ -156,7 +165,7 @@ function FFM_Engine(guiParameters) {
 
 
             //   &rank;      The rank in the list of files of the file being moved/copied, padded to COUNT_PAD.
-            variables['rank'] = i.pad(FFM_COUNT_PAD);
+            variables['rank'] = inputOrderIndex.pad(FFM_COUNT_PAD);
 
             // The file name part is calculated at each scan as the regxep may have been changed
             // TODO Optimize this maybe, clear the numbered variables of a previous scan
@@ -211,9 +220,16 @@ function FFM_Engine(guiParameters) {
             debug("buildTargetFiles: expanded targetString = " + targetString + ", errors: " + expansionErrors.join(","));
 #endif
 
-            // Target file but without the output directory
             this.targetFilesIndices.push(inputFileIndex);
-            this.targetFiles.push(targetString);
+            if (expansionErrors.length>0) {
+             this.targetFiles.push(null);
+             this.errorPerFile.push(expansionErrors.join(", "));
+             this.nmbFilesInError += 1;
+            } else {
+             this.targetFiles.push(targetString);
+             this.errorPerFile.push(null);
+             this.nmbFilesTransformed += 1;
+            }
 
          }
 #ifdef DEBUG
@@ -248,16 +264,28 @@ function FFM_Engine(guiParameters) {
          }
       }
 
+      // Check if any file is in error
+      for (var i=0; i<this.errorPerFile.length; i++) {
+         var index = this.targetFilesIndices[i];
+         var inputFile = this.inputFiles[index];
+         if (this.errorPerFile[i]) {
+            errors.push("File '"+ inputFile + "' has variable expansion error");
+         }
+      }
+
       // Check duplicates target names
       var targetFileNameInputFile = {};
       for (var i=0; i<this.targetFiles.length; i++) {
          var index = this.targetFilesIndices[i];
          var targetString = this.targetFiles[i];
-         var inputFile = this.inputFiles[index];
-         if (targetFileNameInputFile.hasOwnProperty(targetString)) {
-            errors.push("File '"  + inputFile + "' generates same file '" + targetString + "' as '" + targetFileNameInputFile[targetString] +"'");
+         // Null are skipped files or files in error
+         if (targetString !== null) {
+            var inputFile = this.inputFiles[index];
+            if (targetFileNameInputFile.hasOwnProperty(targetString)) {
+               errors.push("File '"  + inputFile + "' generates same file '" + targetString + "' as '" + targetFileNameInputFile[targetString] +"'");
+            }
+            targetFileNameInputFile[targetString] = inputFile;
          }
-         targetFileNameInputFile[targetString] = inputFile;
       }
 
       // Check bad names (empty, /, ...)
@@ -266,10 +294,13 @@ function FFM_Engine(guiParameters) {
       for (var i=0; i<this.targetFiles.length; i++) {
          var index = this.targetFilesIndices[i];
          var targetString = this.targetFiles[i];
-         var inputFile = this.inputFiles[index];
-         var targetFilePath = this.outputDirectory + "/" + targetString;
-         if (File.exists(targetFilePath)) {
-            errors.push("File '"  + inputFile + "' generates the already existing file '" + targetFilePath + "'");
+         // Null are skipped files or files in error
+         if (targetString !== null) {
+            var inputFile = this.inputFiles[index];
+          var targetFilePath = this.outputDirectory + "/" + targetString;
+            if (File.exists(targetFilePath)) {
+               errors.push("File '"  + inputFile + "' generates the already existing file '" + targetFilePath + "'");
+            }
          }
       }
 
@@ -284,7 +315,13 @@ function FFM_Engine(guiParameters) {
       for (var i = 0; i<this.targetFiles.length; i++) {
          var index = this.targetFilesIndices[i];
          var inputFile = this.inputFiles[index];
-         listOfTransforms.push("File ".concat(inputFile, "\n  to .../",this.targetFiles[i], "\n"));
+         var targetFile = this.targetFiles[i];
+         var errorList = this.errorPerFile[i];
+         if (targetFile) {
+            listOfTransforms.push("File ".concat(inputFile, "\n  to .../",targetFile, "\n"));
+         } else {
+            listOfTransforms.push("File ".concat(inputFile, "\n     Error: ",errorList, "\n"));
+         }
       }
       return listOfTransforms;
     }

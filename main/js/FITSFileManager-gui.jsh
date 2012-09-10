@@ -484,11 +484,11 @@ function MainDialog(engine, guiParameters)
    // -- Remove selected files
    this.remove_files_Button = new ToolButton( this );
    this.remove_files_Button.icon = new Bitmap( ":/images/close.png" );
-   this.remove_files_Button.toolTip = "<p>Removed selected images from the list.</p>";
+   this.remove_files_Button.toolTip = "<p>Remove selected images from the list.</p>";
    this.remove_files_Button.onClick = function()
       {
 #ifdef DEBUG
-         debug("Remove files");
+         debug("Remove selected image");
 #endif
 
          for ( var iTreeBox = this.dialog.filesTreeBox.numberOfChildren; --iTreeBox >= 0; )
@@ -513,11 +513,11 @@ function MainDialog(engine, guiParameters)
    // -- Remove all files
    this.remove_all_files_Button = new ToolButton( this );
    this.remove_all_files_Button.icon = new Bitmap( ":/images/close_all.png" );
-   this.remove_all_files_Button.toolTip = "<p>Removed all images from the list.</p>";
+   this.remove_all_files_Button.toolTip = "<p>Remove all images from the list.</p>";
    this.remove_all_files_Button.onClick = function()
       {
 #ifdef DEBUG
-         debug("Remove all files (" + this.dialog.engine.inputFiles.length + ")");
+         debug("Remove all images (" + this.dialog.engine.inputFiles.length + ")");
 #endif
 
          // TODO We can probably clear in one go
@@ -1019,8 +1019,23 @@ function MainDialog(engine, guiParameters)
       var listOfTransforms = this.engine.makeListOfTransforms();
       this.transform_TextBox.text = listOfTransforms.join("");
 
-      this.bar4.setCollapsedTitle("Resulting operation - " + listOfTransforms.length + " operations");
+      var nmbFilesExamined = this.engine.targetFiles.length;
 
+      var bar4Title = "Resulting operations";
+      if (nmbFilesExamined === 0) {
+          bar4Title += " - None";
+      } else {
+         bar4Title += " - " + nmbFilesExamined + " files checked" ;
+         if (this.engine.nmbFilesTransformed >0) {
+            bar4Title += ", " + this.engine.nmbFilesTransformed + " transformed";
+         }
+
+         //      this.engine.nmbFilesSkipped;
+         if (this.engine.nmbFilesInError >0) {
+            bar4Title += ", " + this.engine.nmbFilesInError + " IN ERROR";
+         }
+      }
+      this.bar4.setCollapsedTitle(bar4Title);
     }
 
 
