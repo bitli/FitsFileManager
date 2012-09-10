@@ -170,6 +170,12 @@ function FFM_Engine(guiParameters) {
             // The file name part is calculated at each scan as the regxep may have been changed
             // TODO Optimize this maybe, clear the numbered variables of a previous scan
             //   &1; &2;, ... The corresponding match from the sourceFileNameRegExp
+            // First must delete left over of previous matches
+            var indexOfLastReplacement = 1;
+            while (variables.hasOwnProperty(indexOfLastReplacement)) {
+               delete variables[indexOfLastReplacement];
+               indexOfLastReplacement += 1;
+            }
             if (guiParameters.sourceFileNameRegExp !== null) {
                var inputFileNameMatch = guiParameters.sourceFileNameRegExp.exec(inputFileName);
 #ifdef DEBUG
@@ -384,6 +390,7 @@ function FFM_Engine(guiParameters) {
 
    };
 
+#ifdef IMPLEMENTS_FITS_EXPORT
    // -- Export the keywords of a list of files
    this.exportFITSKeyWords = function() {
       var tab = String.fromCharCode(9);
@@ -440,6 +447,7 @@ function FFM_Engine(guiParameters) {
       f.close();
       console.writeln("FITSKeywords saved to ",t);
    }
+#endif
 
    // -- Return true if move or copy is possible
    this.canDoOperation = function() {

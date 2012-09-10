@@ -814,7 +814,8 @@ function MainDialog(engine, guiParameters)
       }
 
 
-   // Export FITS values button
+#ifdef IMPLEMENTS_FITS_EXPORT
+// Export FITS values button
    this.txt_Button = new PushButton( this );
    this.txt_Button.text = "Export FITS.txt";
    this.txt_Button.toolTip = "For Checked files write FitKeywords value to file FITS.txt in output directory";
@@ -822,6 +823,7 @@ function MainDialog(engine, guiParameters)
    this.txt_Button.onClick = function() {
       this.parent.engine.exportFITSKeyWords();
    }
+#endif
 
    // Help buton
    this.helpButton = new ToolButton( this );
@@ -843,7 +845,9 @@ function MainDialog(engine, guiParameters)
    this.buttonSizer.add( this.check_Button);
    this.buttonSizer.add( this.move_Button);
    this.buttonSizer.add( this.copy_Button);
+#ifdef IMPLEMENTS_FITS_EXPORT
    this.buttonSizer.add( this.txt_Button);
+#endif
    this.buttonSizer.addStretch();
    this.buttonSizer.add( this.helpButton);
 
@@ -948,7 +952,9 @@ function MainDialog(engine, guiParameters)
       var enabled = this.dialog.engine.canDoOperation();
       this.dialog.move_Button.enabled = enabled;
       this.dialog.copy_Button.enabled = enabled;
+#ifdef IMPLEMENTS_FITS_EXPORT
       this.dialog.txt_Button.enabled = enabled;
+#endif
    }
 
    // Add a list of files to the TreeBox (remove duplicates)
@@ -1171,7 +1177,7 @@ function FITSKeysDialog( parentDialog, engine)
 
    // TreeBox to display list of FITS keywords
    this.keyword_TreeBox = new TreeBox( this );
-   this.keyword_TreeBox.toolTip = "Check mark to include in report\nname in red of keyword not in current file";
+   this.keyword_TreeBox.toolTip = "Check mark to include in table\nname in red of keyword not in current file";
    this.keyword_TreeBox.rootDecoration = false;
    this.keyword_TreeBox.numberOfColumns = 3;
    this.keyword_TreeBox.setHeaderText(0, "name");

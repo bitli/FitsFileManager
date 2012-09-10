@@ -5,6 +5,11 @@
 #feature-info Copy and move files based on FITS keys.<br/>\
    Written by Jean-Marc Lugrin (c) 2012.
 
+// ==================================================================================================
+// The complete source code is hosted at https://bitbucket.org/bitli/fitsfilemanager
+// with test scripts
+// ==================================================================================================
+
 // Copyright (c) 2012 Jean-Marc Lugrin
 // Copyright (c) 2003-2012 Pleiades Astrophoto S.L.
 //
@@ -57,11 +62,12 @@
 // Set to false when doing hasardous developments...
 #define EXECUTE_COMMANDS false
 // Tracing - define DEBUG if you define any other
-// #define DEBUG
+#define DEBUG
 //#define DEBUG_EVENTS
 //#define DEBUG_FITS
 //#define DEBUG_VARS
 //#define DEBUG_COLUMNS
+
 
 #ifdef DEBUG
 function debug(str) {
@@ -72,6 +78,8 @@ function debug(str) {
 }
 #endif
 
+// FITS keyword implementation is not yet fully oK and could not be implemented as may be part of PI 1.8
+// #define IMPLEMENTS_FITS_EXPORT
 
 // Padding format
 #define FFM_COUNT_PAD 4
@@ -91,6 +99,10 @@ function debug(str) {
 //     Added button remove all
 //     Added help label
 //     Use SectionBar
+//     Added optional indicator to accept missing values '?' and default value
+//     Check for missing key values, show message
+//     Source file list is refreshed after a move
+//     Supressed Export FITS keys as incompletely implemented and may be integrated in 1.8
 
 
 
@@ -98,23 +110,21 @@ function debug(str) {
 // keep list of recent templates used
 // Option for handling of minus and other special characters for form file name being valid PI ids
 // Add FITS keywords as variables, with formatting options
-// Add optional indicator to accept missing values '?' and default value
-// Check for missing key values
 // Add sequence of optional text to ignore if missing variable value ()
-// Generate and 'orderBy' column
+// Generate an 'orderBy' column
 // Show sythetic keys in table, only show selected keys
 // Hide common header part of source folders to make file name more visible
 // Add a way to use directory of source file as variable  &filedir, &filedirparent for template matching and group names
 // Support date formatting, number formatting
 // Create a log file for record the source files
-// Ensure source is refreshed in case of move
 // Request confirmation for move (or move and copy)
 // Add 'reset' icon for rules
 // Possibility to add FITS keywords to copied files (for example original file name, or replace erroneous values)
 // Allow to open selected files (not required, part of new file manager)
 // Configurable list of transformation, especially for filters (ha, ..)
 // Normalize directory (remove .., redundant /)
-// Ensure that text is stable after update of GUI
+// Ensure that text is stable after update of GUI (optimized event handling)
+// Details pane for rules, with list of variables and transformations
 
 
 // Select the first sequence without -_. or the whole name in &1; (second group is non capturing)
