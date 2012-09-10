@@ -432,10 +432,6 @@ function makeSynthethicVariables(inputFile, keys) {
        variables['binning'] = xBinning.toFixed(0)+"x"+yBinning.toFixed(0);
    }
 
-   // 'count' and 'rank' depends on the order, will be recalculated when files are processed,
-   // here for documentation purpose
-   variables['count'] = 0 .pad(FFM_COUNT_PAD);
-   variables['rank'] = 0 .pad(FFM_COUNT_PAD);
 
    //   &exposure;   The exposure from EXPOSURE, as an integer (assume seconds)
    var exposure = findKeyWord(keys,'EXPOSURE');

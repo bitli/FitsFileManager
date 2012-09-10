@@ -94,7 +94,7 @@ function FFM_Engine(guiParameters) {
 
 
 
-   // --  Build the list of target files for the checked input files, result stored in object variables
+   // ---  Build the list of target files for the checked input files, result stored in object variables
    this.buildTargetFiles = function(listOfFiles) {
 
 #ifdef DEBUG
@@ -105,9 +105,6 @@ function FFM_Engine(guiParameters) {
 #endif
 
       this.resetTarget();
-
-      // A map of group count values
-      var countingGroups = {};
 
 
       // Separate directory from file name part in target template
@@ -135,10 +132,65 @@ function FFM_Engine(guiParameters) {
       debug("buildTargetFiles: targetFileNameCompiledTemplate = " + targetFileNameCompiledTemplate);
 #endif
 
+      // A map of group count values
+      var countingGroups = {};
 
-      // Count and groups are initialized inside each loop, declared here for clarity
-      var count = 0;
-      var group = '';
+
+      // Variables used in the loop
+      var group;
+      var count;
+      var expansionErrors;
+      // For use by variable resolver
+      var variables;
+      var rankString;
+      var countString;
+
+      // Replace variables, rank and regexp results (accessed by lexical scope)
+      var targetDirectoryVariableResolver = function(v) {
+               if (variables.hasOwnProperty(v)) {
+                  return variables[v];
+               } else if (v === "rank") {
+                  return rankString;
+               } else if (regexpVariables.hasOwnProperty(v)) {
+                  return regexpVariables[v];
+               } else {
+                  return null;
+               }
+      };
+
+
+      // Replace variables, rank, regexp results and targetDir  (accessed by lexical scope)
+      var groupByVariableResolver = function(v) {
+               if (variables.hasOwnProperty(v)) {
+                  return variables[v];
+               } else if (v === "rank") {
+                  return rankString;
+               } else if (v === "targetDir") {
+                  return targetDirectory;
+               } else if (regexpVariables.hasOwnProperty(v) ) {
+                  return regexpVariables[v];
+               } else {
+                  return null;
+               }
+      };
+
+      // Replace variables, rank, regexp results and count (accessed by lexical scope)
+      var targetFileVariableResolver = function(v) {
+               if (variables.hasOwnProperty(v)) {
+                  return variables[v];
+               } else if (v === "rank") {
+                  return rankString;
+               } else if (v === "count") {
+                  return countString;
+               } else if (regexpVariables.hasOwnProperty(v) ) {
+                  return regexpVariables[v];
+               } else {
+                  return null;
+               }
+      };
+
+
+
       for (var inputOrderIndex = 0; inputOrderIndex < listOfFiles.length; ++inputOrderIndex) {
 
             var inputFile = listOfFiles[inputOrderIndex];
@@ -153,29 +205,13 @@ function FFM_Engine(guiParameters) {
 
             var inputFileName =  File.extractName(inputFile);
 
-            var variables = this.inputVariables[inputFileIndex];
+            variables = this.inputVariables[inputFileIndex];
 
-            var variableResolver = function(v) {
-               if (variables.hasOwnProperty(v)) {
-                  return variables[v];
-               } else {
-                  return null;
-               }
-            }
-
-
-            //   &rank;      The rank in the list of files of the file being moved/copied, padded to COUNT_PAD.
-            variables['rank'] = inputOrderIndex.pad(FFM_COUNT_PAD);
 
             // The file name part is calculated at each scan as the regxep may have been changed
             // TODO Optimize this maybe, clear the numbered variables of a previous scan
             //   &1; &2;, ... The corresponding match from the sourceFileNameRegExp
-            // First must delete left over of previous matches
-            var indexOfLastReplacement = 1;
-            while (variables.hasOwnProperty(indexOfLastReplacement)) {
-               delete variables[indexOfLastReplacement];
-               indexOfLastReplacement += 1;
-            }
+            var regexpVariables = [];
             if (guiParameters.sourceFileNameRegExp !== null) {
                var inputFileNameMatch = guiParameters.sourceFileNameRegExp.exec(inputFileName);
 #ifdef DEBUG
@@ -183,25 +219,26 @@ function FFM_Engine(guiParameters) {
 #endif
                if (inputFileNameMatch !== null) {
                   for (var j = 0; j<inputFileNameMatch.length; j++) {
-                     variables[j.toString()] = inputFileNameMatch[j]
+                     regexpVariables[j.toString()] = inputFileNameMatch[j]
                   }
                }
             }
+            //   &rank;      The rank in the list of files of the file being moved/copied, padded to COUNT_PAD.
+            rankString = inputOrderIndex.pad(FFM_COUNT_PAD);
 
-            // Use only directory part, count should not be used, used to initialize 'targetdir'
-            variables['count'] = 'COUNT';
 
-
-            var expansionErrors = [];
-            var targetDirectory = targetDirectoryCompiledTemplate.expandTemplate(expansionErrors,variableResolver);
+            // TODO Handle case of error and case of empty
+            expansionErrors = [];
+            var targetDirectory = targetDirectoryCompiledTemplate.expandTemplate(expansionErrors,targetDirectoryVariableResolver);
 #ifdef DEBUG
             debug("buildTargetFiles: expanded targetDirectory = " + targetDirectory + ", errors = " + expansionErrors);
 #endif
-            variables['targetDir'] = targetDirectory;
+
 
             // Expand the groupByTemplate to form the id of the counter (targetDir may be used)
-            var expansionErrors = [];
-            group = groupByCompiledTemplate.expandTemplate(expansionErrors,variableResolver);
+            // TODO Handle case of error
+            expansionErrors = [];
+            group = groupByCompiledTemplate.expandTemplate(expansionErrors,groupByVariableResolver);
 #ifdef DEBUG
             debug("buildTargetFiles: expanded group = " + group + ", errors: " + expansionErrors.join(","));
 #endif
@@ -211,40 +248,39 @@ function FFM_Engine(guiParameters) {
             }
             count ++;
             countingGroups[group] = count;
-            variables['count'] = count.pad(FFM_COUNT_PAD);
+            countString = count.pad(FFM_COUNT_PAD);
 #ifdef DEBUG
-            debug("buildTargetFiles: for group = " + group + ", count = " + variables['count']);
+            debug("buildTargetFiles: for group = " + group + ", count = " + countString);
 #endif
 
-            // We should not use 'targetDir' in the expansion of the file name
-            variables['targetDir'] = 'TARGETDIR';
             // The resulting name may include directories
 
-            var expansionErrors = [];
-            var targetString = targetFileNameCompiledTemplate.expandTemplate(expansionErrors,variableResolver);
+            expansionErrors = [];
+            var targetString = targetFileNameCompiledTemplate.expandTemplate(expansionErrors,targetFileVariableResolver);
 #ifdef DEBUG
             debug("buildTargetFiles: expanded targetString = " + targetString + ", errors: " + expansionErrors.join(","));
 #endif
 
             this.targetFilesIndices.push(inputFileIndex);
             if (expansionErrors.length>0) {
-             this.targetFiles.push(null);
-             this.errorPerFile.push(expansionErrors.join(", "));
-             this.nmbFilesInError += 1;
+               this.targetFiles.push(null);
+               this.errorPerFile.push(expansionErrors.join(", "));
+               this.nmbFilesInError += 1;
             } else {
-             this.targetFiles.push(targetString);
-             this.errorPerFile.push(null);
-             this.nmbFilesTransformed += 1;
+               this.targetFiles.push(targetString);
+               this.errorPerFile.push(null);
+               this.nmbFilesTransformed += 1;
             }
-
          }
 #ifdef DEBUG
-         debug("buildTargetFiles: Total files: ", this.targetFiles.length);
+         debug("buildTargetFiles: Total files: " + this.targetFiles.length);
 #endif
 
     }
 
-    // Check that the operations can be executed for a list of files ------------------------------
+
+
+    // --- Check that the operations can be executed for a list of files ------------------------------
     this.checkValidTargets = function(listOfFiles) {
 
       var errors = [];

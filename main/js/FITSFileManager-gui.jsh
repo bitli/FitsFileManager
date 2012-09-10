@@ -57,6 +57,7 @@ in the target file name template as &0; (whole expression), &1 (first group), ..
 The default extract the part of the name before the first dash (you can replace the\n\
 two dashes by two underlines for example).\n\
 In case of error the field turns red\n\
+See https:\/\/developer.mozilla.org\/en-US\/docs\/JavaScript\/Guide\/Regular_Expressions for more informations on regular expresssions\
 "
 
 #define GROUP_TEMPLATE_TOOLTIP "\
@@ -585,7 +586,7 @@ function MainDialog(engine, guiParameters)
       }
 
 
-   // Source file name template --------------------------------------------------------------------------------------
+   // Regular expression on source file --------------------------------------------------------------------------------------
    this.sourceTemplate_Edit = new Edit( this );
    this.sourceTemplate_Edit.text = regExpToString(guiParameters.sourceFileNameRegExp);
    this.sourceTemplate_Edit.toolTip = SOURCE_FILENAME_REGEXP_TOOLTIP;
