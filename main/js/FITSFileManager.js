@@ -62,7 +62,7 @@
 // Set to false when doing hasardous developments...
 #define EXECUTE_COMMANDS false
 // Tracing - define DEBUG if you define any other
-#define DEBUG
+//#define DEBUG
 //#define DEBUG_EVENTS
 //#define DEBUG_FITS
 //#define DEBUG_VARS

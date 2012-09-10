@@ -255,7 +255,10 @@ var ffM_template = (function() {
 
   // Create a rule that return to parameter literal
   var makeLiteralRule = function(templateErrors,literal){
-    // TODO Check that literal does not contains & ( ) ; < > (and % unless formatting is implemented)
+    // TODO Check that literal does not contains & ( ) ; < > = ! ( ) and % unless formatting is implemented)
+    if (/[&\(\);<>=!%*]/.test(literal)) {
+      templateErrors.push("Invalid characters in literal sequence " + literal);
+    }
     var literalRule = function(errors) {
       return literal;
     }
@@ -334,11 +337,12 @@ var ffM_template = (function() {
 
   // Public interface
   return {
-    analyzeTemplate: function(template) {
+    // Analyze a template string and return the compiled template (or null),
+    // push the errors to templateErrors, which must be an array
+    analyzeTemplate: function(templateErrors, template) {
 #ifdef DEBUG_TEMPLATE
       debug("analyzeTemplate:'" + template + "'");
 #endif
-      var templateErrors = [];
       // The replacing handler global variables
       var rules = []; // Invalid if error is not empty
       var iNext = 0; // next character that will be examined

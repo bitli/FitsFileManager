@@ -110,8 +110,12 @@ function FFM_GUIParameters() {
       // Default template to create groups
       this.groupByTemplate = FFM_DEFAULT_GROUP_TEMPLATE;
 
-      this.targetFileNameCompiledTemplate = ffM_template.analyzeTemplate(FFM_DEFAULT_TARGET_FILENAME_TEMPLATE);
-      this.groupByCompiledTemplate = ffM_template.analyzeTemplate(FFM_DEFAULT_GROUP_TEMPLATE);
+      var templateErrors = [];
+      this.targetFileNameCompiledTemplate = ffM_template.analyzeTemplate(templateErrors, FFM_DEFAULT_TARGET_FILENAME_TEMPLATE);
+      this.groupByCompiledTemplate = ffM_template.analyzeTemplate(templateErrors, FFM_DEFAULT_GROUP_TEMPLATE);
+      if (templateErrors.length>0) {
+         throw "PROGRAMMING ERROR - default built in templates invalid";
+      }
 
     }
    this.reset();
@@ -144,13 +148,18 @@ FFM_GUIParameters.prototype.loadSettings = function()
       return load( key + '_' + index.toString(), type );
    }
 
-   var o;
+   var o, t, templateErrors;
    if ( (o = load( "version",    DataType_Double )) !== null ) {
       if (o > VERSION) {
          Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' have version ", o, " later than script version ", VERSION, ", settings ignored");
       } else {
          if ( (o = load( "targetFileNameTemplate",    DataType_String )) !== null ) {
-            this.targetFileNameCompiledTemplate =  this.targetFileNameCompiledTemplate = ffM_template.analyzeTemplate(o);
+           templateErrors = [];
+           t =   ffM_template.analyzeTemplate(templateErrors,o);
+           if (templateErrors.length===0) {
+               this.targetFileNameCompiledTemplate = t; // Template correct
+           }
+
          };
          if ( (o = load( "sourceFileNameRegExp",    DataType_String )) !== null ) {
             try {
@@ -166,7 +175,11 @@ FFM_GUIParameters.prototype.loadSettings = function()
          if ( (o = load( "orderBy",                 DataType_String )) !== null )
             this.orderBy = o;
          if ( (o = load( "groupByTemplate",          DataType_String )) !== null )
-            this.groupByCompiledTemplate = ffM_template.analyzeTemplate(o);
+            templateErrors = [];
+            t = ffM_template.analyzeTemplate(templateErrors, o);
+            if (templateErrors.length ===0) {
+               this.groupByCompiledTemplate = t;
+            }
       }
    } else {
       Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' do not have a 'version' key, settings ignored");
@@ -576,13 +589,20 @@ function MainDialog(engine, guiParameters)
    this.targetFileTemplate_Edit.toolTip = TARGET_TEMPLATE_TOOLTIP;
    this.targetFileTemplate_Edit.enabled = true;
    this.targetFileTemplate_Edit.onTextUpdated = function() {
-         guiParameters.targetFileNameCompiledTemplate = ffM_template.analyzeTemplate(this.text);
 #ifdef DEBUG
-         debug("targetFileTemplate_Edit: onTextUpdated " + this.text);
+      debug("targetFileTemplate_Edit: onTextUpdated " + this.text);
 #endif
+      var templateErrors = [];
+      var t = ffM_template.analyzeTemplate(templateErrors, this.text);
+      if (templateErrors.length === 0) {
+         this.textColor = 0x000000;
+         guiParameters.targetFileNameCompiledTemplate  = t;
          this.dialog.refreshTargetFiles();
-
+      } else {
+         this.textColor = 0xFF0000;
       }
+
+   }
 
 
    // Regular expression on source file --------------------------------------------------------------------------------------
@@ -591,30 +611,30 @@ function MainDialog(engine, guiParameters)
    this.sourceTemplate_Edit.toolTip = SOURCE_FILENAME_REGEXP_TOOLTIP;
    this.sourceTemplate_Edit.enabled = true;
    this.sourceTemplate_Edit.onTextUpdated = function() {
-         var re = this.text.trim();
-         if (re.length === 0) {
+      var re = this.text.trim();
+      if (re.length === 0) {
+         guiParameters.sourceFileNameRegExp = null;
+#ifdef DEBUG
+         debug("sourceTemplate_Edit: onTextUpdated:- cancel regexp");
+#endif
+      } else {
+         try {
+            guiParameters.sourceFileNameRegExp = RegExp(re);
+            this.textColor = 0x000000;
+#ifdef DEBUG
+            debug("sourceTemplate_Edit: onTextUpdated: regexp: " + guiParameters.sourceFileNameRegExp);
+#endif
+         } catch (err) {
             guiParameters.sourceFileNameRegExp = null;
+            this.textColor = 0xFF0000;
 #ifdef DEBUG
-            debug("sourceTemplate_Edit: onTextUpdated:- cancel regexp");
+            debug("sourceTemplate_Edit: onTextUpdated:  bad regexp - err: " + err);
 #endif
-         } else {
-            try {
-               guiParameters.sourceFileNameRegExp = RegExp(re);
-               this.textColor = 0;
-#ifdef DEBUG
-               debug("sourceTemplate_Edit: onTextUpdated: regexp: " + guiParameters.sourceFileNameRegExp);
-#endif
-            } catch (err) {
-               guiParameters.sourceFileNameRegExp = null;
-               this.textColor = 0xFF0000;
-#ifdef DEBUG
-               debug("sourceTemplate_Edit: onTextUpdated:  bad regexp - err: " + err);
-#endif
-            }
          }
-         // Refresh the generated files
-         this.dialog.refreshTargetFiles();
       }
+      // Refresh the generated files
+      this.dialog.refreshTargetFiles();
+   }
 
 
    // Group template --------------------------------------------------------------------------------------
@@ -627,8 +647,15 @@ function MainDialog(engine, guiParameters)
 #ifdef DEBUG
       debug("groupTemplate_Edit: onTextUpdated " + this.text);
 #endif
-      guiParameters.groupByCompiledTemplate = ffM_template.analyzeTemplate(this.text);
-      this.dialog.refreshTargetFiles();
+      var templateErrors = [];
+      var t = ffM_template.analyzeTemplate(templateErrors,this.text);
+      if (templateErrors.length === 0) {
+         this.textColor = 0x000000;
+         guiParameters.groupByCompiledTemplate  = t;
+         this.dialog.refreshTargetFiles();
+      } else {
+         this.textColor = 0xFF0000;
+      }
    }
 
 

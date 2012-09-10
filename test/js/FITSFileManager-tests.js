@@ -35,6 +35,9 @@ var ffM_rv = function(obj) {
    });
 }
 
+// TODO Init at each call
+var templateErrors = [];
+
 var ffM_allTests = {
    test_ffM_rv_found: function() {
       pT_assertEquals("toto", ffM_rv({titi: "toto"})("titi"));
@@ -103,100 +106,101 @@ var ffM_allTests = {
    // ---------------------------------------------------------------------------------------------------------
 
    testTemplate_text: function () {
-      var t = ffM_template.analyzeTemplate("textonly");
+      var t = ffM_template.analyzeTemplate(templateErrors,"textonly");
       pT_assertEquals("literalRule('textonly')",t.toString());
    },
    testTemplate_inside: function () {
-      var t = ffM_template.analyzeTemplate("beg&VAR;end");
+      var t = ffM_template.analyzeTemplate(templateErrors,"beg&VAR;end");
       pT_assertEquals("literalRule('beg'),lookUpRule('VAR':[onFound:copyValue()]:[onMissing:reject()]),literalRule('end')",t.toString());
    },
    testTemplate_start: function () {
-      var t = ffM_template.analyzeTemplate("&VAR;atend");
+      var t = ffM_template.analyzeTemplate(templateErrors,"&VAR;atend");
       pT_assertEquals("lookUpRule('VAR':[onFound:copyValue()]:[onMissing:reject()]),literalRule('atend')",t.toString());
    },
    testTemplate_end: function () {
-      var t = ffM_template.analyzeTemplate("atbeg&VAR;");
+      var t = ffM_template.analyzeTemplate(templateErrors,"atbeg&VAR;");
       pT_assertEquals("literalRule('atbeg'),lookUpRule('VAR':[onFound:copyValue()]:[onMissing:reject()])",t.toString());
    },
    testTemplate_alone: function () {
-      var t = ffM_template.analyzeTemplate("&VAR;");
+      var t = ffM_template.analyzeTemplate(templateErrors,"&VAR;");
       pT_assertEquals("lookUpRule('VAR':[onFound:copyValue()]:[onMissing:reject()])",t.toString());
    },
    testTemplate_two: function () {
-      var t = ffM_template.analyzeTemplate("beg&VAR1;middle&VAR2;end");
+      var t = ffM_template.analyzeTemplate(templateErrors,"beg&VAR1;middle&VAR2;end");
       pT_assertEquals("literalRule('beg'),lookUpRule('VAR1':[onFound:copyValue()]:[onMissing:reject()]),literalRule('middle'),lookUpRule('VAR2':[onFound:copyValue()]:[onMissing:reject()]),literalRule('end')",t.toString());
    },
    testTemplate_together: function () {
-      var t = ffM_template.analyzeTemplate("beg&VAR1;&VAR2;end");
+      var t = ffM_template.analyzeTemplate(templateErrors,"beg&VAR1;&VAR2;end");
       pT_assertEquals("literalRule('beg'),lookUpRule('VAR1':[onFound:copyValue()]:[onMissing:reject()]),lookUpRule('VAR2':[onFound:copyValue()]:[onMissing:reject()]),literalRule('end')",t.toString());
    },
 
    testTemplate_present: function () {
-      var t = ffM_template.analyzeTemplate("beg&VAR:present;end");
+      var t = ffM_template.analyzeTemplate(templateErrors,"beg&VAR:present;end");
       pT_assertEquals("literalRule('beg'),lookUpRule('VAR':[onFound:formatValueAs('present')]:[onMissing:reject()]),literalRule('end')",t.toString());
    },
    testTemplate_missing: function () {
-      var t = ffM_template.analyzeTemplate("beg&VAR?missing;end");
+      var t = ffM_template.analyzeTemplate(templateErrors,"beg&VAR?missing;end");
       pT_assertEquals("literalRule('beg'),lookUpRule('VAR':[onFound:copyValue()]:[onMissing:copyLiteral('undefined')]),literalRule('end')",t.toString());
    },
    testTemplate_present_missing: function () {
-      var t = ffM_template.analyzeTemplate("beg&VAR:present?missing;end");
+      var t = ffM_template.analyzeTemplate(templateErrors,"beg&VAR:present?missing;end");
       pT_assertEquals("literalRule('beg'),lookUpRule('VAR':[onFound:formatValueAs('present')]:[onMissing:copyLiteral('present')]),literalRule('end')",t.toString());
    },
    testTemplate_none: function () {
-      var t = ffM_template.analyzeTemplate("beg&NONE:;end");
+      var t = ffM_template.analyzeTemplate(templateErrors,"beg&NONE:;end");
       pT_assertEquals("literalRule('beg'),lookUpRule('NONE':[onFound:copyLiteral('')]:[onMissing:reject()]),literalRule('end')",t.toString());
    },
    testTemplate_opt: function () {
-      var t = ffM_template.analyzeTemplate("beg&OPT?;end");
+      var t = ffM_template.analyzeTemplate(templateErrors,"beg&OPT?;end");
       pT_assertEquals("literalRule('beg'),lookUpRule('OPT':[onFound:copyValue()]:[onMissing:copyLiteral('')]),literalRule('end')",t.toString());
    },
 
+   // Test resolver
    testResolve_text: function () {
       var errors = [];
-      var t = ffM_template.analyzeTemplate("textonly");
+      var t = ffM_template.analyzeTemplate(templateErrors,"textonly");
       pT_assertEquals("textonly",t.expandTemplate(errors,null));
       pT_assertEquals(0, errors.length);
    },
    testResolve_var: function () {
       var errors = [];
-      var t = ffM_template.analyzeTemplate("&var;");
+      var t = ffM_template.analyzeTemplate(templateErrors,"&var;");
       pT_assertEquals("value",t.expandTemplate(errors,ffM_rv({'var':'value'})));
       pT_assertEquals(0, errors.length);
    },
    testResolve_var_found: function () {
       var errors = [];
-      var t = ffM_template.analyzeTemplate("&var:found;");
+      var t = ffM_template.analyzeTemplate(templateErrors,"&var:found;");
       pT_assertEquals("found",t.expandTemplate(errors,ffM_rv({'var':'value'})));
       pT_assertEquals(0, errors.length);
    },
    testResolve_var_found_2: function () {
       var errors = [];
-      var t = ffM_template.analyzeTemplate("&var:found?notfound;");
+      var t = ffM_template.analyzeTemplate(templateErrors,"&var:found?notfound;");
       pT_assertEquals("found",t.expandTemplate(errors,ffM_rv({'var':'value'})));
       pT_assertEquals(0, errors.length);
    },
    testResolve_var_found_empty: function () {
       var errors = [];
-      var t = ffM_template.analyzeTemplate("&var:;");
+      var t = ffM_template.analyzeTemplate(templateErrors,"&var:;");
       pT_assertEquals("",t.expandTemplate(errors,ffM_rv({'var':'value'})));
       pT_assertEquals(0, errors.length);
    },
    testResolve_var_not_found: function () {
       var errors = [];
-      var t = ffM_template.analyzeTemplate("&var?notfound;");
+      var t = ffM_template.analyzeTemplate(templateErrors,"&var?notfound;");
       pT_assertEquals("notfound",t.expandTemplate(errors,ffM_rv({'NOPE':'value'})));
       pT_assertEquals(0, errors.length);
    },
    testResolve_var_optional: function () {
       var errors = [];
-      var t = ffM_template.analyzeTemplate("&var?;");
+      var t = ffM_template.analyzeTemplate(templateErrors,"&var?;");
       pT_assertEquals("",t.expandTemplate(errors,ffM_rv({'NOPE':'value'})));
       pT_assertEquals(0, errors.length);
    },
    testResolve_var_complex: function () {
       var errors = [];
-      var t = ffM_template.analyzeTemplate("AB,&v1;,CD,&v2:v2fmt?v2missing;,EF,&v3?;,GH,&v4?v4opt;,IJ,&v5;,KL");
+      var t = ffM_template.analyzeTemplate(templateErrors,"AB,&v1;,CD,&v2:v2fmt?v2missing;,EF,&v3?;,GH,&v4?v4opt;,IJ,&v5;,KL");
       pT_assertEquals("AB,v1val,CD,v2fmt,EF,,GH,v4opt,IJ,v5val,KL",
             t.expandTemplate(errors,ffM_rv({v1:'v1val', v2:'NO', v5:'v5val'})));
       pT_assertEquals(0, errors.length);
@@ -204,7 +208,7 @@ var ffM_allTests = {
 
    testResolve_error: function () {
       var errors = [];
-      var t = ffM_template.analyzeTemplate("abc&required;def");
+      var t = ffM_template.analyzeTemplate(templateErrors,"abc&required;def");
       t.expandTemplate(errors,ffM_rv({v1:'v1val', v2:'NO', v5:'v5val'}));
       pT_assertEquals("No value for the variable", errors.join(""));
    },

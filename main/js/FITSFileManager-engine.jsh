@@ -122,7 +122,8 @@ function FFM_Engine(guiParameters) {
 #endif
 
       // Compile directory template (copy others)
-      var targetDirectoryCompiledTemplate = ffM_template.analyzeTemplate(targetDirectoryTemplate);
+      var templateErrors = [];
+      var targetDirectoryCompiledTemplate = ffM_template.analyzeTemplate(templateErrors,targetDirectoryTemplate);
       var groupByCompiledTemplate = guiParameters.groupByCompiledTemplate;
       var targetFileNameCompiledTemplate = guiParameters.targetFileNameCompiledTemplate;
 
