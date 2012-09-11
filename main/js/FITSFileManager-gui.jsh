@@ -23,9 +23,6 @@
 
 // Help texts
 
-//#define HELP_STYLE "<style>{font-family: \"DejaVu Sans\",Verdana,Arial,Helvetica,sans-serif; font-size:12px;}" +\
-//"h1 {font-family: \"DejaVu Sans\",Verdana,Arial,Helvetica,sans-serif; font-size: 24pt; font-weight: normal; line-height: 1.2em; letter-spacing: -0.5px; margin-top: 1em; margin-bottom: 0.5em; color: #06F;}" +\
-//"h3 {clear: both; border-bottom: 1px solid #999; padding-bottom: 0.1em; margin-top: 1.5em; margin-bottom: 1.25em; font-size: 16pt; font-weight: normal; line-height: 1.2em; color: #06F;}</style>"
 
 #define TARGET_TEMPLATE_TOOLTIP "\
 Define how the target file name will be generated. The text is copied \
@@ -46,7 +43,6 @@ Keywords (like  &amp;keyword;) are replaced by values defined from the file info
 <dl>\
    <dt>&amp;count;</dt><dd>The number of the file being moved/copied int the current group, padded to COUNT_PAD.<\dd>\
    <dt>&amp;rank;</dt><dd>The number of the file in the order of the input file list, padded to COUNT_PAD.<\dd>\
-</dl>\
 "
 
 
@@ -54,38 +50,54 @@ Keywords (like  &amp;keyword;) are replaced by values defined from the file info
 Define  a regular expression (without the surround slashes) that will be applied to all file names\n\
 without the extension. The 'match' array resulting from the regular expression matching can be used\n\
 in the target file name template as &0; (whole expression), &1 (first group), ...\n\
-The default extract the part of the name before the first dash (you can replace the\n\
-two dashes by two underlines for example).\n\
-In case of error the field turns red\n\
+In case of error the field turns red.\n\
 See https:\/\/developer.mozilla.org\/en-US\/docs\/JavaScript\/Guide\/Regular_Expressions for more informations on regular expresssions\
 "
+
 
 #define GROUP_TEMPLATE_TOOLTIP "\
 Define the template to generate a group name used by &count;.\n\
 Each group has its own group number starting at 1. You can use the same variables\n\
 as for the target file name, except &count;. In addition you can use:\n\
-   &targetDir;    The directory part of the target file name (except that &count; is not replaced).\n\
-Leave blank or use a fixed name to have a single counter. The default &targetDir; count in each target\n\
-directory. &filter; would count separetely for each filter.\n\
+<dl>\
+   <dt>&targetDir;</dt><dd>The directory part of the target file name (except that &count; is not replaced).</dd>\n\
+</dl>Leave blank or use a fixed name to have a single counter. For example '&targetDir;' count in each target\n\
+directory.' &filter;' count separetely for each filter.\n\
 "
 
 #define BASE_HELP_TEXT "\
 <p>FITSFileManager allow to copy or move image files to new locations, building the \
 new location from a template and replacement of variables extracted from FITS keys \
-and other information\
-</p>"
+and other information.\
+<p/>You select the files to move/copy (files can be individually checked or un-checked) \
+and enter the template to generate the target name using variables to substitute values \
+based on image file name or keywords. \
+<p/>The variables have the general form &name:present?absent;. The 'name' represent the variable. \
+<ul><li>The 'present' part is the string that will be used if the variable \
+is present - usually ':present' is not specified and the value of the variable is used as the replacement string. It can also \
+be empty, in which case the variable is checked for presence (an error is generated if it is missing) \
+but its value does not contribute to the target string.</li> \
+<li>The '?absent' part is used if the variable is not present in the file (for example '&type?light;'). \
+You can also have an empty absent part (like '&binning?;') in which case there is no error if the variable  \
+is not present. </li>\
+</ul><p>The variables are defined in the section 'target template' below. They are built from the FITS keywords, \
+the number of the file being processed or are result of a regular expression applied to the file name. \
+The regular expression can be used, for example, to extract the part of the file name \
+before the first dash. \
+<p/>The files are processed in the order they appear in the table (variable &amp;rank;). \
+In addition a 'group' string can be generated using the same template rules and a &amp;count; \
+variable is increased for each different group (for example each target directory). \
+"
 
-// #define HELP_TEXT ("<style>" + HELP_STYLE + "</style><body>" + \
-// "<h1>FITSFileManager</h1>" + BASE_HELP_TEXT + \
-// "<h3>Target template</h3>" + TARGET_TEMPLATE_TOOLTIP + \
-// "<h3>Source filename template</h3>" + SOURCE_FILENAME_REGEXP_TOOLTIP + \
-// "<h3>Group template</h3>" +  GROUP_TEMPLATE_TOOLTIP + "</body>")
 
 #define HELP_TEXT ("<html>" + \
 "<h1><font color=\"#06F\">FITSFileManager</font></h1>" + BASE_HELP_TEXT + \
 "<h3><font color=\"#06F\">Target template</font></h3/>" + TARGET_TEMPLATE_TOOLTIP + \
-"<h3><font color=\"#06F\">Source filename template</font></h3>" + SOURCE_FILENAME_REGEXP_TOOLTIP + \
+"</dl>Example of template:\<br\><tt>&nbsp;&nbsp;&nbsp;&amp;1;_&amp;binning;_&amp;temp;C_&amp;type;_&amp;exposure;s_&amp;filter;_&amp;count;&amp;extension;</tt>"+\
+"<h3><font color=\"#06F\">Source filename reg exp</font></h3>" + SOURCE_FILENAME_REGEXP_TOOLTIP + \
+"Example of regular expression:<br\><tt>&nbsp;&nbsp;&nbsp;([^-_.]+)(?:[._-]|$)</tt><p>" + \
 "<h3><font color=\"#06F\">Group template</font></h3>" +  GROUP_TEMPLATE_TOOLTIP + \
+"Example of group definition:<br/><tt>&nbsp;&nbsp;&nbsp;&amp;targetdir;</tt><p> " + \
 "</html>")
 
 
@@ -390,7 +402,7 @@ function MainDialog(engine, guiParameters)
       this.filesTreeBox.setHeaderText(0, "Filename");
       this.filesTreeBox.sort(0,true);
 
-      this.filesTreeBox.setMinSize( 600, 200 );
+      this.filesTreeBox.setMinSize( 700, 200 );
 
       // Assume that 'check' is the only operation that update the nodes,
       // this may not be true...
@@ -775,17 +787,31 @@ function MainDialog(engine, guiParameters)
    this.check_Button.text = "Check validity";
    this.check_Button.toolTip = "Check that the target files are valid\nthis is automatically done before any other operation";
    this.check_Button.enabled = true;
-   this.check_Button.onClick = function()
-      {
+   this.check_Button.onClick = function() {
          var listOfFiles = this.parent.makeListOfCheckedFiles();
          var errors = this.parent.engine.checkValidTargets(listOfFiles);
          if (errors.length > 0) {
             var msg = new MessageBox( errors.join("\n"),
                    "Check failed", StdIcon_Error, StdButton_Ok );
             msg.execute();
+         } else if (this.parent.engine.targetFiles.length === 0) {
+            var msg = new MessageBox(
+            "There is no file to move or copy", "Check irrelevant", StdIcon_Information, StdButton_Ok );
+             msg.execute();
          } else {
-            var msg = new MessageBox("Check ok",
-            "Check successfull", StdIcon_Information, StdButton_Ok );
+            var text = "" + this.parent.engine.targetFiles.length + " files checked" ;
+             if (this.parent.engine.nmbFilesTransformed >0) {
+                text += ", " + this.parent.engine.nmbFilesTransformed + " to copy/move";
+             }
+
+            //      this.engine.nmbFilesSkipped;
+            if (this.parent.engine.nmbFilesInError >0) {
+               // Should not happens
+               text += ", " + this.parent.engine.nmbFilesInError + " IN ERROR";
+            }
+
+            var msg = new MessageBox(text,
+            "Check successful", StdIcon_Information, StdButton_Ok );
              msg.execute();
          }
       }
@@ -1019,7 +1045,7 @@ function MainDialog(engine, guiParameters)
       } else {
          countText = "" + countChecked + " checked file" +  (countChecked>1 ? "s" : "") + " / " + countTotal + " file" + (countTotal>1 ? "s" : "");
       }
-      this.QTY.text =countText;
+      this.QTY.text = countText;
       this.bar1.setCollapsedTitle("Input - " + countText);
    }
 
@@ -1062,7 +1088,7 @@ function MainDialog(engine, guiParameters)
       } else {
          bar4Title += " - " + nmbFilesExamined + " files checked" ;
          if (this.engine.nmbFilesTransformed >0) {
-            bar4Title += ", " + this.engine.nmbFilesTransformed + " transformed";
+            bar4Title += ", " + this.engine.nmbFilesTransformed + " to copy/move";
          }
 
          //      this.engine.nmbFilesSkipped;
