@@ -392,7 +392,11 @@ function FFM_Engine(guiParameters) {
             // Create target directory if required
             if (!File.directoryExists(targetDirectory)) {
                console.writeln("mkdir " + targetDirectory);
-               if (EXECUTE_COMMANDS) File.createDirectory(targetDirectory, true);
+               if (EXECUTE_COMMANDS) {
+                   File.createDirectory(targetDirectory, true);
+               } else {
+                  console.writeln("*** COMMAND NOT EXECUTED - EXECUTE_COMMANDS IS FALSE FOR DEBUGGING PURPOSE");
+               }
             }
 
             // TO BE ON SAFE SIDE

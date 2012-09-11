@@ -55,12 +55,12 @@
 // Thanks to Nikolay for sharing the original FITSKey
 
 
-#define VERSION   "0.30"
+#define VERSION   "0.60"
 #define TITLE     "FITSFileManager"
 
 // --- Debugging control ----------------
 // Set to false when doing hasardous developments...
-#define EXECUTE_COMMANDS false
+// #define EXECUTE_COMMANDS false
 // Tracing - define DEBUG if you define any other
 //#define DEBUG
 //#define DEBUG_EVENTS
@@ -90,7 +90,7 @@ function debug(str) {
 
 // Change log
 // 2012-08-27 - 0.1 - Initial Version
-// 2012-xx-xx - 0.3 - Enhancements and speedup
+// 2012-09-11 - 0.5 - Significant enhancements
 //     Code refactoring, speedups
 //     Save/restore parameters
 //     Corrected mapping of files in tree and list if not sorted as loaded,
@@ -103,6 +103,7 @@ function debug(str) {
 //     Check for missing key values, show message
 //     Source file list is refreshed after a move
 //     Supressed Export FITS keys as incompletely implemented and may be integrated in 1.8
+// 2012-09-xx - 0.6 - Significant enhancements
 
 
 
@@ -112,7 +113,7 @@ function debug(str) {
 // Add FITS keywords as variables, with formatting options
 // Add sequence of optional text to ignore if missing variable value ()
 // Generate an 'orderBy' column
-// Show sythetic keys in table, only show selected keys
+// Show synthetic keys in table, only show selected keys
 // Hide common header part of source folders to make file name more visible
 // Add a way to use directory of source file as variable  &filedir, &filedirparent for template matching and group names
 // Support date formatting, number formatting

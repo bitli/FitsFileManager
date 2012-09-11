@@ -374,6 +374,9 @@ function MainDialog(engine, guiParameters)
    this.__base__();
    this.engine = engine;
 
+   var labelWidth = this.font.width( "MMMMMMMMMMMMMM" ) ;
+
+
    // -- FITSKeyWord Dialog (opened as a child on request)
    this.fitsKeysDialog = new FITSKeysDialog( this, engine );
 
@@ -385,8 +388,8 @@ function MainDialog(engine, guiParameters)
    helpLabel.wordWrapping = true;
    helpLabel.useRichText = true;
    helpLabel.text = "<b>" + TITLE + " v" + VERSION + "</b> &mdash; Copy or move FITS image " +
-           "files using selected FITS keyword values or original file name template " +
-           "to create the target directory/file name.";
+           "files using values derived from FITS keywords and from original file name, using a template " +
+           "to create the target directory/file name. See the help for more details.";
 
 
    //----------------------------------------------------------------------------------
@@ -560,8 +563,8 @@ function MainDialog(engine, guiParameters)
       }
 
    // -- Total file Label ---------------------------------------------------------------------------
-   this.QTY = new Label( this );
-   this.QTY.textAlignment = TextAlign_Right|TextAlign_VertCenter;
+   this.inputSummaryLabel = new Label( this );
+   this.inputSummaryLabel.textAlignment = TextAlign_Right|TextAlign_VertCenter;
 
    // -- Sizer for Input Files Section
 
@@ -573,7 +576,7 @@ function MainDialog(engine, guiParameters)
    this.fileButonSizer.add( this.dirAdd_Button );
    this.fileButonSizer.add( this.remove_files_Button );
    this.fileButonSizer.add( this.remove_all_files_Button );
-   this.fileButonSizer.add( this.QTY );
+   this.fileButonSizer.add( this.inputSummaryLabel );
    this.fileButonSizer.addStretch();
 
 
@@ -677,7 +680,7 @@ function MainDialog(engine, guiParameters)
    this.targetFileTemplate_Edit_sizer.margin = 4;
    this.targetFileTemplate_Edit_sizer.spacing = 2;
    var label = new Label();
-   label.minWidth			= 100;
+   label.setFixedWidth(labelWidth);
    label.text		= "Target file template: ";
    label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
@@ -689,7 +692,7 @@ function MainDialog(engine, guiParameters)
    this.sourceTemplate_Edit_sizer.margin = 4;
    this.sourceTemplate_Edit_sizer.spacing = 2;
    var label = new Label();
-   label.minWidth			= 100;
+   label.setFixedWidth(labelWidth);;
    label.text		= "File name RegExp: ";
    label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
@@ -701,7 +704,7 @@ function MainDialog(engine, guiParameters)
    this.groupTemplate_Edit_sizer.margin = 4;
    this.groupTemplate_Edit_sizer.spacing = 2;
    var label = new Label();
-   label.minWidth			= 100;
+   label.setFixedWidth(labelWidth);;
    label.text		= "Group template: ";
    label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
@@ -775,9 +778,20 @@ function MainDialog(engine, guiParameters)
    this.transform_TextBox.enabled = true;
    this.transform_TextBox.readOnly = true;
 
+   this.outputSummaryLabel = new Label( this );
+   this.outputSummaryLabel.textAlignment = TextAlign_Left|TextAlign_VertCenter;
+
+   this.outputFiles_GroupBox = new GroupBox( this );
+   this.outputFiles_GroupBox.sizer = new VerticalSizer;
+   this.outputFiles_GroupBox.sizer.margin = 6;
+   this.outputFiles_GroupBox.sizer.spacing = 4;
+   this.outputFiles_GroupBox.sizer.add( this.transform_TextBox, 100);
+   this.outputFiles_GroupBox.sizer.add( this.outputSummaryLabel );
+
+
    this.bar4 = new SectionBar( this );
    this.bar4.setTitle( "Resulting operations" );
-   this.bar4.setSection( this.transform_TextBox );
+   this.bar4.setSection( this.outputFiles_GroupBox );
 
 
 
@@ -808,6 +822,10 @@ function MainDialog(engine, guiParameters)
             if (this.parent.engine.nmbFilesInError >0) {
                // Should not happens
                text += ", " + this.parent.engine.nmbFilesInError + " IN ERROR";
+            }
+
+            if (!this.parent.engine.outputDirectory) {
+               text += ",\nbut output directory is not defined";
             }
 
             var msg = new MessageBox(text,
@@ -923,7 +941,7 @@ function MainDialog(engine, guiParameters)
    this.sizer.add(this.bar3);
    this.sizer.add( this.outputDir_GroupBox );
    this.sizer.add(this.bar4);
-   this.sizer.add(this.transform_TextBox,50);
+   this.sizer.add(this.outputFiles_GroupBox,50);
    this.sizer.add( this.buttonSizer );
 
 
@@ -943,7 +961,7 @@ function MainDialog(engine, guiParameters)
       }
    }
 
-   // Rebuild the TreeBox content
+   // -- Rebuild the TreeBox content
    this.rebuildFilesTreeBox = function () {
       var i, keys, node, name, iKeyOfFile, k;
 
@@ -1001,7 +1019,7 @@ function MainDialog(engine, guiParameters)
    }
 
 
-   // enable/disable operation buttons
+   // -- enable/disable operation buttons
    this.updateButtonState = function()
    {
       var enabled = this.dialog.engine.canDoOperation();
@@ -1012,7 +1030,7 @@ function MainDialog(engine, guiParameters)
 #endif
    }
 
-   // Add a list of files to the TreeBox (remove duplicates)
+   // -- Add a list of files to the TreeBox (remove duplicates)
    this.addFilesAction = function (fileNames)
    {
       this.engine.addFiles(fileNames);
@@ -1027,7 +1045,7 @@ function MainDialog(engine, guiParameters)
       //this.hideKey(); // *** TEST
    }
 
-   // update the input file list total after each add/remove/check toogle
+   // -- update the input file list total after each add/remove/check toogle
    this.updateTotal = function() {
       // Should be same as this.engine.inputFiles.length
       var countTotal = this.filesTreeBox.numberOfChildren;
@@ -1045,11 +1063,12 @@ function MainDialog(engine, guiParameters)
       } else {
          countText = "" + countChecked + " checked file" +  (countChecked>1 ? "s" : "") + " / " + countTotal + " file" + (countTotal>1 ? "s" : "");
       }
-      this.QTY.text = countText;
+      this.inputSummaryLabel.text = countText;
       this.bar1.setCollapsedTitle("Input - " + countText);
    }
 
 
+   //.. return an array of files that are checked (ticked)
    this.makeListOfCheckedFiles = function() {
       var listOfFiles = [];
 
@@ -1065,28 +1084,35 @@ function MainDialog(engine, guiParameters)
       return listOfFiles;
    }
 
-   // Update the output operations indications
+
+   // -- Update the output operations indications
    this.refreshTargetFiles = function() {
+      // var startTime, elapsedTime;
+      // startTime = Date.now().valueOf();
 
 #ifdef DEBUG
       debug("refreshTargetFiles() called");
 #endif
-
+      this.transform_TextBox.clear();
       var listOfFiles = this.makeListOfCheckedFiles();
 
       this.engine.buildTargetFiles(listOfFiles);
 
+
       // List of text accumulating the transformation rules for display
       var listOfTransforms = this.engine.makeListOfTransforms();
+      //elapsedTime = Date.now().valueOf() - startTime;
+      // console.writeln("refreshTargetFiles - rebuilt in " + elapsedTime + " ms");
       this.transform_TextBox.text = listOfTransforms.join("");
+      this.transform_TextBox.caretPosition = 0;
 
       var nmbFilesExamined = this.engine.targetFiles.length;
 
-      var bar4Title = "Resulting operations";
+      var bar4Title = "";
       if (nmbFilesExamined === 0) {
-          bar4Title += " - None";
+          bar4Title += "None";
       } else {
-         bar4Title += " - " + nmbFilesExamined + " files checked" ;
+         bar4Title += "" + nmbFilesExamined + " files checked" ;
          if (this.engine.nmbFilesTransformed >0) {
             bar4Title += ", " + this.engine.nmbFilesTransformed + " to copy/move";
          }
@@ -1096,7 +1122,13 @@ function MainDialog(engine, guiParameters)
             bar4Title += ", " + this.engine.nmbFilesInError + " IN ERROR";
          }
       }
-      this.bar4.setCollapsedTitle(bar4Title);
+      this.outputSummaryLabel.text = bar4Title;
+      this.bar4.setCollapsedTitle("Resulting operations - " + bar4Title);
+
+      //elapsedTime = Date.now().valueOf() - startTime;
+      // console.writeln("refreshTargetFiles - rebuilt and refreshed in " + elapsedTime + " ms");
+
+
     }
 
 

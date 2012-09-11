@@ -11,7 +11,7 @@
 #define DEBUG true
 
 
-#define VERSION "0.3-tests"
+#define VERSION "0.5-tests"
 
 #include "../../main/js/FITSFileManager-helpers.jsh"
 #include "../../main/js/FITSFileManager-engine.jsh"
@@ -210,7 +210,7 @@ var ffM_allTests = {
       var errors = [];
       var t = ffM_template.analyzeTemplate(templateErrors,"abc&required;def");
       t.expandTemplate(errors,ffM_rv({v1:'v1val', v2:'NO', v5:'v5val'}));
-      pT_assertEquals("No value for the variable", errors.join(""));
+      pT_assertEquals("No value for the variable 'required'", errors.join(""));
    },
 
 
