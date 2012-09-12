@@ -7,7 +7,7 @@
 
 #include <pjsr/DataType.jsh>
 
-#define VERSION "0.5"
+#define VERSION "0.5-textbox"
 #define ROOT_FILE_NAME "FITSFileManager.js"
 #define ROOT_FILE_DIR "../../main/js"
 #define TARGET_FILE_DIR "../../../releases"

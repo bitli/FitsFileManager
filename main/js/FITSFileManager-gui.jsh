@@ -397,20 +397,19 @@ function MainDialog(engine, guiParameters)
    //----------------------------------------------------------------------------------
    this.filesTreeBox = new TreeBox( this );
 
-      this.filesTreeBox.rootDecoration = false;
-      this.filesTreeBox.numberOfColumns = 1;
-      this.filesTreeBox.multipleSelection = true;
-      this.filesTreeBox.headerVisible = true;
-      this.filesTreeBox.headerSorting = true;
-      this.filesTreeBox.setHeaderText(0, "Filename");
-      this.filesTreeBox.sort(0,true);
+   this.filesTreeBox.rootDecoration = false;
+   this.filesTreeBox.numberOfColumns = 1;
+   this.filesTreeBox.multipleSelection = true;
+   this.filesTreeBox.headerVisible = true;
+   this.filesTreeBox.headerSorting = true;
+   this.filesTreeBox.setHeaderText(0, "Filename");
+   this.filesTreeBox.sort(0,true);
+   this.filesTreeBox.setMinSize( 700, 200 );
 
-      this.filesTreeBox.setMinSize( 700, 200 );
-
-      // Assume that 'check' is the only operation that update the nodes,
-      // this may not be true...
-      this.filesTreeBox.onNodeUpdated = function( node, column ) // Invert CheckMark
-      {
+   // Assume that 'check' is the only operation that update the nodes,
+   // this may not be true...
+   this.filesTreeBox.onNodeUpdated = function( node, column ) // Invert CheckMark
+   {
 
 #ifdef DEBUG_EVENTS
          debug("filesTreeBox: onNodeUpdated("+node+","+column+")");
@@ -422,33 +421,33 @@ function MainDialog(engine, guiParameters)
          }
          this.dialog.updateTotal();
          this.dialog.refreshTargetFiles();
-      };
+   };
 #ifdef DEBUG_EVENTS
-      this.filesTreeBox.onCurrentNodeUpdated = function(node) {
-         debug("filesTreeBox: onCurrentNodeUpdated("+node+")");
-      };
-      this.filesTreeBox.onNodeActivated = function(node) {
-         debug("filesTreeBox: onNodeActivated("+node+")");
-      };
-      this.filesTreeBox.onNodeClicked = function(node) {
-         debug("filesTreeBox: onNodeClicked("+node+")");
-      };
-      this.filesTreeBox.onNodeCollapsed = function(node) {
-         debug("filesTreeBox: onNodeCollapsed("+node+")");
-      };
-      this.filesTreeBox.onNodeDoubleClicked = function(node) {
-         debug("filesTreeBox: onNodeDoubleClicked("+node+")");
-      };
-      this.filesTreeBox.onNodeEntered = function(node) {
-         // this is not called unless mouse events are enabled
-         debug("filesTreeBox: onNodeEntered("+node+")");
-      };
-      this.filesTreeBox.onNodeExpanded = function(node) {
-         debug("filesTreeBox: onNodeExpanded("+node+")");
-      };
-      this.filesTreeBox.onNodeSelectionUpdated = function() {
-         debug("filesTreeBox: onNodeSelectionUpdated()");
-      };
+   this.filesTreeBox.onCurrentNodeUpdated = function(node) {
+      debug("filesTreeBox: onCurrentNodeUpdated("+node+")");
+   };
+   this.filesTreeBox.onNodeActivated = function(node) {
+      debug("filesTreeBox: onNodeActivated("+node+")");
+   };
+   this.filesTreeBox.onNodeClicked = function(node) {
+      debug("filesTreeBox: onNodeClicked("+node+")");
+   };
+   this.filesTreeBox.onNodeCollapsed = function(node) {
+      debug("filesTreeBox: onNodeCollapsed("+node+")");
+   };
+   this.filesTreeBox.onNodeDoubleClicked = function(node) {
+      debug("filesTreeBox: onNodeDoubleClicked("+node+")");
+   };
+   this.filesTreeBox.onNodeEntered = function(node) {
+      // this is not called unless mouse events are enabled
+      debug("filesTreeBox: onNodeEntered("+node+")");
+   };
+   this.filesTreeBox.onNodeExpanded = function(node) {
+      debug("filesTreeBox: onNodeExpanded("+node+")");
+   };
+   this.filesTreeBox.onNodeSelectionUpdated = function() {
+      debug("filesTreeBox: onNodeSelectionUpdated()");
+   };
 #endif
 
 
@@ -514,29 +513,24 @@ function MainDialog(engine, guiParameters)
    this.remove_files_Button = new ToolButton( this );
    this.remove_files_Button.icon = new Bitmap( ":/images/close.png" );
    this.remove_files_Button.toolTip = "<p>Remove selected images from the list.</p>";
-   this.remove_files_Button.onClick = function()
-      {
+   this.remove_files_Button.onClick = function() {
 #ifdef DEBUG
-         debug("Remove selected image");
+      debug("Remove selected image");
 #endif
 
-         for ( var iTreeBox = this.dialog.filesTreeBox.numberOfChildren; --iTreeBox >= 0; )
-         {
+      for ( var iTreeBox = this.dialog.filesTreeBox.numberOfChildren; --iTreeBox >= 0; ) {
+         if ( this.dialog.filesTreeBox.child( iTreeBox ).selected ) {
+            var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).text(0);
 
-            if ( this.dialog.filesTreeBox.child( iTreeBox ).selected )
-            {
-               var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).text(0);
-
-               this.dialog.engine.removeFiles(nameInTreeBox);
-               this.dialog.filesTreeBox.remove( iTreeBox );
-            }
+            this.dialog.engine.removeFiles(nameInTreeBox);
+            this.dialog.filesTreeBox.remove( iTreeBox );
          }
-         this.dialog.updateTotal();
-         this.dialog.updateButtonState();
-         // Refresh the generated files
-         this.dialog.refreshTargetFiles();
-
       }
+      this.dialog.updateTotal();
+      this.dialog.updateButtonState();
+      // Refresh the generated files
+      this.dialog.refreshTargetFiles();
+   }
 
 
    // -- Remove all files
@@ -550,8 +544,7 @@ function MainDialog(engine, guiParameters)
 #endif
 
          // TODO We can probably clear in one go
-         for ( var i = this.dialog.filesTreeBox.numberOfChildren; --i >= 0; )
-         {
+         for ( var i = this.dialog.filesTreeBox.numberOfChildren; --i >= 0; ) {
                this.dialog.filesTreeBox.remove( i );
          }
          this.dialog.engine.reset();
@@ -771,12 +764,25 @@ function MainDialog(engine, guiParameters)
 
 
    // Result operations --------------------------------------------------------------------------------------
+#ifdef USE_TREEBOX
+   this.transform_TreeBox = new TreeBox( this );
+
+   this.transform_TreeBox.rootDecoration = false;
+   this.transform_TreeBox.numberOfColumns = 1;
+   this.transform_TreeBox.multipleSelection = false;
+   this.transform_TreeBox.headerVisible = false;
+   this.transform_TreeBox.headerSorting = false;
+   this.transform_TreeBox.setHeaderText(0, "Filename");
+   //this.transform_TreeBox.sort(0,false);
+   this.transform_TreeBox.setMinSize( 700, 200 );
+#else
    this.transform_TextBox = new TextBox( this );
    this.transform_TextBox.frameStyle = FrameStyle_Box;
    this.transform_TextBox.text = '';
    this.transform_TextBox.toolTip = "Transformations that will be executed";
    this.transform_TextBox.enabled = true;
    this.transform_TextBox.readOnly = true;
+#endif
 
    this.outputSummaryLabel = new Label( this );
    this.outputSummaryLabel.textAlignment = TextAlign_Left|TextAlign_VertCenter;
@@ -785,7 +791,11 @@ function MainDialog(engine, guiParameters)
    this.outputFiles_GroupBox.sizer = new VerticalSizer;
    this.outputFiles_GroupBox.sizer.margin = 6;
    this.outputFiles_GroupBox.sizer.spacing = 4;
+#ifdef USE_TREEBOX
+   this.outputFiles_GroupBox.sizer.add( this.transform_TreeBox, 100);
+#else
    this.outputFiles_GroupBox.sizer.add( this.transform_TextBox, 100);
+#endif
    this.outputFiles_GroupBox.sizer.add( this.outputSummaryLabel );
 
 
@@ -1087,13 +1097,14 @@ function MainDialog(engine, guiParameters)
 
    // -- Update the output operations indications
    this.refreshTargetFiles = function() {
-      // var startTime, elapsedTime;
-      // startTime = Date.now().valueOf();
+#ifdef DEBUG_TIMING
+      var startTime, elapsedTime;
+      startTime = Date.now().valueOf();
+#endif
 
 #ifdef DEBUG
       debug("refreshTargetFiles() called");
 #endif
-      this.transform_TextBox.clear();
       var listOfFiles = this.makeListOfCheckedFiles();
 
       this.engine.buildTargetFiles(listOfFiles);
@@ -1101,10 +1112,29 @@ function MainDialog(engine, guiParameters)
 
       // List of text accumulating the transformation rules for display
       var listOfTransforms = this.engine.makeListOfTransforms();
-      //elapsedTime = Date.now().valueOf() - startTime;
-      // console.writeln("refreshTargetFiles - rebuilt in " + elapsedTime + " ms");
+#ifdef DEBUG_TIMING
+      elapsedTime = Date.now().valueOf() - startTime;
+      console.writeln("refreshTargetFiles - rebuilt in " + elapsedTime + " ms");
+#endif
+
+#ifdef USE_TREEBOX
+      this.transform_TreeBox.clear();
+      for (var i=0; i<listOfTransforms.length; i++) {
+         var node = new TreeBoxNode( this.transform_TreeBox );
+         node.setText( 0, listOfTransforms[i] );
+         // TODO Use better status
+         if (listOfTransforms[i].indexOf("Error")>0) {
+            node.setTextColor(0,0x00FF0000);
+         }
+      }
+#else
       this.transform_TextBox.text = listOfTransforms.join("");
       this.transform_TextBox.caretPosition = 0;
+#endif
+#ifdef DEBUG_TIMING
+      elapsedTime = Date.now().valueOf() - startTime;
+      console.writeln("refreshTargetFiles - rebuilt and refreshed in " + elapsedTime + " ms");
+#endif
 
       var nmbFilesExamined = this.engine.targetFiles.length;
 
@@ -1124,9 +1154,6 @@ function MainDialog(engine, guiParameters)
       }
       this.outputSummaryLabel.text = bar4Title;
       this.bar4.setCollapsedTitle("Resulting operations - " + bar4Title);
-
-      //elapsedTime = Date.now().valueOf() - startTime;
-      // console.writeln("refreshTargetFiles - rebuilt and refreshed in " + elapsedTime + " ms");
 
 
     }

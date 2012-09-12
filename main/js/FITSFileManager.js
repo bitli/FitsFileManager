@@ -68,6 +68,10 @@
 //#define DEBUG_VARS
 //#define DEBUG_COLUMNS
 
+// This uses the TREEBOX instead of the TEXT_BOX due to timing problem
+//#define USE_TREEBOX
+//This log timing information related to TEXTBOX/TREEBOX
+#define DEBUG_TIMING
 
 #ifdef DEBUG
 function debug(str) {
@@ -103,7 +107,8 @@ function debug(str) {
 //     Check for missing key values, show message
 //     Source file list is refreshed after a move
 //     Supressed Export FITS keys as incompletely implemented and may be integrated in 1.8
-// 2012-09-xx - 0.6 - Significant enhancements
+// 2012-09-xx - 0.6 - Performance enhancements
+//     Use TreeBox instead of TextBox
 
 
 
