@@ -55,7 +55,7 @@
 // Thanks to Nikolay for sharing the original FITSKey
 
 
-#define VERSION   "0.60"
+#define VERSION   "0.6"
 #define TITLE     "FITSFileManager"
 
 // --- Debugging control ----------------
@@ -69,9 +69,9 @@
 //#define DEBUG_COLUMNS
 
 // This uses the TREEBOX instead of the TEXT_BOX due to timing problem
-//#define USE_TREEBOX
+#define USE_TREEBOX
 //This log timing information related to TEXTBOX/TREEBOX
-#define DEBUG_TIMING
+//#define DEBUG_TIMING
 
 #ifdef DEBUG
 function debug(str) {

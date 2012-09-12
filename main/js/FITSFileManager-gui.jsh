@@ -408,47 +408,15 @@ function MainDialog(engine, guiParameters)
 
    // Assume that 'check' is the only operation that update the nodes,
    // this may not be true...
-   this.filesTreeBox.onNodeUpdated = function( node, column ) // Invert CheckMark
-   {
-
+   this.filesTreeBox.onNodeUpdated = function( node, column )  {
+   // Invert CheckMark
 #ifdef DEBUG_EVENTS
          debug("filesTreeBox: onNodeUpdated("+node+","+column+")");
 #endif
-         for (var i=0; i < this.selectedNodes.length; i++)
-         {
-            if ( node === this.selectedNodes[i] ) continue; // skip curent clicked node, because it will inverted automaticaly
-            this.selectedNodes[i].checked = !this.selectedNodes[i].checked;
-         }
-         this.dialog.updateTotal();
-         this.dialog.refreshTargetFiles();
+      // Check box was likely changed
+      this.dialog.updateTotal();
+      this.dialog.refreshTargetFiles();
    };
-#ifdef DEBUG_EVENTS
-   this.filesTreeBox.onCurrentNodeUpdated = function(node) {
-      debug("filesTreeBox: onCurrentNodeUpdated("+node+")");
-   };
-   this.filesTreeBox.onNodeActivated = function(node) {
-      debug("filesTreeBox: onNodeActivated("+node+")");
-   };
-   this.filesTreeBox.onNodeClicked = function(node) {
-      debug("filesTreeBox: onNodeClicked("+node+")");
-   };
-   this.filesTreeBox.onNodeCollapsed = function(node) {
-      debug("filesTreeBox: onNodeCollapsed("+node+")");
-   };
-   this.filesTreeBox.onNodeDoubleClicked = function(node) {
-      debug("filesTreeBox: onNodeDoubleClicked("+node+")");
-   };
-   this.filesTreeBox.onNodeEntered = function(node) {
-      // this is not called unless mouse events are enabled
-      debug("filesTreeBox: onNodeEntered("+node+")");
-   };
-   this.filesTreeBox.onNodeExpanded = function(node) {
-      debug("filesTreeBox: onNodeExpanded("+node+")");
-   };
-   this.filesTreeBox.onNodeSelectionUpdated = function() {
-      debug("filesTreeBox: onNodeSelectionUpdated()");
-   };
-#endif
 
 
    // -- Actions for input file list ---------------------------------------------------------------------------------------
@@ -509,13 +477,43 @@ function MainDialog(engine, guiParameters)
       }
 
 
+   // -- Check selected files
+   this.checkSelected_Button = new ToolButton( this );
+   this.checkSelected_Button.icon = new Bitmap( ":/images/process_explorer/expand_all.png" );
+   this.checkSelected_Button.toolTip = "<p>Check selected images.</p>";
+   this.checkSelected_Button.onClick = function() {
+#ifdef DEBUG
+      debug("checkSelected_Button: onClick");
+#endif
+      for (var i=0; i < this.dialog.filesTreeBox.selectedNodes.length; i++) {
+            this.dialog.filesTreeBox.selectedNodes[i].checked = true;
+      }
+      this.dialog.updateTotal();
+      this.dialog.refreshTargetFiles();
+   }
+
+   // -- uncheck selected files
+   this.uncheckSelected_Button = new ToolButton( this );
+   this.uncheckSelected_Button.icon = new Bitmap( ":/images/process_explorer/collapse_all.png" );
+   this.uncheckSelected_Button.toolTip = "<p>Uncheck selected images.</p>";
+   this.uncheckSelected_Button.onClick = function() {
+#ifdef DEBUG
+      debug("uncheckSelected_Button: onClick");
+#endif
+      for (var i=0; i < this.dialog.filesTreeBox.selectedNodes.length; i++) {
+            this.dialog.filesTreeBox.selectedNodes[i].checked = false;
+      }
+      this.dialog.updateTotal();
+      this.dialog.refreshTargetFiles();
+   }
+
    // -- Remove selected files
    this.remove_files_Button = new ToolButton( this );
    this.remove_files_Button.icon = new Bitmap( ":/images/close.png" );
    this.remove_files_Button.toolTip = "<p>Remove selected images from the list.</p>";
    this.remove_files_Button.onClick = function() {
 #ifdef DEBUG
-      debug("Remove selected image");
+      debug("remove_files_Button: onClick");
 #endif
 
       for ( var iTreeBox = this.dialog.filesTreeBox.numberOfChildren; --iTreeBox >= 0; ) {
@@ -540,7 +538,7 @@ function MainDialog(engine, guiParameters)
    this.remove_all_files_Button.onClick = function()
       {
 #ifdef DEBUG
-         debug("Remove all images (" + this.dialog.engine.inputFiles.length + ")");
+         debug("remove_all_files_Button: onClick");
 #endif
 
          // TODO We can probably clear in one go
@@ -565,8 +563,12 @@ function MainDialog(engine, guiParameters)
    this.fileButonSizer.margin = 6;
    this.fileButonSizer.spacing = 4;
    this.fileButonSizer.add( this.keyButton );
+   this.fileButonSizer.addSpacing( 5 );
    this.fileButonSizer.add( this.filesAdd_Button );
    this.fileButonSizer.add( this.dirAdd_Button );
+   this.fileButonSizer.add( this.checkSelected_Button );
+   this.fileButonSizer.add( this.uncheckSelected_Button );
+   this.fileButonSizer.addSpacing( 5 );
    this.fileButonSizer.add( this.remove_files_Button );
    this.fileButonSizer.add( this.remove_all_files_Button );
    this.fileButonSizer.add( this.inputSummaryLabel );
