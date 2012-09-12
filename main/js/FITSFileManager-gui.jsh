@@ -535,23 +535,22 @@ function MainDialog(engine, guiParameters)
    this.remove_all_files_Button = new ToolButton( this );
    this.remove_all_files_Button.icon = new Bitmap( ":/images/close_all.png" );
    this.remove_all_files_Button.toolTip = "<p>Remove all images from the list.</p>";
-   this.remove_all_files_Button.onClick = function()
-      {
+   this.remove_all_files_Button.onClick = function() {
 #ifdef DEBUG
-         debug("remove_all_files_Button: onClick");
+      debug("remove_all_files_Button: onClick");
 #endif
 
-         // TODO We can probably clear in one go
-         for ( var i = this.dialog.filesTreeBox.numberOfChildren; --i >= 0; ) {
-               this.dialog.filesTreeBox.remove( i );
-         }
-         this.dialog.engine.reset();
-         this.dialog.updateTotal();
-         this.dialog.updateButtonState();
-         // Refresh the generated files
-         this.dialog.refreshTargetFiles();
-
+      // TODO We can probably clear in one go
+      for ( var i = this.dialog.filesTreeBox.numberOfChildren; --i >= 0; ) {
+            this.dialog.filesTreeBox.remove( i );
       }
+      this.dialog.engine.reset();
+      this.dialog.updateTotal();
+      this.dialog.updateButtonState();
+      // Refresh the generated files
+      this.dialog.refreshTargetFiles();
+
+   }
 
    // -- Total file Label ---------------------------------------------------------------------------
    this.inputSummaryLabel = new Label( this );
@@ -1121,14 +1120,17 @@ function MainDialog(engine, guiParameters)
 
 #ifdef USE_TREEBOX
       this.transform_TreeBox.clear();
+      var firstNode = null;
       for (var i=0; i<listOfTransforms.length; i++) {
          var node = new TreeBoxNode( this.transform_TreeBox );
+         if (i===0) { firstNode = node}
          node.setText( 0, listOfTransforms[i] );
-         // TODO Use better status
+         // TODO Use better status information than text
          if (listOfTransforms[i].indexOf("Error")>0) {
             node.setTextColor(0,0x00FF0000);
          }
       }
+      if (firstNode) {this.transform_TreeBox.currentNode = firstNode;}
 #else
       this.transform_TextBox.text = listOfTransforms.join("");
       this.transform_TextBox.caretPosition = 0;
@@ -1235,7 +1237,6 @@ function FITSKeysDialog( parentDialog, engine)
 
    // A file was selected (also called to initialize)
    this.file_ComboBox.onItemSelected = function( index ) {
-      // TODO Refactor action code to be in keyword_TreeBox
       // Assume that index in combox is same as index in inputfiles
 #ifdef DEBUG
       debug("FITSKeysDialog: file_ComboBox: onItemSelected - " + index + " key table length = " + engine.keyTable.length);
@@ -1253,15 +1254,17 @@ function FITSKeysDialog( parentDialog, engine)
          if (variable !== null) {
             synthRootNode.child(i).setTextColor(0,0x00000000);
             synthRootNode.child(i).setText(1,variable);
-            synthRootNode.child(i).setText(2,shownSyntheticComments[i]);
+            synthRootNode.child(i).setText(2,'');
+            synthRootNode.child(i).setText(3,shownSyntheticComments[i]);
          } else {
             synthRootNode.child(i).setTextColor(0,0x00FF0000);
             synthRootNode.child(i).setText(1,'');
             synthRootNode.child(i).setText(2,'');
+            synthRootNode.child(i).setText(3,'');
          }
       }
 
-      // Update FITS key words from engine information
+      // Update FITS key words values from engine information
       var fitsRoootNode = keyword_TreeBox.child(1);
 
       for (var i = 0; i<engine.keyTable.length; i++) {
@@ -1281,11 +1284,23 @@ function FITSKeysDialog( parentDialog, engine)
          if (keyWord !== null) {
             fitsRoootNode.child(i).setTextColor(0,0x00000000);
             fitsRoootNode.child(i).setText(1,keyWord.value);
-            fitsRoootNode.child(i).setText(2,keyWord.comment);
+            var type = '';
+            if (keyWord.isBoolean) {
+               type = "bool";
+            } else if (keyWord.isNumeric) {
+               type = "num";
+            } else if (keyWord.isString) {
+               type ="str";
+            } else if (keyWord.isNull) {
+               type = "null";
+            }
+            fitsRoootNode.child(i).setText(2,type);
+            fitsRoootNode.child(i).setText(3,keyWord.comment);
          } else {
             fitsRoootNode.child(i).setTextColor(0,0x00FF0000);
             fitsRoootNode.child(i).setText(1,'');
             fitsRoootNode.child(i).setText(2,'');
+            fitsRoootNode.child(i).setText(3,'');
          }
       }
 
@@ -1298,10 +1313,12 @@ function FITSKeysDialog( parentDialog, engine)
    this.keyword_TreeBox.numberOfColumns = 3;
    this.keyword_TreeBox.setHeaderText(0, "name");
    this.keyword_TreeBox.setHeaderText(1, "value");
-   this.keyword_TreeBox.setHeaderText(2, "comment");
+   this.keyword_TreeBox.setHeaderText(2, "type");
+   this.keyword_TreeBox.setHeaderText(3, "comment");
    this.keyword_TreeBox.setColumnWidth(0,150);
    this.keyword_TreeBox.setColumnWidth(1,200);
-   this.keyword_TreeBox.setColumnWidth(2,600);
+   this.keyword_TreeBox.setColumnWidth(2,50);
+   this.keyword_TreeBox.setColumnWidth(3,600);
 
 
    // Export selected fits keywords for checked files
@@ -1353,7 +1370,7 @@ function FITSKeysDialog( parentDialog, engine)
       this.position = p;
 
 
-      // -- Rebuild the list of FITS keywords
+      // -- Rebuild the list of keywords
 
       this.keyword_TreeBox.clear();
 
@@ -1363,7 +1380,7 @@ function FITSKeysDialog( parentDialog, engine)
       synthRoootNode.setText(0,"Synthetic keywords");
 
 
-      // Fill list of keywords from parent keyTable
+      // Fill list of keywords global variable
       for (var i =0; i<shownSyntheticVariables.length; i++) {
          var node = new TreeBoxNode(synthRoootNode);
          node.setText( 0, shownSyntheticVariables[i] );
@@ -1376,7 +1393,7 @@ function FITSKeysDialog( parentDialog, engine)
       fitsRoootNode.setText(0,"FITS keywords");
 
 
-      // Fill list of keywords from parent keyTable
+      // Fill FITS keyword names from keyTable (accumulated name of all keywords)
       for (var i =0; i<engine.keyTable.length; i++) {
          var node = new TreeBoxNode(fitsRoootNode);
          node.setText( 0, engine.keyTable[i] );
@@ -1389,6 +1406,7 @@ function FITSKeysDialog( parentDialog, engine)
       for (i = 0; i< engine.inputFiles.length; i++) {
          this.file_ComboBox.addItem(engine.inputFiles[i]);
       }
+      // TODO position on select file on input, if any
       this.file_ComboBox.onItemSelected(0);
 
 

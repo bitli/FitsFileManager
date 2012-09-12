@@ -109,6 +109,8 @@ function debug(str) {
 //     Supressed Export FITS keys as incompletely implemented and may be integrated in 1.8
 // 2012-09-xx - 0.6 - Performance enhancements
 //     Use TreeBox instead of TextBox
+//     Added button to check/uncheck boxes
+
 
 
 
