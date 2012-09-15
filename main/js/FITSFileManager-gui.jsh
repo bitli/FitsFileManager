@@ -743,6 +743,7 @@ function MainDialog(engine, guiParameters)
       if ( gdd.execute() ) {
          this.dialog.engine.outputDirectory = gdd.directory;
          this.dialog.outputDir_Edit.text = this.dialog.engine.outputDirectory;
+         this.dialog.bar3.setCollapsedTitle( "Output base directory - " +  this.dialog.engine.outputDirectory);
          this.dialog.updateButtonState();
       }
    }
@@ -756,6 +757,7 @@ function MainDialog(engine, guiParameters)
 
    this.bar3 = new SectionBar( this );
    this.bar3.setTitle( "Output base directory" );
+   this.bar3.setCollapsedTitle( "Output base directory - not specified" );
    this.bar3.setSection( this.outputDir_GroupBox );
 
 
@@ -802,6 +804,7 @@ function MainDialog(engine, guiParameters)
 
    this.bar4 = new SectionBar( this );
    this.bar4.setTitle( "Resulting operations" );
+   this.bar4.setCollapsedTitle( "Resulting operations - None" );
    this.bar4.setSection( this.outputFiles_GroupBox );
 
 
@@ -964,10 +967,12 @@ function MainDialog(engine, guiParameters)
    // Support methods
    //----------------------------------------------------------------------------------
 
+   var synthKeyList = ['type','binning','temp','filter','exposure'];
+
    // -- Hide columns of unchecked keywords (called to apply changes)
    this.hideKey = function () {
       for (var i = 0; i<this.engine.keyEnabled.length;i++) {
-         var c = i + 1;
+         var c = i + 1 + synthKeyList.length;
          this.filesTreeBox.showColumn( c, this.engine.keyEnabled[i]);
       }
    }
@@ -981,16 +986,28 @@ function MainDialog(engine, guiParameters)
 #endif
 
       this.filesTreeBox.clear();
-      this.filesTreeBox.numberOfColumns = 0;
+      this.filesTreeBox.numberOfColumns = 1; // Filename
 
-     // TODO move key building code in engine
 
       this.engine.keyTable = []; // clear
       this.engine.keyEnabled = []; // clear
 
+
+      for (var iSynthKey = 0; iSynthKey<synthKeyList.length; iSynthKey++) {
+         var name = synthKeyList[iSynthKey];
+         this.filesTreeBox.numberOfColumns++;// add new column
+         this.filesTreeBox.setHeaderText(this.filesTreeBox.numberOfColumns-1, name);//set name of new column
+#ifdef DEBUG
+         debug("rebuildFilesTreeBox: added synth key header '" + name +  "' as col " + this.filesTreeBox.numberOfColumns);
+#endif
+      }
+
+
+
       // Accumulate all unique FITS keys in keyTable
       for (var i = 0; i < this.engine.inputFiles.length; ++i) {
          var keys = this.engine.inputKeys[i]; // keywords of one file
+         var syntheticKeyWords = this.engine.inputVariables[i];
 
          // Create TreeBoxNode for file
          var node = new TreeBoxNode( this.filesTreeBox );
@@ -999,8 +1016,19 @@ function MainDialog(engine, guiParameters)
          node.checked = true;
 
 #ifdef DEBUG
-         debug("rebuildFilesTreeBox: adding " + keys.length + " FITS keys to row " + i);
+         debug("rebuildFilesTreeBox: adding " + Object.keys(syntheticKeyWords) + " synthetics keys, " + keys.length + " FITS keys to row " + i);
 #endif
+         for (var iSynthKey = 0; iSynthKey<synthKeyList.length; iSynthKey++) {
+            var name = synthKeyList[iSynthKey];
+            // col 1 is filename
+            var textSynthKey = syntheticKeyWords[name];
+            node.setText(iSynthKey+1, textSynthKey ? textSynthKey : "");
+         }
+
+#ifdef DEBUG
+         debug("rebuildFilesTreeBox: setting " + keys.length + " FITS keys to row " + i);
+#endif
+
          for ( var iKeyOfFile = 0; iKeyOfFile<keys.length; iKeyOfFile++) {
             var name = keys[iKeyOfFile].name; //name of Keyword from file
             var k = this.engine.keyTable.indexOf(name);// find index of "name" in keyTable
@@ -1011,18 +1039,17 @@ function MainDialog(engine, guiParameters)
 #endif
                this.engine.keyTable.push(name);//add keyword name to table
                this.filesTreeBox.numberOfColumns++;// add new column
-               this.filesTreeBox.setHeaderText(this.engine.keyTable.length, name);//set name of new column
+               this.filesTreeBox.setHeaderText(this.filesTreeBox.numberOfColumns-1, name);//set name of new column
                //console.writeln("*** " + this.filesTreeBox.numberOfColumns + " " + name);
                this.engine.keyEnabled.push (this.engine.defaultKey.indexOf(name)> -1);//compare with default enabled keywords
-               k = this.engine.keyTable.length-1;
 
                //this.filesTreeBox.showColumn( this.filesTreeBox.numberOfColumns, this.keyEnabled[k]);
             }
             // TODO Supports other formatting (dates ?) or show raw text
             if (keys[iKeyOfFile].isNumeric) {
-               node.setText( k+1, Number(keys[iKeyOfFile].value).toFixed(3) );
+               node.setText(this.filesTreeBox.numberOfColumns-1, Number(keys[iKeyOfFile].value).toFixed(3) );
             } else {
-               node.setText( k+1, keys[iKeyOfFile].value.trim() );
+               node.setText( this.filesTreeBox.numberOfColumns-1, keys[iKeyOfFile].value.trim() );
             }
          }
       }
@@ -1242,67 +1269,7 @@ function FITSKeysDialog( parentDialog, engine)
       debug("FITSKeysDialog: file_ComboBox: onItemSelected - " + index + " key table length = " + engine.keyTable.length);
 #endif
 
-      var keyword_TreeBox = this.parent.keyword_TreeBox;
-
-      // Update the values of the synthethic keywords from a predefined list and engine values
-      var synthRootNode = keyword_TreeBox.child(0);
-
-      for (var i =0; i<shownSyntheticVariables.length; i++) {
-         var keyName = shownSyntheticVariables[i];
-         var variables = engine.inputVariables[index];
-         var variable = variables[keyName];
-         if (variable !== null) {
-            synthRootNode.child(i).setTextColor(0,0x00000000);
-            synthRootNode.child(i).setText(1,variable);
-            synthRootNode.child(i).setText(2,'');
-            synthRootNode.child(i).setText(3,shownSyntheticComments[i]);
-         } else {
-            synthRootNode.child(i).setTextColor(0,0x00FF0000);
-            synthRootNode.child(i).setText(1,'');
-            synthRootNode.child(i).setText(2,'');
-            synthRootNode.child(i).setText(3,'');
-         }
-      }
-
-      // Update FITS key words values from engine information
-      var fitsRoootNode = keyword_TreeBox.child(1);
-
-      for (var i = 0; i<engine.keyTable.length; i++) {
-         var keyName = engine.keyTable[i];
-         var keys = engine.inputKeys[index];
-         // TODO - Refactor lookup to engine
-         var keyWord = null;
-         for (var j = 0; j<keys.length; j++) {
-            if (keys[j].name === keyName) {
-               keyWord = keys[j];
-               break;
-            }
-         }
-#ifdef DEBUG_FITS
-         debug("FITSKeysDialog: file_ComboBox: onItemSelected - keyName=" + keyName + ",  keyWord=" + keyWord );
-#endif
-         if (keyWord !== null) {
-            fitsRoootNode.child(i).setTextColor(0,0x00000000);
-            fitsRoootNode.child(i).setText(1,keyWord.value);
-            var type = '';
-            if (keyWord.isBoolean) {
-               type = "bool";
-            } else if (keyWord.isNumeric) {
-               type = "num";
-            } else if (keyWord.isString) {
-               type ="str";
-            } else if (keyWord.isNull) {
-               type = "null";
-            }
-            fitsRoootNode.child(i).setText(2,type);
-            fitsRoootNode.child(i).setText(3,keyWord.comment);
-         } else {
-            fitsRoootNode.child(i).setTextColor(0,0x00FF0000);
-            fitsRoootNode.child(i).setText(1,'');
-            fitsRoootNode.child(i).setText(2,'');
-            fitsRoootNode.child(i).setText(3,'');
-         }
-      }
+     this.dialog.populate(index);
 
    }
 
@@ -1361,7 +1328,8 @@ function FITSKeysDialog( parentDialog, engine)
    this.adjustToContents();
 
    // ------------------------------------------------------------
-   // Recreate the content (key names and list of files) when the dialog is showns
+   // Recreate the content when the dialog is showns
+   // This method recreate the columnsm key names, populate the list of file and call initializer for data
    this.onShow = function()
    {
       // -- Locate dialog
@@ -1406,11 +1374,80 @@ function FITSKeysDialog( parentDialog, engine)
       for (i = 0; i< engine.inputFiles.length; i++) {
          this.file_ComboBox.addItem(engine.inputFiles[i]);
       }
-      // TODO position on select file on input, if any
-      this.file_ComboBox.onItemSelected(0);
 
+      // TODO position on select file on input, if any
+      this.populate(0);
 
       this.setMinSize(700,600);
+   };
+
+   this.getTypeString = function (fitsKey) {
+      if (fitsKey.isBoolean) {
+         return "bool";
+      } else if (fitsKey.isNumeric) {
+         return "num";
+      } else if (fitsKey.isString) {
+         return "str";
+      } else if (fitsKey.isNull) {
+         return "null";
+      }
+      return "";
+
+   }
+
+   // Populate from information of inputFile[index]
+   this.populate = function (index) {
+
+      // Update the values of the synthethic keywords from a predefined list and engine values
+      var synthRootNode = this.keyword_TreeBox.child(0);
+
+      for (var i =0; i<shownSyntheticVariables.length; i++) {
+         var keyName = shownSyntheticVariables[i];
+         var variables = engine.inputVariables[index];
+         var variable = variables[keyName];
+         if (variable !== null) {
+            synthRootNode.child(i).setTextColor(0,0x00000000);
+            synthRootNode.child(i).setText(1,variable);
+            synthRootNode.child(i).setText(2,'');
+            synthRootNode.child(i).setText(3,shownSyntheticComments[i]);
+         } else {
+            synthRootNode.child(i).setTextColor(0,0x00FF0000);
+            synthRootNode.child(i).setText(1,'');
+            synthRootNode.child(i).setText(2,'');
+            synthRootNode.child(i).setText(3,'');
+         }
+      }
+
+      // Update FITS key words values from engine information
+      var fitsRoootNode = this.keyword_TreeBox.child(1);
+
+      for (var i = 0; i<engine.keyTable.length; i++) {
+         var keyName = engine.keyTable[i];
+         var keys = engine.inputKeys[index];
+         // TODO - Refactor lookup to engine
+         var keyWord = null;
+         for (var j = 0; j<keys.length; j++) {
+            if (keys[j].name === keyName) {
+               keyWord = keys[j];
+               break;
+            }
+         }
+#ifdef DEBUG_FITS
+         debug("FITSKeysDialog: file_ComboBox: onItemSelected - keyName=" + keyName + ",  keyWord=" + keyWord );
+#endif
+         if (keyWord !== null) {
+            fitsRoootNode.child(i).setTextColor(0,0x00000000);
+            fitsRoootNode.child(i).setText(1,keyWord.value);
+            fitsRoootNode.child(i).setText(2,this.getTypeString(keyWord));
+            fitsRoootNode.child(i).setText(3,keyWord.comment);
+         } else {
+            fitsRoootNode.child(i).setTextColor(0,0x00FF0000);
+            fitsRoootNode.child(i).setText(1,'');
+            fitsRoootNode.child(i).setText(2,'');
+            fitsRoootNode.child(i).setText(3,'');
+         }
+      }
+
    }
 
 }

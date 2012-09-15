@@ -193,6 +193,7 @@ function convertFilter(rawFilterName) {
       [/.*red.*/i, 'red'],
       [/.*blue.*/i, 'blue'],
       [/.*clear.*/i, 'clear'],
+      [/.*luminance.*/i, 'luminance'],
    ];
    var unquotedName = unQuote(rawFilterName);
    for (var i=0; i<filterConversions.length; i++) {
@@ -424,7 +425,6 @@ function makeSynthethicVariables(inputFile, keys) {
 
    var inputFileName =  File.extractName(inputFile);
 
-
    var variables = [];
 
    //   &binning     Binning from XBINNING and YBINNING as integers, like 2x2.
@@ -471,6 +471,9 @@ function makeSynthethicVariables(inputFile, keys) {
 
    //   &FITSKW;     (NOT IMPLEMENTED)
 
+#ifdef DEBUG
+   debug("makeSynthethicVariables: made " + Object.keys(variables).length + " synthetics keys for file " + inputFileName);
+#endif
 
    return variables;
 

@@ -25,7 +25,7 @@ function FFM_Engine(guiParameters) {
       // Cache of file information. 3parallel arrays, the order is usually NOT the same as in the GUI
       this.inputFiles = []; //Array of filename with full path
       this.inputKeys = [];  // Array of an array of FITSKeywords for the corresponding file
-      this.inputVariables = [];  // Array of Map of stable variables for the corresponding file
+      this.inputVariables = [];  // Array of Map of stable synthethic variables for the corresponding file
 
       // Cache global FITS key information (two parallel arrays)
       this.keyTable = [];   //accumulated names of keywords from all files

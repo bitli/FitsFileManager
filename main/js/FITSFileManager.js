@@ -60,7 +60,7 @@
 
 // --- Debugging control ----------------
 // Set to false when doing hasardous developments...
-// #define EXECUTE_COMMANDS false
+#define EXECUTE_COMMANDS true
 // Tracing - define DEBUG if you define any other
 //#define DEBUG
 //#define DEBUG_EVENTS
@@ -110,6 +110,8 @@ function debug(str) {
 // 2012-09-xx - 0.6 - Performance enhancements
 //     Use TreeBox instead of TextBox
 //     Added button to check/uncheck boxes
+//     List types in keyword table
+
 
 
 
