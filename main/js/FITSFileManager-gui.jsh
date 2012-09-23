@@ -43,26 +43,28 @@ Keywords (like  &amp;keyword;) are replaced by values defined from the file info
 <dl>\
    <dt>&amp;count;</dt><dd>The number of the file being moved/copied int the current group, padded to COUNT_PAD.<\dd>\
    <dt>&amp;rank;</dt><dd>The number of the file in the order of the input file list, padded to COUNT_PAD.<\dd>\
+</dl>You can enter the template or select one of the predefined one and optionaly modify it.\
 "
 
 
 #define SOURCE_FILENAME_REGEXP_TOOLTIP "\
-Define  a regular expression (without the surround slashes) that will be applied to all file names\n\
-without the extension. The 'match' array resulting from the regular expression matching can be used\n\
-in the target file name template as &0; (whole expression), &1 (first group), ...\n\
-In case of error the field turns red.\n\
-See https:\/\/developer.mozilla.org\/en-US\/docs\/JavaScript\/Guide\/Regular_Expressions for more informations on regular expresssions\
+Define  a regular expression (without the surround slashes) that will be applied to all file names \
+without the extension. The 'match' array resulting from the regular expression matching can be used \
+in the target file name template as &0; (whole expression), &1 (first group), ... \
+In case of error the field turns red. \
+You can enter the regexp or select one of the predefined one and optionaly modify it. \
+<br/>See https:\/\/developer.mozilla.org\/en-US\/docs\/JavaScript\/Guide\/Regular_Expressions for more informations on regular expresssions. \
 "
 
 
 #define GROUP_TEMPLATE_TOOLTIP "\
-Define the template to generate a group name used by &count;.\n\
-Each group has its own group number starting at 1. You can use the same variables\n\
-as for the target file name, except &count;. In addition you can use:\n\
-<dl>\
-   <dt>&targetDir;</dt><dd>The directory part of the target file name (except that &count; is not replaced).</dd>\n\
-</dl>Leave blank or use a fixed name to have a single counter. For example '&targetDir;' count in each target\n\
-directory.' &filter;' count separetely for each filter.\n\
+Define the template to generate a group name used by &count;. \
+Each group has its own group number starting at 1. You can use the same variables \
+as for the target file name, except &count;. In addition you can use:\
+<dl><dt>&targetDir;</dt><dd>The directory part of the target file name (except that &count; is not replaced).</dd>\
+</dl>Leave blank or use a fixed name to have a single counter. For example '&targetDir;' count in each target \
+directory.' &filter;' count separetely for each filter. \
+You can enter the template or select one of the predefined one and optionaly modify it.\
 "
 
 #define BASE_HELP_TEXT "\
@@ -391,8 +393,6 @@ function MainDialog(engine, guiParameters) {
    // -- FITSKeyWord Dialog (opened as a child on request)
    this.fitsKeysDialog = new FITSKeysDialog( this, engine );
 
-   this.selectPredefinedDialog = new SelectPredefinedDialog(this);
-
 
    // -- HelpLabel
    var helpLabel = new Label( this );
@@ -606,7 +606,6 @@ function MainDialog(engine, guiParameters) {
    //----------------------------------------------------------------------------------
 
    // Target template --------------------------------------------------------------------------------------
-
    this.targetFileItemListText = [
       guiParameters.targetFileNameCompiledTemplate.templateString,
       FFM_DEFAULT_TARGET_FILENAME_TEMPLATE,
