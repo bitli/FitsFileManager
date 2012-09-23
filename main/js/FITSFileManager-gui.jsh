@@ -131,17 +131,62 @@ function FFM_GUIParameters() {
          throw "PROGRAMMING ERROR - default built in templates invalid";
       }
 
-    }
+      // The predefined templates and regexp, an array of value and an arary of comments
+      // In theGUI parameters as they could be made configurable by the user
+      this.regexpItemListText = [
+         regExpToString(this.sourceFileNameRegExp), // Must be adapted after parameter loading
+         FFM_DEFAULT_SOURCE_FILENAME_REGEXP,
+         "/.*/"
+      ];
+      this.regexpItemListComment = [
+         "last",
+         "extract name",
+         "(everything)"
+      ];
+
+
+      this.groupItemListText = [
+            this.groupByCompiledTemplate.templateString, // Must be adapted after parameter loading
+            FFM_DEFAULT_GROUP_TEMPLATE,
+            "&filter;",
+            ""
+      ];
+      this.groupItemListComment = [
+            "last",
+            "by directory (default)",
+            "by filter",
+            "none"
+      ];
+
+      this.targetFileItemListText = [
+            this.targetFileNameCompiledTemplate.templateString, // Must be adapted after parameter loading
+            FFM_DEFAULT_TARGET_FILENAME_TEMPLATE,
+            "&type;/&1;_&binning;_&temp;C_&exposure;s_&filter;_&count;&extension;",
+            "&filter;_&count;&extension;",
+            "&1;_&type?light;_&filter?clear;_&count;&extension;",
+            ""
+      ];
+      this.targetFileItemListComment = [
+            "last",
+            "detailled",
+            "directory by type",
+            "just filter",
+            "type and filter with defaults",
+            "(clear)"
+      ];
+
+
+   }
    this.reset();
 
 
    // For debugging and logging
    this.toString = function() {
       var s = "GUIParameters:\n";
-      s += "  targetFileNameTemplate:           " + replaceAmps(this.targetFileNameCompiledTemplate.templateString) + "\n";
+      s += "  targetFileNameTemplate:         " + replaceAmps(this.targetFileNameCompiledTemplate.templateString) + "\n";
       s += "  sourceFileNameRegExp:           " + replaceAmps(regExpToString(this.sourceFileNameRegExp)) + "\n";
       s += "  orderBy:                        " + replaceAmps(this.orderBy) + "\n";
-      s += "  groupByTemplate:                 " + replaceAmps(this.groupByCompiledTemplate.templateString) + "\n";
+      s += "  groupByTemplate:                " + replaceAmps(this.groupByCompiledTemplate.templateString) + "\n";
       return s;
    }
 }
@@ -186,14 +231,21 @@ FFM_GUIParameters.prototype.loadSettings = function()
 #endif
             }
          };
-         if ( (o = load( "orderBy",                 DataType_String )) !== null )
+         if ( (o = load( "orderBy",                  DataType_String )) !== null ) {
             this.orderBy = o;
-         if ( (o = load( "groupByTemplate",          DataType_String )) !== null )
+         }
+         if ( (o = load( "groupByTemplate",          DataType_String )) !== null ) {
             templateErrors = [];
             t = ffM_template.analyzeTemplate(templateErrors, o);
             if (templateErrors.length ===0) {
                this.groupByCompiledTemplate = t;
             }
+         }
+
+         // Restore the 'last' value in the list of predfined choices
+         this.regexpItemListText[0] = regExpToString(this.sourceFileNameRegExp);
+         this.groupItemListText[0] = this.groupByCompiledTemplate.templateString;
+         this.targetFileItemListText[0] = this.targetFileNameCompiledTemplate.templateString;
       }
    } else {
       Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' do not have a 'version' key, settings ignored");
@@ -218,11 +270,11 @@ FFM_GUIParameters.prototype.saveSettings = function()
       save( key + '_' + index.toString(), type, value );
    }
 
-   save( "version",                  DataType_Double,  parseFloat(VERSION) );
-   save( "targetFileNameTemplate",     DataType_String,  this.targetFileNameCompiledTemplate.templateString );
-   save( "sourceFileNameRegExp",     DataType_String,  regExpToString(this.sourceFileNameRegExp) );
-   save( "orderBy",                  DataType_String,  this.orderBy );
-   save( "groupByTemplate",           DataType_String,  this.groupByCompiledTemplate.templateString );
+   save( "version",                    DataType_Double, parseFloat(VERSION) );
+   save( "targetFileNameTemplate",     DataType_String, this.targetFileNameCompiledTemplate.templateString );
+   save( "sourceFileNameRegExp",       DataType_String, regExpToString(this.sourceFileNameRegExp) );
+   save( "orderBy",                    DataType_String,  this.orderBy );
+   save( "groupByTemplate",            DataType_String,  this.groupByCompiledTemplate.templateString );
 
 }
 
@@ -606,24 +658,16 @@ function MainDialog(engine, guiParameters) {
    //----------------------------------------------------------------------------------
 
    // Target template --------------------------------------------------------------------------------------
-   this.targetFileItemListText = [
-      guiParameters.targetFileNameCompiledTemplate.templateString,
-      FFM_DEFAULT_TARGET_FILENAME_TEMPLATE,
-      "&type;/&1;_&binning;_&temp;C_&exposure;s_&filter;_&count;&extension;",
-      "&filter;_&count;&extension;",
-      "&1;_&type?light;_&filter?clear;_&count;&extension;",
-      ""];
-   this.targetFileItemListComment = ["last", "detailled", "directory by type", "just filter", "type and filter with defaults", "(clear)"];
 
 
    this.targetFileTemplate_ComboBox = new ComboBox( this );
    this.targetFileTemplate_ComboBox.toolTip = TARGET_TEMPLATE_TOOLTIP;
    this.targetFileTemplate_ComboBox.enabled = true;
    this.targetFileTemplate_ComboBox.editEnabled = true;
-   for (var it = 0; it<this.targetFileItemListText.length; it++) {
-      this.targetFileTemplate_ComboBox.addItem("'" + this.targetFileItemListText[it] +  "' - " + this.targetFileItemListComment[it]);
+   for (var it = 0; it<guiParameters.targetFileItemListText.length; it++) {
+      this.targetFileTemplate_ComboBox.addItem("'" + guiParameters.targetFileItemListText[it] +  "' - " + guiParameters.targetFileItemListComment[it]);
    }
-   this.targetFileTemplate_ComboBox.editText = this.targetFileItemListText[0];
+   this.targetFileTemplate_ComboBox.editText = guiParameters.targetFileItemListText[0];
 
 
    this.targetFileTemplate_ComboBox.onEditTextUpdated = function() {
@@ -664,20 +708,14 @@ function MainDialog(engine, guiParameters) {
 
 
    // Regular expression on source file --------------------------------------------------------------------------------------
-   this.regexpItemListText = [regExpToString(guiParameters.sourceFileNameRegExp),
-      FFM_DEFAULT_SOURCE_FILENAME_REGEXP,
-      "/.*/"];
-   this.regexpItemListComment = ["last", "extract name", "(everything)"];
-
-
    this.regexp_ComboBox = new ComboBox( this );
    this.regexp_ComboBox.toolTip = SOURCE_FILENAME_REGEXP_TOOLTIP;
    this.regexp_ComboBox.enabled = true;
    this.regexp_ComboBox.editEnabled = true;
-   for (var it = 0; it<this.regexpItemListText.length; it++) {
-      this.regexp_ComboBox.addItem("'" + this.regexpItemListText[it] +  "' - " + this.regexpItemListComment[it]);
+   for (var it = 0; it<guiParameters.regexpItemListText.length; it++) {
+      this.regexp_ComboBox.addItem("'" + guiParameters.regexpItemListText[it] +  "' - " + guiParameters.regexpItemListComment[it]);
    }
-   this.regexp_ComboBox.editText = this.regexpItemListText[0];
+   this.regexp_ComboBox.editText = guiParameters.regexpItemListText[0];
 
 
    this.regexp_ComboBox.onEditTextUpdated = function() {
@@ -739,18 +777,16 @@ function MainDialog(engine, guiParameters) {
 
 
    // Group template --------------------------------------------------------------------------------------
-   this.groupItemListText = [guiParameters.groupByCompiledTemplate.templateString,FFM_DEFAULT_GROUP_TEMPLATE,"&filter;",""];
-   this.groupItemListComment = ["last", "by directory (default)", "by filter","none"];
 
 
    this.groupTemplate_ComboBox = new ComboBox( this );
    this.groupTemplate_ComboBox.toolTip = GROUP_TEMPLATE_TOOLTIP;
    this.groupTemplate_ComboBox.enabled = true;
    this.groupTemplate_ComboBox.editEnabled = true;
-   for (var it = 0; it<this.groupItemListText.length; it++) {
-      this.groupTemplate_ComboBox.addItem("'" + this.groupItemListText[it] +  "' - " + this.groupItemListComment[it]);
+   for (var it = 0; it<guiParameters.groupItemListText.length; it++) {
+      this.groupTemplate_ComboBox.addItem("'" + guiParameters.groupItemListText[it] +  "' - " + guiParameters.groupItemListComment[it]);
    }
-   this.groupTemplate_ComboBox.editText = this.groupItemListText[0];
+   this.groupTemplate_ComboBox.editText = guiParameters.groupItemListText[0];
 
 
    this.groupTemplate_ComboBox.onEditTextUpdated = function() {
