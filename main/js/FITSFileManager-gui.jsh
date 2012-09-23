@@ -224,6 +224,16 @@ FFM_GUIParameters.prototype.saveSettings = function()
 
 }
 
+FFM_GUIParameters.prototype.targetTemplateSelection =  [
+   FFM_DEFAULT_TARGET_FILENAME_TEMPLATE
+];
+FFM_GUIParameters.prototype.groupTemplateSelection = [
+   FFM_DEFAULT_GROUP_TEMPLATE
+];
+FFM_GUIParameters.prototype.regexpSelection = [
+   FFM_DEFAULT_SOURCE_FILENAME_REGEXP.toString()
+];
+
 
 
 // ------------------------------------------------------------------------------------------------------------------------
@@ -364,12 +374,13 @@ function SectionBar( parent )
 SectionBar.prototype = new Control;
 
 
+
+
 // ------------------------------------------------------------------------------------------------------------------------
 // GUI Main Dialog
 // ------------------------------------------------------------------------------------------------------------------------
 
-function MainDialog(engine, guiParameters)
-{
+function MainDialog(engine, guiParameters) {
    this.__base__ = Dialog;
    this.__base__();
    this.engine = engine;
@@ -379,6 +390,8 @@ function MainDialog(engine, guiParameters)
 
    // -- FITSKeyWord Dialog (opened as a child on request)
    this.fitsKeysDialog = new FITSKeysDialog( this, engine );
+
+   this.selectPredefinedDialog = new SelectPredefinedDialog(this);
 
 
    // -- HelpLabel
@@ -593,16 +606,37 @@ function MainDialog(engine, guiParameters)
    //----------------------------------------------------------------------------------
 
    // Target template --------------------------------------------------------------------------------------
-   this.targetFileTemplate_Edit = new Edit( this );
-   this.targetFileTemplate_Edit.text = guiParameters.targetFileNameCompiledTemplate.templateString;
-   this.targetFileTemplate_Edit.toolTip = TARGET_TEMPLATE_TOOLTIP;
-   this.targetFileTemplate_Edit.enabled = true;
-   this.targetFileTemplate_Edit.onTextUpdated = function() {
+
+   this.targetFileItemListText = [
+      guiParameters.targetFileNameCompiledTemplate.templateString,
+      FFM_DEFAULT_TARGET_FILENAME_TEMPLATE,
+      "&type;/&1;_&binning;_&temp;C_&exposure;s_&filter;_&count;&extension;",
+      "&filter;_&count;&extension;",
+      "&1;_&type?light;_&filter?clear;_&count;&extension;",
+      ""];
+   this.targetFileItemListComment = ["last", "detailled", "directory by type", "just filter", "type and filter with defaults", "(clear)"];
+
+
+   this.targetFileTemplate_ComboBox = new ComboBox( this );
+   this.targetFileTemplate_ComboBox.toolTip = TARGET_TEMPLATE_TOOLTIP;
+   this.targetFileTemplate_ComboBox.enabled = true;
+   this.targetFileTemplate_ComboBox.editEnabled = true;
+   for (var it = 0; it<this.targetFileItemListText.length; it++) {
+      this.targetFileTemplate_ComboBox.addItem("'" + this.targetFileItemListText[it] +  "' - " + this.targetFileItemListComment[it]);
+   }
+   this.targetFileTemplate_ComboBox.editText = this.targetFileItemListText[0];
+
+
+   this.targetFileTemplate_ComboBox.onEditTextUpdated = function() {
 #ifdef DEBUG
-      debug("targetFileTemplate_Edit: onTextUpdated " + this.text);
+      debug("targetFileTemplate_ComboBox: onEditTextUpdated " + this.editText);
 #endif
+
+      var text = this.editText;
       var templateErrors = [];
-      var t = ffM_template.analyzeTemplate(templateErrors, this.text);
+
+      var templateErrors = [];
+      var t = ffM_template.analyzeTemplate(templateErrors, text);
       if (templateErrors.length === 0) {
          this.textColor = 0x000000;
          guiParameters.targetFileNameCompiledTemplate  = t;
@@ -610,17 +644,49 @@ function MainDialog(engine, guiParameters)
       } else {
          this.textColor = 0xFF0000;
       }
+   }
 
+   this.targetFileTemplate_ComboBox.onItemSelected = function() {
+#ifdef DEBUG
+      debug("targetFileTemplate_ComboBox: onItemSelected " + this.currentItem);
+#endif
+      var text = this.dialog.targetFileItemListText[this.currentItem];
+      this.dialog.targetFileTemplate_ComboBox.editText = text;
+      var templateErrors = [];
+      var t = ffM_template.analyzeTemplate(templateErrors, text);
+      if (templateErrors.length === 0) {
+         this.textColor = 0x000000;
+         guiParameters.targetFileNameCompiledTemplate  = t;
+         this.dialog.refreshTargetFiles();
+      } else {
+         this.textColor = 0xFF0000;
+      }
    }
 
 
    // Regular expression on source file --------------------------------------------------------------------------------------
-   this.sourceTemplate_Edit = new Edit( this );
-   this.sourceTemplate_Edit.text = regExpToString(guiParameters.sourceFileNameRegExp);
-   this.sourceTemplate_Edit.toolTip = SOURCE_FILENAME_REGEXP_TOOLTIP;
-   this.sourceTemplate_Edit.enabled = true;
-   this.sourceTemplate_Edit.onTextUpdated = function() {
-      var re = this.text.trim();
+   this.regexpItemListText = [regExpToString(guiParameters.sourceFileNameRegExp),
+      FFM_DEFAULT_SOURCE_FILENAME_REGEXP,
+      "/.*/"];
+   this.regexpItemListComment = ["last", "extract name", "(everything)"];
+
+
+   this.regexp_ComboBox = new ComboBox( this );
+   this.regexp_ComboBox.toolTip = SOURCE_FILENAME_REGEXP_TOOLTIP;
+   this.regexp_ComboBox.enabled = true;
+   this.regexp_ComboBox.editEnabled = true;
+   for (var it = 0; it<this.regexpItemListText.length; it++) {
+      this.regexp_ComboBox.addItem("'" + this.regexpItemListText[it] +  "' - " + this.regexpItemListComment[it]);
+   }
+   this.regexp_ComboBox.editText = this.regexpItemListText[0];
+
+
+   this.regexp_ComboBox.onEditTextUpdated = function() {
+#ifdef DEBUG
+      debug("regexp_ComboBox: onEditTextUpdated " + this.editText);
+#endif
+
+      var re = this.editText.trim();
       if (re.length === 0) {
          guiParameters.sourceFileNameRegExp = null;
 #ifdef DEBUG
@@ -641,23 +707,79 @@ function MainDialog(engine, guiParameters)
 #endif
          }
       }
-      // Refresh the generated files
-      this.dialog.refreshTargetFiles();
+   }
+
+   this.regexp_ComboBox.onItemSelected = function() {
+#ifdef DEBUG
+      debug("regexp_ComboBox: onItemSelected " + this.currentItem);
+#endif
+      var text = regExpToString(this.dialog.regexpItemListText[this.currentItem]);
+      this.dialog.regexp_ComboBox.editText = text;
+      var re = text.trim();
+      if (re.length === 0) {
+         guiParameters.sourceFileNameRegExp = null;
+#ifdef DEBUG
+         debug("sourceTemplate_Edit: onTextUpdated:- cancel regexp");
+#endif
+      } else {
+         try {
+            guiParameters.sourceFileNameRegExp = RegExp(re);
+            this.textColor = 0x000000;
+#ifdef DEBUG
+            debug("sourceTemplate_Edit: onTextUpdated: regexp: " + guiParameters.sourceFileNameRegExp);
+#endif
+         } catch (err) {
+            guiParameters.sourceFileNameRegExp = null;
+            this.textColor = 0xFF0000;
+#ifdef DEBUG
+            debug("sourceTemplate_Edit: onTextUpdated:  bad regexp - err: " + err);
+#endif
+         }
+      }
    }
 
 
    // Group template --------------------------------------------------------------------------------------
-   this.groupTemplate_Edit = new Edit( this );
-   this.groupTemplate_Edit.text = guiParameters.groupByCompiledTemplate.templateString;
-   this.groupTemplate_Edit.toolTip = GROUP_TEMPLATE_TOOLTIP;
-   this.groupTemplate_Edit.enabled = true;
-   this.groupTemplate_Edit.onTextUpdated = function()
-   {
+   this.groupItemListText = [guiParameters.groupByCompiledTemplate.templateString,FFM_DEFAULT_GROUP_TEMPLATE,"&filter;",""];
+   this.groupItemListComment = ["last", "by directory (default)", "by filter","none"];
+
+
+   this.groupTemplate_ComboBox = new ComboBox( this );
+   this.groupTemplate_ComboBox.toolTip = GROUP_TEMPLATE_TOOLTIP;
+   this.groupTemplate_ComboBox.enabled = true;
+   this.groupTemplate_ComboBox.editEnabled = true;
+   for (var it = 0; it<this.groupItemListText.length; it++) {
+      this.groupTemplate_ComboBox.addItem("'" + this.groupItemListText[it] +  "' - " + this.groupItemListComment[it]);
+   }
+   this.groupTemplate_ComboBox.editText = this.groupItemListText[0];
+
+
+   this.groupTemplate_ComboBox.onEditTextUpdated = function() {
 #ifdef DEBUG
-      debug("groupTemplate_Edit: onTextUpdated " + this.text);
+      debug("groupTemplate_ComboBox: onEditTextUpdated " + this.editText);
 #endif
+
+      var text = this.editText;
       var templateErrors = [];
-      var t = ffM_template.analyzeTemplate(templateErrors,this.text);
+
+      var t = ffM_template.analyzeTemplate(templateErrors,text);
+      if (templateErrors.length === 0) {
+         this.textColor = 0x000000;
+         guiParameters.groupByCompiledTemplate  = t;
+         this.dialog.refreshTargetFiles();
+      } else {
+         this.textColor = 0xFF0000;
+      }
+   }
+
+   this.groupTemplate_ComboBox.onItemSelected = function() {
+#ifdef DEBUG
+      debug("groupTemplate_ComboBox: onItemSelected " + this.currentItem);
+#endif
+      var text = this.dialog.groupItemListText[this.currentItem];
+      this.dialog.groupTemplate_ComboBox.editText = text;
+      var templateErrors = [];
+      var t = ffM_template.analyzeTemplate(templateErrors,text);
       if (templateErrors.length === 0) {
          this.textColor = 0x000000;
          guiParameters.groupByCompiledTemplate  = t;
@@ -679,32 +801,31 @@ function MainDialog(engine, guiParameters)
    label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
    this.targetFileTemplate_Edit_sizer.add( label );
-   this.targetFileTemplate_Edit_sizer.add( this.targetFileTemplate_Edit );
+   this.targetFileTemplate_Edit_sizer.add( this.targetFileTemplate_ComboBox,100 );
 
 
-   this.sourceTemplate_Edit_sizer = new HorizontalSizer;
-   this.sourceTemplate_Edit_sizer.margin = 4;
-   this.sourceTemplate_Edit_sizer.spacing = 2;
+   this.regexp_ComboBox_sizer = new HorizontalSizer;
+   this.regexp_ComboBox_sizer.margin = 4;
+   this.regexp_ComboBox_sizer.spacing = 2;
    var label = new Label();
    label.setFixedWidth(labelWidth);;
    label.text		= "File name RegExp: ";
    label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
-   this.sourceTemplate_Edit_sizer.add( label );
-   this.sourceTemplate_Edit_sizer.add( this.sourceTemplate_Edit );
+   this.regexp_ComboBox_sizer.add( label );
+   this.regexp_ComboBox_sizer.add( this.regexp_ComboBox,100 );
 
 
-   this.groupTemplate_Edit_sizer = new HorizontalSizer;
-   this.groupTemplate_Edit_sizer.margin = 4;
-   this.groupTemplate_Edit_sizer.spacing = 2;
+   this.groupTemplate_ComboBox_sizer = new HorizontalSizer;
+   this.groupTemplate_ComboBox_sizer.margin = 4;
+   this.groupTemplate_ComboBox_sizer.spacing = 2;
    var label = new Label();
    label.setFixedWidth(labelWidth);;
    label.text		= "Group template: ";
    label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
-   this.groupTemplate_Edit_sizer.add( label );
-   this.groupTemplate_Edit_sizer.add( this.groupTemplate_Edit );
-
+   this.groupTemplate_ComboBox_sizer.add( label );
+   this.groupTemplate_ComboBox_sizer.add( this.groupTemplate_ComboBox,100);
 
 
    this.rules_GroupBox = new GroupBox( this );
@@ -714,8 +835,8 @@ function MainDialog(engine, guiParameters)
    this.rules_GroupBox.sizer.spacing = 4;
 
    this.rules_GroupBox.sizer.add( this.targetFileTemplate_Edit_sizer, 100);
-   this.rules_GroupBox.sizer.add( this.sourceTemplate_Edit_sizer );
-   this.rules_GroupBox.sizer.add( this.groupTemplate_Edit_sizer );
+   this.rules_GroupBox.sizer.add( this.regexp_ComboBox_sizer );
+   this.rules_GroupBox.sizer.add( this.groupTemplate_ComboBox_sizer );
 
    this.bar2 = new SectionBar( this );
    this.bar2.setTitle( "Rules" );
@@ -1450,7 +1571,11 @@ function FITSKeysDialog( parentDialog, engine)
 
    }
 
-}
+};
+
+
+
+
 FITSKeysDialog.prototype = new Dialog;
 
 
