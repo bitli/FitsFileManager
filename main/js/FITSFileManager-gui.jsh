@@ -297,7 +297,7 @@ FFM_GUIParameters.prototype.regexpSelection = [
 #define contract_icon   new Bitmap( ":/images/icons/contract_v.png" )
 #define expand_icon     new Bitmap( ":/images/icons/expand_v.png" )
 
-function SectionBar( parent )
+function SectionBar( parent, initialyCollapsed )
 {
    this.__base__ = Control;
    if ( parent )
@@ -352,6 +352,7 @@ function SectionBar( parent )
    this.adjustToContents();
    this.setFixedHeight();
 
+
    this.onMousePress = function( x, y, button, buttonState, modifiers )
    {
       if ( button == MouseButton_Left )
@@ -399,6 +400,8 @@ function SectionBar( parent )
             this.button.icon = expand_icon;
    };
 
+
+
    // Public interface
 
    this.setTitle = function( title )
@@ -421,8 +424,13 @@ function SectionBar( parent )
    this.setSection = function( section )
    {
       this.section = section;
+      if (initialyCollapsed) {
+          this.section.hide();
+      }
       this.updateIcon();
    };
+
+
 }
 
 SectionBar.prototype = new Control;
@@ -880,6 +888,56 @@ function MainDialog(engine, guiParameters) {
 
 
    //----------------------------------------------------------------------------------
+   // Conversion definition section
+   //----------------------------------------------------------------------------------
+
+   // Convert type
+   var typeConversion_GroupBox = new GroupBox(this);
+
+   typeConversion_GroupBox.sizer = new VerticalSizer;
+   typeConversion_GroupBox.sizer.margin = 6;
+   typeConversion_GroupBox.sizer.spacing = 4;
+   typeConversion_GroupBox.title = "Type conversions ";
+
+   for (var ic=0; ic<typeConversions.length; ic++) {
+      label = new Label();
+      label.text		= regExpToString( typeConversions[ic][0]) + " -> " + typeConversions[ic][1];
+      //label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
+      typeConversion_GroupBox.sizer.add(label);
+   }
+
+   var filterConversion_GroupBox = new GroupBox(this);
+   filterConversion_GroupBox.sizer = new VerticalSizer;
+   filterConversion_GroupBox.sizer.margin = 6;
+   filterConversion_GroupBox.sizer.spacing = 4;
+   filterConversion_GroupBox.title = "Filter conversions";
+   for (var ic=0; ic<filterConversions.length; ic++) {
+      label = new Label();
+      label.text		= regExpToString( filterConversions[ic][0]) + " -> " + filterConversions[ic][1];
+      //label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
+      filterConversion_GroupBox.sizer.add(label);
+   }
+
+
+
+   this.conversion_GroupBox = new GroupBox( this );
+
+   this.conversion_GroupBox.sizer = new HorizontalSizer;
+   this.conversion_GroupBox.sizer.margin = 6;
+   this.conversion_GroupBox.sizer.spacing = 4;
+
+   this.conversion_GroupBox.sizer.add( typeConversion_GroupBox);
+   this.conversion_GroupBox.sizer.add( filterConversion_GroupBox);
+
+   this.bar2a = new SectionBar( this, true );
+   this.bar2a.setTitle( "Conversion definitions" );
+   this.bar2a.setSection( this.conversion_GroupBox );
+   //this.bar2a.toggleSection();
+
+
+
+
+   //----------------------------------------------------------------------------------
    // Output directory section
    //----------------------------------------------------------------------------------
 
@@ -1108,6 +1166,8 @@ function MainDialog(engine, guiParameters) {
    this.sizer.add( this.inputFiles_GroupBox,50 );
    this.sizer.add(this.bar2);
    this.sizer.add(this.rules_GroupBox);
+   this.sizer.add(this.bar2a);
+   this.sizer.add(this.conversion_GroupBox);
    this.sizer.add(this.bar3);
    this.sizer.add( this.outputDir_GroupBox );
    this.sizer.add(this.bar4);
@@ -1364,6 +1424,7 @@ function MainDialog(engine, guiParameters) {
          // Caller must refresh the generated files
        }
     }
+
 }
 MainDialog.prototype = new Dialog;
 

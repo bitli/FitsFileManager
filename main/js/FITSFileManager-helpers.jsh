@@ -186,15 +186,16 @@ FFM_Converter.prototype = {
 }
 
 
-function convertFilter(rawFilterName) {
-   if (rawFilterName === null) { return null}
-   var filterConversions = [
+var filterConversions = [
       [/.*green.*/i, 'green'],
       [/.*red.*/i, 'red'],
       [/.*blue.*/i, 'blue'],
       [/.*clear.*/i, 'clear'],
       [/.*luminance.*/i, 'luminance'],
-   ];
+];
+
+function convertFilter(rawFilterName) {
+   if (rawFilterName === null) { return null}
    var unquotedName = unQuote(rawFilterName);
    for (var i=0; i<filterConversions.length; i++) {
       var filterName = unquotedName.replace(filterConversions[i][0],filterConversions[i][1]);
@@ -207,16 +208,16 @@ function convertFilter(rawFilterName) {
    return unquotedName.toLowerCase();
 }
 
-function convertType(rawTypeName) {
-   if (rawTypeName === null) { return null}
-   var typeConversions = [
+var typeConversions = [
       [/.*flat.*/i, 'flat'],
       [/.*bias.*/i, 'bias'],
       [/.*offset.*/i, 'bias'],
       [/.*dark.*/i, 'dark'],
       [/.*light.*/i, 'light'],
       [/.*science.*/i, 'light'],
-   ];
+];
+function convertType(rawTypeName) {
+   if (rawTypeName === null) { return null}
    var unquotedName = unQuote(rawTypeName);
    for (var i=0; i<typeConversions.length; i++) {
       var typeName = unquotedName.replace(typeConversions[i][0],typeConversions[i][1]);
