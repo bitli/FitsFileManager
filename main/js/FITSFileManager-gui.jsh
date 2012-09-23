@@ -149,13 +149,15 @@ function FFM_GUIParameters() {
             this.groupByCompiledTemplate.templateString, // Must be adapted after parameter loading
             FFM_DEFAULT_GROUP_TEMPLATE,
             "&filter;",
+            "&type?;&filter?;",
             ""
       ];
       this.groupItemListComment = [
             "last",
-            "by directory (default)",
-            "by filter",
-            "none"
+            "count by directory",
+            "count by filter",
+            "count by type and filter if present",
+            "none (count globally)"
       ];
 
       this.targetFileItemListText = [
@@ -701,7 +703,7 @@ function MainDialog(engine, guiParameters) {
 #ifdef DEBUG
       debug("targetFileTemplate_ComboBox: onItemSelected " + this.currentItem);
 #endif
-      var text = this.dialog.targetFileItemListText[this.currentItem];
+      var text =guiParameters.targetFileItemListText[this.currentItem];
       this.dialog.targetFileTemplate_ComboBox.editText = text;
       var templateErrors = [];
       var t = ffM_template.analyzeTemplate(templateErrors, text);
@@ -758,7 +760,7 @@ function MainDialog(engine, guiParameters) {
 #ifdef DEBUG
       debug("regexp_ComboBox: onItemSelected " + this.currentItem);
 #endif
-      var text = regExpToString(this.dialog.regexpItemListText[this.currentItem]);
+      var text = regExpToString(guiParameters.regexpItemListText[this.currentItem]);
       this.dialog.regexp_ComboBox.editText = text;
       var re = text.trim();
       if (re.length === 0) {
@@ -819,7 +821,7 @@ function MainDialog(engine, guiParameters) {
 #ifdef DEBUG
       debug("groupTemplate_ComboBox: onItemSelected " + this.currentItem);
 #endif
-      var text = this.dialog.groupItemListText[this.currentItem];
+      var text = guiParameters.groupItemListText[this.currentItem];
       this.dialog.groupTemplate_ComboBox.editText = text;
       var templateErrors = [];
       var t = ffM_template.analyzeTemplate(templateErrors,text);
@@ -901,7 +903,7 @@ function MainDialog(engine, guiParameters) {
 
    for (var ic=0; ic<typeConversions.length; ic++) {
       label = new Label();
-      label.text		= regExpToString( typeConversions[ic][0]) + " -> " + typeConversions[ic][1];
+      label.text		=  typeConversions[ic][0].toString() + " -> " + typeConversions[ic][1];
       //label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
       typeConversion_GroupBox.sizer.add(label);
    }
@@ -913,7 +915,7 @@ function MainDialog(engine, guiParameters) {
    filterConversion_GroupBox.title = "Filter conversions";
    for (var ic=0; ic<filterConversions.length; ic++) {
       label = new Label();
-      label.text		= regExpToString( filterConversions[ic][0]) + " -> " + filterConversions[ic][1];
+      label.text		=  filterConversions[ic][0].toString() + " -> " + filterConversions[ic][1];
       //label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
       filterConversion_GroupBox.sizer.add(label);
    }

@@ -168,6 +168,8 @@ function findKeyWord(fitsKeyWordsArray, name) {
 // ------------------------------------------------------------------------------------------------------------------------
 // Conversion support functions
 // ------------------------------------------------------------------------------------------------------------------------
+// TODO Avoid global, move conversion rules to gui parameters
+
 function FFM_Converter() {
    // array of {regexp, replacement}
    this.conversions = [];
@@ -238,8 +240,10 @@ function regExpToString(re) {
    if (re === null) {
       return "";
    } else {
-   // Remove lading and trainling slahes
+   // Remove leading and trailing slahes as weel as flag
       var reString = re.toString();
+      //var secondSeparator = reString.lastIndexOf(reString[0]);
+      //return  reString.substring(1, secondSeparator);
       return  reString.substring(1, reString.length-1);
    }
 }
