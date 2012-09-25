@@ -111,6 +111,9 @@ function debug(str) {
 //     Use TreeBox instead of TextBox
 //     Added button to check/uncheck boxes
 //     List types in keyword table
+//     More dynamic layout
+//     Added predefined templates and regexps
+//     Added copy via FITS load/save with added KEYWORD
 
 
 

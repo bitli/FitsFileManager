@@ -422,17 +422,27 @@ function FFM_Engine(guiParameters) {
                }
             }
 
-            if (engine_mode===0) {
+            switch (engine_mode) {
+             case 0:
                console.writeln("move " + inputFile +"\n  to "+ targetFile);
                if (EXECUTE_COMMANDS) File.move(inputFile,targetFile);
-            } else {
+               break;
+            case 1:
                console.writeln("copy " + inputFile+"\n  to "+ targetFile);
                if (EXECUTE_COMMANDS)  copyFile(inputFile,targetFile);
+            case 2:
+               console.writeln("load  " + inputFile+"\n write "+ targetFile);
+               if (EXECUTE_COMMANDS)  loadSaveFile(inputFile,targetFile);
+             break;
+
             }
+
             count ++;
 
             // To allow abort ?
             processEvents();
+            // May be useful as we load /save a lot of data or images
+            gc();
 
          }
          //console.writeln("Total files: ", this.inputFiles.length,"; Processed: ",count);

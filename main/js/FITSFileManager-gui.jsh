@@ -91,6 +91,14 @@ In addition a 'group' string can be generated using the same template rules and 
 variable is increased for each different group (for example each target directory). \
 "
 
+#define HELP_OPERATIONS "<p>The operations Copy/Move copy or move the files directly, without \
+adding any FITS keywords.  The operation Load/SaveAs loads the image temporarily in the workspace, \
+adds an HISTORY keyword with the original file name if it is not already present and then save it to the new location. \
+The HISTORY with the original name is not added if it was already present. This avoids cluttering \
+the FITS headers in case of multiple renaming and ensures that the original name can always be retrieved. \
+<br/>The operation buttons may be disabled if the operation is not possible (for example if the \
+output directory is not specified).\
+"
 
 #define HELP_TEXT ("<html>" + \
 "<h1><font color=\"#06F\">FITSFileManager</font></h1>" + BASE_HELP_TEXT + \
@@ -100,6 +108,7 @@ variable is increased for each different group (for example each target director
 "Example of regular expression:<br\><tt>&nbsp;&nbsp;&nbsp;([^-_.]+)(?:[._-]|$)</tt><p>" + \
 "<h3><font color=\"#06F\">Group template</font></h3>" +  GROUP_TEMPLATE_TOOLTIP + \
 "Example of group definition:<br/><tt>&nbsp;&nbsp;&nbsp;&amp;targetdir;</tt><p> " + \
+"<h3><font color=\"#06F\">Operations</font></h3>" + HELP_OPERATIONS + \
 "</html>")
 
 
@@ -1032,89 +1041,104 @@ function MainDialog(engine, guiParameters) {
    this.check_Button.toolTip = "Check that the target files are valid\nthis is automatically done before any other operation";
    this.check_Button.enabled = true;
    this.check_Button.onClick = function() {
-         var listOfFiles = this.parent.makeListOfCheckedFiles();
-         var errors = this.parent.engine.checkValidTargets(listOfFiles);
-         if (errors.length > 0) {
-            var msg = new MessageBox( errors.join("\n"),
+      var listOfFiles = this.parent.makeListOfCheckedFiles();
+      var errors = this.parent.engine.checkValidTargets(listOfFiles);
+      if (errors.length > 0) {
+         var msg = new MessageBox( errors.join("\n"),
                    "Check failed", StdIcon_Error, StdButton_Ok );
-            msg.execute();
-         } else if (this.parent.engine.targetFiles.length === 0) {
-            var msg = new MessageBox(
+         msg.execute();
+      } else if (this.parent.engine.targetFiles.length === 0) {
+         var msg = new MessageBox(
             "There is no file to move or copy", "Check irrelevant", StdIcon_Information, StdButton_Ok );
-             msg.execute();
-         } else {
-            var text = "" + this.parent.engine.targetFiles.length + " files checked" ;
-             if (this.parent.engine.nmbFilesTransformed >0) {
-                text += ", " + this.parent.engine.nmbFilesTransformed + " to copy/move";
-             }
-
-            //      this.engine.nmbFilesSkipped;
-            if (this.parent.engine.nmbFilesInError >0) {
-               // Should not happens
-               text += ", " + this.parent.engine.nmbFilesInError + " IN ERROR";
+         msg.execute();
+      } else {
+         var text = "" + this.parent.engine.targetFiles.length + " files checked" ;
+            if (this.parent.engine.nmbFilesTransformed >0) {
+               text += ", " + this.parent.engine.nmbFilesTransformed + " to copy/move";
             }
 
-            if (!this.parent.engine.outputDirectory) {
-               text += ",\nbut output directory is not defined";
-            }
+         //      this.engine.nmbFilesSkipped;
+         if (this.parent.engine.nmbFilesInError >0) {
+            // Should not happens
+            text += ", " + this.parent.engine.nmbFilesInError + " IN ERROR";
+         }
 
-            var msg = new MessageBox(text,
+         if (!this.parent.engine.outputDirectory) {
+            text += ",\nbut output directory is not defined";
+         }
+
+         var msg = new MessageBox(text,
             "Check successful", StdIcon_Information, StdButton_Ok );
-             msg.execute();
-         }
+         msg.execute();
       }
-
-
-   this.move_Button = new PushButton( this );
-   this.move_Button.text = "Move files";
-   this.move_Button.toolTip = "Move Checked files to output directory";
-   this.move_Button.enabled = false;
-   this.move_Button.onClick = function()
-      {
-         var listOfFiles = this.parent.makeListOfCheckedFiles();
-         var errors = this.parent.engine.checkValidTargets(listOfFiles);
-         if (errors.length > 0) {
-            var msg = new MessageBox( errors.join("\n"),
-                   "Check failed", StdIcon_Error, StdButton_Ok );
-            msg.execute();
-            return;
-         }
-         this.parent.engine.executeFileOperations(0);
-         this.parent.removeDeletedFiles();
-         this.parent.refreshTargetFiles();
-         //this.dialog.ok();
-         // TODO Refresh source
-      }
-
+   }
 
    this.refresh_Button = new PushButton( this );
    this.refresh_Button.text = "Refresh list";
    this.refresh_Button.toolTip = "Refresh the list of operations\nrequired after a sort on an header (there is on onSort event)";
    this.refresh_Button.enabled = true;
-   this.refresh_Button.onClick = function()
-      {
-         this.parent.removeDeletedFiles();
-         this.parent.refreshTargetFiles();
+   this.refresh_Button.onClick = function() {
+      this.parent.removeDeletedFiles();
+      this.parent.refreshTargetFiles();
+   }
+
+
+
+   this.move_Button = new PushButton( this );
+   this.move_Button.text = "Move files";
+   this.move_Button.toolTip = "Move the checked files to the output directory.\nNo HISTORY keyword added";
+   this.move_Button.enabled = false;
+   this.move_Button.onClick = function() {
+      var listOfFiles = this.parent.makeListOfCheckedFiles();
+      var errors = this.parent.engine.checkValidTargets(listOfFiles);
+      if (errors.length > 0) {
+         var msg = new MessageBox( errors.join("\n"),
+                   "Check failed", StdIcon_Error, StdButton_Ok );
+         msg.execute();
+         return;
       }
+      this.parent.engine.executeFileOperations(0);
+      this.parent.removeDeletedFiles();
+      this.parent.refreshTargetFiles();
+      //this.dialog.ok();
+   }
 
 
    this.copy_Button = new PushButton( this );
    this.copy_Button.text = "Copy files";
-      this.copy_Button.toolTip = "Copy Checked files to output directory";
-      this.copy_Button.enabled = false;
-      this.copy_Button.onClick = function()
-      {
-         var listOfFiles = this.parent.makeListOfCheckedFiles();
-         var errors = this.parent.engine.checkValidTargets(listOfFiles);
-         if (errors.length > 0) {
+   this.copy_Button.toolTip = "Copy the checked files in the output directory.\nNo HISTORY keyword added";
+   this.copy_Button.enabled = false;
+   this.copy_Button.onClick = function() {
+      var listOfFiles = this.parent.makeListOfCheckedFiles();
+      var errors = this.parent.engine.checkValidTargets(listOfFiles);
+      if (errors.length > 0) {
             var msg = new MessageBox( errors.join("\n"),
                    "Check failed", StdIcon_Error, StdButton_Ok );
             msg.execute();
             return;
-         }
-         this.parent.engine.executeFileOperations(1);
-         //this.dialog.ok();
       }
+      this.parent.engine.executeFileOperations(1);
+      //this.dialog.ok();
+   }
+
+
+
+   this.loadSave_Button = new PushButton( this );
+   this.loadSave_Button.text = "Load / SaveAs files";
+   this.loadSave_Button.toolTip = "Load the checked files and save them in the output directory.\nAdd HISTORY keyword with original name if not already present.";
+   this.loadSave_Button.enabled = false;
+   this.loadSave_Button.onClick = function() {
+      var listOfFiles = this.parent.makeListOfCheckedFiles();
+      var errors = this.parent.engine.checkValidTargets(listOfFiles);
+      if (errors.length > 0) {
+            var msg = new MessageBox( errors.join("\n"),
+                   "Check failed", StdIcon_Error, StdButton_Ok );
+            msg.execute();
+            return;
+      }
+      this.parent.engine.executeFileOperations(2);
+      //this.dialog.ok();
+   }
 
 
 #ifdef IMPLEMENTS_FITS_EXPORT
@@ -1148,6 +1172,7 @@ function MainDialog(engine, guiParameters) {
    this.buttonSizer.add( this.check_Button);
    this.buttonSizer.add( this.move_Button);
    this.buttonSizer.add( this.copy_Button);
+   this.buttonSizer.add( this.loadSave_Button);
 #ifdef IMPLEMENTS_FITS_EXPORT
    this.buttonSizer.add( this.txt_Button);
 #endif
@@ -1281,6 +1306,7 @@ function MainDialog(engine, guiParameters) {
       var enabled = this.dialog.engine.canDoOperation();
       this.dialog.move_Button.enabled = enabled;
       this.dialog.copy_Button.enabled = enabled;
+      this.dialog.loadSave_Button.enabled = enabled;
 #ifdef IMPLEMENTS_FITS_EXPORT
       this.dialog.txt_Button.enabled = enabled;
 #endif

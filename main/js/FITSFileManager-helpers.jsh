@@ -66,6 +66,40 @@ function copyFile( sourceFilePath, targetFilePath ) {
 }
 
 
+// Load a file and save it with the new name, adding the original name HISTORY record if not yet present
+#define FFM_FITS_HISTORY_LEADER "PI FITSFileManager from "
+
+function loadSaveFile( sourceFilePath, targetFilePath ) {
+
+   // More than one image may be loaded - this is an issue
+   var images = ImageWindow.open( sourceFilePath,"FITSFileManagerLoadSaveAs_Temp", true );
+   if (images.length !== 1) {
+      throw "File '" + sourceFilePath + "' contains " + images.length + " images, this is not supported.";
+   }
+   var image = images[0];
+   var keywords = image.keywords;
+   var hasHistory = false;
+   for (var i=0; i<keywords.length; i++) {
+      if (keywords[i].name === "HISTORY" && keywords[i].comment  && keywords[i].comment.indexOf(FFM_FITS_HISTORY_LEADER)==0) {
+         hasHistory = keywords[i].comment;
+         break;
+      }
+   }
+   if (hasHistory) {
+      Console.writeln("Keep keyword: " + hasHistory);
+   } else {
+      var kw = new FITSKeyword( "HISTORY", "", "PI FITSFileManager from " + File.extractName(sourceFilePath) + File.extractExtension(sourceFilePath));
+      keywords.push( kw );
+      image.keywords = keywords;
+      Console.writeln("Adding keyword: " + kw.toString());
+   }
+
+   image.saveAs(targetFilePath,  false, false, false, false);
+
+   image.forceClose();
+
+}
+
 
 
 // ------------------------------------------------------------------------------------------------------------------------
