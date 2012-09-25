@@ -93,11 +93,9 @@ variable is increased for each different group (for example each target director
 
 #define HELP_OPERATIONS "<p>The operations Copy/Move copy or move the files directly, without \
 adding any FITS keywords.  The operation Load/SaveAs loads the image temporarily in the workspace, \
-adds an HISTORY keyword with the original file name if it is not already present and then save it to the new location. \
-The HISTORY with the original name is not added if it was already present. This avoids cluttering \
-the FITS headers in case of multiple renaming and ensures that the original name can always be retrieved. \
+and save it to the new location. An ORIGFILE keyword with the original file name is added if it is not already present. \
 <br/>The operation buttons may be disabled if the operation is not possible (for example if the \
-output directory is not specified).\
+output directory is not specified).</p>\
 "
 
 #define HELP_TEXT ("<html>" + \
@@ -1125,7 +1123,7 @@ function MainDialog(engine, guiParameters) {
 
    this.loadSave_Button = new PushButton( this );
    this.loadSave_Button.text = "Load / SaveAs files";
-   this.loadSave_Button.toolTip = "Load the checked files and save them in the output directory.\nAdd HISTORY keyword with original name if not already present.";
+   this.loadSave_Button.toolTip = "Load the checked files and save them in the output directory.\nAdd ORIGFILE keyword with original file name if not already present.";
    this.loadSave_Button.enabled = false;
    this.loadSave_Button.onClick = function() {
       var listOfFiles = this.parent.makeListOfCheckedFiles();

@@ -66,7 +66,11 @@ function copyFile( sourceFilePath, targetFilePath ) {
 }
 
 
-// Load a file and save it with the new name, adding the original name HISTORY record if not yet present
+// Load a file and save it with the new name,
+// The file name is added to the ORIGFILE if not already present
+// (this is not a standard FITS keyword, another possibility is to use
+// the FILENAME FILEXT keywords, but they are not standard either)
+// An HISTORY record is also added
 #define FFM_FITS_HISTORY_LEADER "PI FITSFileManager from "
 
 function loadSaveFile( sourceFilePath, targetFilePath ) {
@@ -78,21 +82,32 @@ function loadSaveFile( sourceFilePath, targetFilePath ) {
    }
    var image = images[0];
    var keywords = image.keywords;
-   var hasHistory = false;
+//   var firstFITSFileManagerHistory = false;
+   var firstORIGFILE = false;
    for (var i=0; i<keywords.length; i++) {
-      if (keywords[i].name === "HISTORY" && keywords[i].comment  && keywords[i].comment.indexOf(FFM_FITS_HISTORY_LEADER)==0) {
-         hasHistory = keywords[i].comment;
+//      if (keywords[i].name === "HISTORY" && keywords[i].comment  && keywords[i].comment.indexOf(FFM_FITS_HISTORY_LEADER)==0) {
+//         firstFITSFileManagerHistory = keywords[i].comment;
+//         break;
+      if (keywords[i].name === "ORIGFILE" && keywords[i].value) {
+         firstORIGFILE = keywords[i].value;
          break;
       }
    }
-   if (hasHistory) {
-      Console.writeln("Keep keyword: " + hasHistory);
+//   if (firstFITSFileManagerHistory) {
+//      Console.writeln("Keep keyword: " + firstFITSFileManagerHistory);
+   if (firstORIGFILE) {
+      Console.writeln("Kept ORIGFILE as: " + firstORIGFILE);
    } else {
-      var kw = new FITSKeyword( "HISTORY", "", "PI FITSFileManager from " + File.extractName(sourceFilePath) + File.extractExtension(sourceFilePath));
+//      var kw = new FITSKeyword( "HISTORY", "", FFM_FITS_HISTORY_LEADER + " " + File.extractName(sourceFilePath) + File.extractExtension(sourceFilePath));
+      var kw = new FITSKeyword( "ORIGFILE",
+               File.extractName(sourceFilePath) + File.extractExtension(sourceFilePath),
+               "File name before first change by FITSFileManager");
+      Console.writeln("Adding ORIGFILE: '" + kw.value + "'");
       keywords.push( kw );
-      image.keywords = keywords;
-      Console.writeln("Adding keyword: " + kw.toString());
    }
+   var kw = new FITSKeyword( "HISTORY", "", "PI FitsFileManager renamed as " + File.extractName(targetFilePath) + File.extractExtension(targetFilePath));
+   keywords.push( kw );
+   image.keywords = keywords;
 
    image.saveAs(targetFilePath,  false, false, false, false);
 
