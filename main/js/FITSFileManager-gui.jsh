@@ -282,8 +282,8 @@ FFM_GUIParameters.prototype.saveSettings = function()
    save( "version",                    DataType_Double, parseFloat(VERSION) );
    save( "targetFileNameTemplate",     DataType_String, this.targetFileNameCompiledTemplate.templateString );
    save( "sourceFileNameRegExp",       DataType_String, regExpToString(this.sourceFileNameRegExp) );
-   save( "orderBy",                    DataType_String,  this.orderBy );
-   save( "groupByTemplate",            DataType_String,  this.groupByCompiledTemplate.templateString );
+   save( "orderBy",                    DataType_String, this.orderBy );
+   save( "groupByTemplate",            DataType_String, this.groupByCompiledTemplate.templateString );
 
 }
 
@@ -1229,11 +1229,10 @@ function MainDialog(engine, guiParameters) {
       this.filesTreeBox.clear();
       this.filesTreeBox.numberOfColumns = 1; // Filename
 
-
       this.engine.keyTable = []; // clear
       this.engine.keyEnabled = []; // clear
 
-
+      // Add the synthetic keys columns
       for (var iSynthKey = 0; iSynthKey<synthKeyList.length; iSynthKey++) {
          var name = synthKeyList[iSynthKey];
          this.filesTreeBox.numberOfColumns++;// add new column
@@ -1246,7 +1245,11 @@ function MainDialog(engine, guiParameters) {
 
 
       // Accumulate all unique FITS keys in keyTable
+      var longestFileName = "          "; // Column will have at least 10 characters
       for (var i = 0; i < this.engine.inputFiles.length; ++i) {
+
+         if (this.engine.inputFiles[i].length>longestFileName.length) {longestFileName = this.engine.inputFiles[i];}
+
          var keys = this.engine.inputKeys[i]; // keywords of one file
          var syntheticKeyWords = this.engine.inputVariables[i];
 
@@ -1295,6 +1298,13 @@ function MainDialog(engine, guiParameters) {
          }
       }
       this.hideKey(); //hide the columns of unchecked FITS keywords
+      // Keep the File name colmn reasonably sized
+      if (longestFileName.length > 80) {
+         longestFileName=longestFileName.substr(0,80);
+      }
+
+      this.filesTreeBox.setColumnWidth(0,this.font.width(longestFileName + "MMMM") );
+
    }
 
 

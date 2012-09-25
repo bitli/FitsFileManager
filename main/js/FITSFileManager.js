@@ -114,6 +114,7 @@ function debug(str) {
 //     More dynamic layout
 //     Added predefined templates and regexps
 //     Added copy via FITS load/save with added KEYWORD
+//     Show conversion definitions
 
 
 
@@ -125,19 +126,16 @@ function debug(str) {
 // Add FITS keywords as variables, with formatting options
 // Add sequence of optional text to ignore if missing variable value ()
 // Generate an 'orderBy' column
-// Show synthetic keys in table, only show selected keys
+// Show only selected sythethic keys
 // Hide common header part of source folders to make file name more visible
 // Add a way to use directory of source file as variable  &filedir, &filedirparent for template matching and group names
 // Support date formatting, number formatting
 // Create a log file for record the source files
 // Request confirmation for move (or move and copy)
-// Add 'reset' icon for rules
-// Possibility to add FITS keywords to copied files (for example original file name, or replace erroneous values)
+// Possibility to add FITS keywords to copied files (to replace erroneous values or add missing ones)
 // Allow to open selected files (not required, part of new file manager)
 // Configurable list of transformation, especially for filters (ha, ..)
 // Normalize directory (remove .., redundant /)
-// Ensure that text is stable after update of GUI (optimized event handling)
-// Details pane for rules, with list of variables and transformations
 
 
 // Select the first sequence without -_. or the whole name in &1; (second group is non capturing)

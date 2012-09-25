@@ -101,7 +101,7 @@ function loadSaveFile( sourceFilePath, targetFilePath ) {
 //      var kw = new FITSKeyword( "HISTORY", "", FFM_FITS_HISTORY_LEADER + " " + File.extractName(sourceFilePath) + File.extractExtension(sourceFilePath));
       var kw = new FITSKeyword( "ORIGFILE",
                File.extractName(sourceFilePath) + File.extractExtension(sourceFilePath),
-               "File name before first change by FITSFileManager");
+               "Original name (FITSFileManager)");
       Console.writeln("Adding ORIGFILE: '" + kw.value + "'");
       keywords.push( kw );
    }
