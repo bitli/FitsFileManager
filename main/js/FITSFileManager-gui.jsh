@@ -1622,14 +1622,23 @@ function FITSKeysDialog( parentDialog, engine)
       }
 
 
-      // -- Update the DropDown box - Fill list of files from parent list of files
+      // -- Update the DropDown box - Fill list of files from parent list of files, t obe in the same order
       this.file_ComboBox.clear();
-      for (i = 0; i< engine.inputFiles.length; i++) {
-         this.file_ComboBox.addItem(engine.inputFiles[i]);
+      for (i = 0; i<parentDialog.filesTreeBox.numberOfChildren; i++) {
+         this.file_ComboBox.addItem(parentDialog.filesTreeBox.child(i).text(0));
       }
+//      for (i = 0; i< engine.inputFiles.length; i++) {
+//         this.file_ComboBox.addItem(engine.inputFiles[i]);
+//      }
 
-      // TODO position on select file on input, if any
-      this.populate(0);
+      var selectedFileIndex = 0;
+      if (parentDialog.filesTreeBox.selectedNodes.length >0) {
+         // Show first selected node
+         selectedFileIndex = parentDialog.filesTreeBox.childIndex(parentDialog.filesTreeBox.selectedNodes[0]);
+      }
+      this.file_ComboBox.currentItem = selectedFileIndex;
+      this.populate(selectedFileIndex);
+
 
       this.setMinSize(700,600);
    };
