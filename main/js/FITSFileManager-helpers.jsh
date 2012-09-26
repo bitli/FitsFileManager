@@ -302,10 +302,12 @@ function regExpToString(re) {
 // Template parsing and execution
 // ------------------------------------------------------------------------------------------------------------------------
 
-// Establish module
+// Create template support in a 'module' like object
 var ffM_template = (function() {
 
+  // Something like &stuf;
   var templateRegExp = /&[^&;]+;/g;
+  // Extract parts of &var:truepart?falsepart;
   var variableRegExp = /^([^:?]+)(?::([^:?]*))?(?:\?([^:?]*))?/
 
   // Create a rule that return to parameter literal
@@ -533,5 +535,28 @@ function makeSynthethicVariables(inputFile, keys) {
 
 }
 
+// NOT YET USED
+
+// ...something strange like l`~!@#$%^&()_-+= {}[];',ïnput.fit maps to l___nput.
+function filterViewId(id) {
+   var fId = "";
+   if (id.length == 0) {
+      return "_";
+   }
+   var c = id.charAt(0);
+   if ("0" <= c && c <= "9") {
+      fId = fId + "_";
+   }
+   for (var i = 0; i != id.length; ++i) {
+      c = id.charAt(i);
+      fId = fId + (
+         (("0" <= c && c <= "9") || ("a" <= c && c <= "z") || ("A" <= c && c <= "Z")) ? c : "_"
+      );
+      if (fId.length > 3 && fId.substring(fId.length - 4, fId.length) == "____") {
+         fId = fId.substring(0, fId.length - 1);
+      }
+   }
+   return fId;
+}
 
 
