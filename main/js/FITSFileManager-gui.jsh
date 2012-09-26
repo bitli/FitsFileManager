@@ -664,10 +664,10 @@ function MainDialog(engine, guiParameters) {
    this.inputFiles_GroupBox.sizer.add( this.fileButonSizer );
 
 
-   this.bar1 = new SectionBar( this );
-   this.bar1.setTitle( "Input" );
-   this.bar1.setCollapsedTitle( "Input - No file" );
-   this.bar1.setSection( this.inputFiles_GroupBox );
+   this.barInput = new SectionBar( this );
+   this.barInput.setTitle( "Input" );
+   this.barInput.setCollapsedTitle( "Input - No file" );
+   this.barInput.setSection( this.inputFiles_GroupBox );
 
 
    //----------------------------------------------------------------------------------
@@ -890,9 +890,9 @@ function MainDialog(engine, guiParameters) {
    this.rules_GroupBox.sizer.add( this.regexp_ComboBox_sizer );
    this.rules_GroupBox.sizer.add( this.groupTemplate_ComboBox_sizer );
 
-   this.bar2 = new SectionBar( this );
-   this.bar2.setTitle( "Rules" );
-   this.bar2.setSection( this.rules_GroupBox );
+   this.barRules = new SectionBar( this );
+   this.barRules.setTitle( "Rules" );
+   this.barRules.setSection( this.rules_GroupBox );
 
 
 
@@ -938,10 +938,10 @@ function MainDialog(engine, guiParameters) {
    this.conversion_GroupBox.sizer.add( typeConversion_GroupBox);
    this.conversion_GroupBox.sizer.add( filterConversion_GroupBox);
 
-   this.bar2a = new SectionBar( this, true );
-   this.bar2a.setTitle( "Conversion definitions" );
-   this.bar2a.setSection( this.conversion_GroupBox );
-   //this.bar2a.toggleSection();
+   this.barConversions = new SectionBar( this, true );
+   this.barConversions.setTitle( "Conversion definitions" );
+   this.barConversions.setSection( this.conversion_GroupBox );
+   //this.barConversions.toggleSection();
 
 
 
@@ -966,7 +966,7 @@ function MainDialog(engine, guiParameters) {
       if ( gdd.execute() ) {
          this.dialog.engine.outputDirectory = gdd.directory;
          this.dialog.outputDir_Edit.text = this.dialog.engine.outputDirectory;
-         this.dialog.bar3.setCollapsedTitle( "Output base directory - " +  this.dialog.engine.outputDirectory);
+         this.dialog.barOutput.setCollapsedTitle( "Output base directory - " +  this.dialog.engine.outputDirectory);
          this.dialog.updateButtonState();
       }
    }
@@ -978,10 +978,10 @@ function MainDialog(engine, guiParameters) {
    this.outputDir_GroupBox.sizer.add( this.outputDir_Edit, 100 );
    this.outputDir_GroupBox.sizer.add( this.outputDirSelect_Button );
 
-   this.bar3 = new SectionBar( this );
-   this.bar3.setTitle( "Output base directory" );
-   this.bar3.setCollapsedTitle( "Output base directory - not specified" );
-   this.bar3.setSection( this.outputDir_GroupBox );
+   this.barOutput = new SectionBar( this );
+   this.barOutput.setTitle( "Output base directory" );
+   this.barOutput.setCollapsedTitle( "Output base directory - not specified" );
+   this.barOutput.setSection( this.outputDir_GroupBox );
 
 
    //----------------------------------------------------------------------------------
@@ -1025,10 +1025,10 @@ function MainDialog(engine, guiParameters) {
    this.outputFiles_GroupBox.sizer.add( this.outputSummaryLabel );
 
 
-   this.bar4 = new SectionBar( this );
-   this.bar4.setTitle( "Resulting operations" );
-   this.bar4.setCollapsedTitle( "Resulting operations - None" );
-   this.bar4.setSection( this.outputFiles_GroupBox );
+   this.barResult = new SectionBar( this );
+   this.barResult.setTitle( "Resulting operations" );
+   this.barResult.setCollapsedTitle( "Resulting operations - None" );
+   this.barResult.setSection( this.outputFiles_GroupBox );
 
 
 
@@ -1187,16 +1187,16 @@ function MainDialog(engine, guiParameters) {
    this.sizer.margin = 2;
    this.sizer.spacing = 2;
    this.sizer.add( helpLabel );
-   this.sizer.add(this.bar1);
+   this.sizer.add(this.barInput);
    this.sizer.add( this.inputFiles_GroupBox,50 );
-   this.sizer.add(this.bar2);
+   this.sizer.add(this.barRules);
    this.sizer.add(this.rules_GroupBox);
-   this.sizer.add(this.bar2a);
+   this.sizer.add(this.barConversions);
    this.sizer.add(this.conversion_GroupBox);
-   this.sizer.add(this.bar3);
+   this.sizer.add(this.barOutput);
    this.sizer.add( this.outputDir_GroupBox );
-   this.sizer.add(this.bar4);
-   this.sizer.add(this.outputFiles_GroupBox,50);
+   this.sizer.add(this.barResult);
+   this.sizer.add(this.outputFiles_GroupBox,501);
    this.sizer.add( this.buttonSizer );
 
 
@@ -1354,7 +1354,7 @@ function MainDialog(engine, guiParameters) {
          countText = "" + countChecked + " checked file" +  (countChecked>1 ? "s" : "") + " / " + countTotal + " file" + (countTotal>1 ? "s" : "");
       }
       this.inputSummaryLabel.text = countText;
-      this.bar1.setCollapsedTitle("Input - " + countText);
+      this.barInput.setCollapsedTitle("Input - " + countText);
    }
 
 
@@ -1421,22 +1421,22 @@ function MainDialog(engine, guiParameters) {
 
       var nmbFilesExamined = this.engine.targetFiles.length;
 
-      var bar4Title = "";
+      var barResultTitle = "";
       if (nmbFilesExamined === 0) {
-          bar4Title += "None";
+          barResultTitle += "None";
       } else {
-         bar4Title += "" + nmbFilesExamined + " files checked" ;
+         barResultTitle += "" + nmbFilesExamined + " files checked" ;
          if (this.engine.nmbFilesTransformed >0) {
-            bar4Title += ", " + this.engine.nmbFilesTransformed + " to copy/move";
+            barResultTitle += ", " + this.engine.nmbFilesTransformed + " to copy/move";
          }
 
          //      this.engine.nmbFilesSkipped;
          if (this.engine.nmbFilesInError >0) {
-            bar4Title += ", " + this.engine.nmbFilesInError + " IN ERROR";
+            barResultTitle += ", " + this.engine.nmbFilesInError + " IN ERROR";
          }
       }
-      this.outputSummaryLabel.text = bar4Title;
-      this.bar4.setCollapsedTitle("Resulting operations - " + bar4Title);
+      this.outputSummaryLabel.text = barResultTitle;
+      this.barResult.setCollapsedTitle("Resulting operations - " + barResultTitle);
 
 
     }
@@ -1499,7 +1499,7 @@ HelpDialog.prototype = new Dialog;
 
 
 // ------------------------------------------------------------------------------------------------------------------------
-// FITS and syntehetic keys dialog
+// FITS and synthetic keys dialog
 // ------------------------------------------------------------------------------------------------------------------------
 // Present a dialog with:
 //   A selection of the files (drop down)

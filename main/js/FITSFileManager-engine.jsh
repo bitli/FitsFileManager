@@ -378,7 +378,7 @@ function FFM_Engine(guiParameters) {
     }
 
 
-   // -- Execute copy or move operation ----------------------------------------------------
+   // -- Execute copy, move or loadSave operation ----------------------------------------------------
    this.executeFileOperations = function (engine_mode) {
 
       var count = 0;
@@ -409,7 +409,7 @@ function FFM_Engine(guiParameters) {
                }
             }
 
-            // TO BE ON SAFE SIDE
+            // TO BE ON SAFE SIDE, was already checked
             if (File.exists(targetFile)) {
             for ( var u = 1; ; ++u )  {
                for( var n = u.toString(); n.length < 4 ; n = "0" + n);
@@ -439,13 +439,13 @@ function FFM_Engine(guiParameters) {
 
             count ++;
 
-            // To allow abort ?
+            // May be this allows abort ?
             processEvents();
             // May be useful as we load /save a lot of data or images
             gc();
 
          }
-         //console.writeln("Total files: ", this.inputFiles.length,"; Processed: ",count);
+         console.writeln("Total files: ", this.inputFiles.length,"; moved/copied: ",count);
 
    };
 

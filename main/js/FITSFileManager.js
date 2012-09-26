@@ -136,6 +136,12 @@ function debug(str) {
 // Allow to open selected files (not required, part of new file manager)
 // Configurable list of transformation, especially for filters (ha, ..)
 // Normalize directory (remove .., redundant /)
+// Check that move is on one drive
+// Check # of images in file (when using load image), or use direct wrtiee to update fits headers
+// Message on completon with # moved, etc.. and select choice of next action (exit, remove copied, add targets...)
+// On list by keyword, select selected image as default
+// Add bar for action on fits header: add, add if missing, add or replace, replace if present, remoe, remove all
+// add .* as last action for conversion
 
 
 // Select the first sequence without -_. or the whole name in &1; (second group is non capturing)
