@@ -536,7 +536,7 @@ function makeSynthethicVariables(inputFile, keys) {
 }
 
 // NOT YET USED
-
+// From mschuster
 // ...something strange like l`~!@#$%^&()_-+= {}[];',ïnput.fit maps to l___nput.
 function filterViewId(id) {
    var fId = "";

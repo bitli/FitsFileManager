@@ -117,6 +117,7 @@ function debug(str) {
 //     Show conversion definitions
 // 2012-09-xx - 0.7 -
 //     Corrected bug on display of FITS keyword in image table
+//     Add the input &extension if the output file has no extension
 
 
 
@@ -140,7 +141,7 @@ function debug(str) {
 // Normalize directory (remove .., redundant /)
 // Check that move is on one drive
 // Check # of images in file (when using load image), or use direct wrtiee to update fits headers
-// Message on completon with # moved, etc.. and select choice of next action (exit, remove copied, add targets...)
+// Add action remove copid and add targets on completion
 // Add bar for action on fits header: add, add if missing, add or replace, replace if present, remoe, remove all
 // add .* as last action for conversion
 

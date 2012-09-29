@@ -257,6 +257,10 @@ function FFM_Engine(guiParameters) {
 #ifdef DEBUG
                   debug("buildTargetFiles: expanded targetString = " + targetString + ", errors: " + expansionErrors.join(","));
 #endif
+                  // Add a default extension
+                  if (File.extractExtension(targetString).length === 0) {
+                     targetString += variables['extension'];
+                  }
                }
             }
 
@@ -379,74 +383,78 @@ function FFM_Engine(guiParameters) {
 
 
    // -- Execute copy, move or loadSave operation ----------------------------------------------------
+   // Return a text that may be show to the user
    this.executeFileOperations = function (engine_mode) {
 
       var count = 0;
 
       for (var i=0; i<this.targetFiles.length; i++) {
 
-            var index = this.targetFilesIndices[i];
-            var targetString = this.targetFiles[i];
-            var inputFile = this.inputFiles[index];
+         var index = this.targetFilesIndices[i];
+         var targetString = this.targetFiles[i];
+         var inputFile = this.inputFiles[index];
 
-            var targetFile = this.outputDirectory + "/" + targetString;
+         var targetFile = this.outputDirectory + "/" + targetString;
 
 #ifdef DEBUG
-            debug("executeFileOperations: targetFile = " + targetFile );
+         debug("executeFileOperations: targetFile = " + targetFile );
 #endif
-            var targetDirectory = File.extractDrive(targetFile) +  File.extractDirectory(targetFile);
+         var targetDirectory = File.extractDrive(targetFile) +  File.extractDirectory(targetFile);
 #ifdef DEBUG
-            debug("executeFileOperations: targetDirectory = " + targetDirectory );
+         debug("executeFileOperations: targetDirectory = " + targetDirectory );
 #endif
 
-            // Create target directory if required
-            if (!File.directoryExists(targetDirectory)) {
-               console.writeln("mkdir " + targetDirectory);
-               if (EXECUTE_COMMANDS) {
-                   File.createDirectory(targetDirectory, true);
-               } else {
+         // Create target directory if required
+         if (!File.directoryExists(targetDirectory)) {
+            console.writeln("mkdir " + targetDirectory);
+            if (EXECUTE_COMMANDS) {
+                  File.createDirectory(targetDirectory, true);
+            } else {
                   console.writeln("*** COMMAND NOT EXECUTED - EXECUTE_COMMANDS IS FALSE FOR DEBUGGING PURPOSE");
-               }
             }
+         }
 
-            // TO BE ON SAFE SIDE, was already checked
-            if (File.exists(targetFile)) {
-            for ( var u = 1; ; ++u )  {
-               for( var n = u.toString(); n.length < 4 ; n = "0" + n);
-               // TODO This does not take 'extension' into account
-                  var tryFilePath = File.appendToName( targetFile, '-' + n );
+         // TO BE ON SAFE SIDE, was already checked
+         if (File.exists(targetFile)) {
+         for ( var u = 1; ; ++u )  {
+            for( var n = u.toString(); n.length < 4 ; n = "0" + n);
+            // TODO This does not take 'extension' into account
+               var tryFilePath = File.appendToName( targetFile, '-' + n );
 #ifdef DEBUG
-                  debug("executeFileOperations: tryFilePath= " + tryFilePath );
+               debug("executeFileOperations: tryFilePath= " + tryFilePath );
 #endif
-                  if ( !File.exists( tryFilePath ) ) { targetFile = tryFilePath; break; }
-               }
+               if ( !File.exists( tryFilePath ) ) { targetFile = tryFilePath; break; }
             }
+         }
 
-            switch (engine_mode) {
-             case 0:
-               console.writeln("move " + inputFile +"\n  to "+ targetFile);
-               if (EXECUTE_COMMANDS) File.move(inputFile,targetFile);
-               break;
-            case 1:
-               console.writeln("copy " + inputFile+"\n  to "+ targetFile);
-               if (EXECUTE_COMMANDS)  copyFile(inputFile,targetFile);
-            case 2:
-               console.writeln("load  " + inputFile+"\n write "+ targetFile);
-               if (EXECUTE_COMMANDS)  loadSaveFile(inputFile,targetFile);
-             break;
-
-            }
-
-            count ++;
-
-            // May be this allows abort ?
-            processEvents();
-            // May be useful as we load /save a lot of data or images
-            gc();
+         switch (engine_mode) {
+            case 0:
+            console.writeln("move " + inputFile +"\n  to "+ targetFile);
+            if (EXECUTE_COMMANDS) File.move(inputFile,targetFile);
+            break;
+         case 1:
+            console.writeln("copy " + inputFile+"\n  to "+ targetFile);
+            if (EXECUTE_COMMANDS)  copyFile(inputFile,targetFile);
+            break;
+         case 2:
+            console.writeln("load  " + inputFile+"\n write "+ targetFile);
+            if (EXECUTE_COMMANDS)  loadSaveFile(inputFile,targetFile);
+            break;
 
          }
-         console.writeln("Total files: ", this.inputFiles.length,"; moved/copied: ",count);
 
+         count ++;
+
+         // May be this allows abort ?
+         processEvents();
+         // May be useful as we load /save a lot of data or images
+         gc();
+
+      }
+      var action = ["moved","copied","load/saved"][engine_mode];
+      var text = count.toString() + " checked file(s) where " + action + " out of " + this.inputFiles.length + " file(s) in input list";
+      console.writeln(text);
+      return text;
    };
 
 #ifdef IMPLEMENTS_FITS_EXPORT

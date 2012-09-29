@@ -31,7 +31,7 @@ Keywords (like  &amp;keyword;) are replaced by values defined from the file info
 <dl>\
    <dt>&amp;binning;</dt><dd>Binning from XBINNING and YBINNING as integers, like 2x2.</dd>\
    <dt>&amp;exposure;</dt><dd>The exposure from EXPOSURE, but as an integer (assume seconds).<\dd>\
-   <dt>&amp;extension;</dt><dd>The extension of the source file (with the dot.)<\dd>\
+   <dt>&amp;extension;</dt><dd>The extension of the source file (with the dot.), will use input extension if not specified<\dd>\
    <dt>&amp;filename;</dt><dd>The file name part of the source file.<\dd>\
    <dt>&amp;filter;</dt><dd>The filter name from FILTER as lower case trimmed normalized name.<\dd>\
    <dt>&amp;temp;</dt><dd>The SET-TEMP temperature in C as an integer.<\dd>\
@@ -109,6 +109,11 @@ output directory is not specified).</p>\
 "<h3><font color=\"#06F\">Operations</font></h3>" + HELP_OPERATIONS + \
 "</html>")
 
+// Constants
+var CompletionDialog_doneContinue = 0;
+var CompletionDialog_doneKeep = 1;
+var CompletionDialog_doneRemove = 2;
+var CompletionDialog_doneLeave= 3;
 
 
 // ------------------------------------------------------------------------------------------------------------------------
@@ -461,6 +466,10 @@ function MainDialog(engine, guiParameters) {
 
    // -- FITSKeyWord Dialog (opened as a child on request)
    this.fitsKeysDialog = new FITSKeysDialog( this, engine );
+
+
+   // -- CompletionDialog Dialog (opened as a child on request)
+   this.completionDialog = new CompletionDialog( this, engine );
 
 
    // -- HelpLabel
@@ -1095,10 +1104,23 @@ function MainDialog(engine, guiParameters) {
          msg.execute();
          return;
       }
-      this.parent.engine.executeFileOperations(0);
+      var resultText = this.parent.engine.executeFileOperations(0);
       this.parent.removeDeletedFiles();
       this.parent.refreshTargetFiles();
-      //this.dialog.ok();
+
+      this.dialog.completionDialog.setResultText(resultText + "\nMoved files were removed from the input list");
+      this.dialog.completionDialog.setResultModeMove();
+      var completionCode =  this.dialog.completionDialog.execute();
+      switch (completionCode) {
+         case CompletionDialog_doneContinue:
+         case CompletionDialog_doneKeep:
+         case CompletionDialog_doneRemove:
+            // Nothing to do, only Continue makes sense above
+         break;
+         case CompletionDialog_doneLeave:
+            this.dialog.ok();
+         break;
+      }
    }
 
 
@@ -1115,8 +1137,32 @@ function MainDialog(engine, guiParameters) {
             msg.execute();
             return;
       }
-      this.parent.engine.executeFileOperations(1);
-      //this.dialog.ok();
+      var resultText =  this.parent.engine.executeFileOperations(1);
+
+      this.dialog.completionDialog.setResultText(resultText + "\nCopied files are still checked in the input list");
+      this.dialog.completionDialog.setResultModeCopy();
+      var completionCode =  this.dialog.completionDialog.execute();
+      switch (completionCode) {
+         case CompletionDialog_doneContinue:
+         case CompletionDialog_doneKeep:
+            return;
+         break;
+         case CompletionDialog_doneRemove:
+            for ( var iTreeBox = this.dialog.filesTreeBox.numberOfChildren; --iTreeBox >= 0; ) {
+            if ( this.dialog.filesTreeBox.child( iTreeBox ).checked ) {
+               var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).text(0);
+               this.dialog.engine.removeFiles(nameInTreeBox);
+               this.dialog.filesTreeBox.remove( iTreeBox );
+            }
+         }
+         this.dialog.updateTotal();
+         this.dialog.updateButtonState();
+         this.dialog.refreshTargetFiles();
+         break;
+         case CompletionDialog_doneLeave:
+            this.dialog.ok();
+         break;
+      }
    }
 
 
@@ -1134,8 +1180,33 @@ function MainDialog(engine, guiParameters) {
             msg.execute();
             return;
       }
-      this.parent.engine.executeFileOperations(2);
-      //this.dialog.ok();
+      var resultText = this.parent.engine.executeFileOperations(2);
+
+      this.dialog.completionDialog.setResultText(resultText+ "\nLoad/saved files are still checked in the input list");
+      this.dialog.completionDialog.setResultModeCopy();
+      var completionCode =  this.dialog.completionDialog.execute();
+      switch (completionCode) {
+         case CompletionDialog_doneContinue:
+         case CompletionDialog_doneKeep:
+            return;
+         break;
+         case CompletionDialog_doneRemove:
+            for ( var iTreeBox = this.dialog.filesTreeBox.numberOfChildren; --iTreeBox >= 0; ) {
+            if ( this.dialog.filesTreeBox.child( iTreeBox ).checked ) {
+               var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).text(0);
+               this.dialog.engine.removeFiles(nameInTreeBox);
+               this.dialog.filesTreeBox.remove( iTreeBox );
+            }
+         }
+         this.dialog.updateTotal();
+         this.dialog.updateButtonState();
+         this.dialog.refreshTargetFiles();
+
+         break;
+         case CompletionDialog_doneLeave:
+            this.dialog.ok();
+         break;
+      }
    }
 
 
@@ -1501,6 +1572,91 @@ function HelpDialog( parentDialog, engine )
 }
 
 HelpDialog.prototype = new Dialog;
+
+
+// ------------------------------------------------------------------------------------------------------------------------
+// Completion dialog
+// ------------------------------------------------------------------------------------------------------------------------
+
+
+function CompletionDialog( parentDialog, engine )
+{
+   this.__base__ = Dialog;
+   this.__base__();
+
+   this.windowTitle = "FITSFileManager operation result";
+
+   this.resultBox = new TextBox( this );
+   this.resultBox.readOnly = true;
+   this.resultBox.text = "TEXT NOT INITIALIZED";
+   this.resultBox.setMinSize( 600, 200 );
+   this.resultBox.caretPosition = 0;
+
+   this.continue_Button = new PushButton( this );
+   this.continue_Button.text = "Continue in FITSFileManager";
+   this.continue_Button.toolTip = "Continue working in FITSFileManager, moved files have been removed from input list";
+   this.continue_Button.enabled = true;
+   this.continue_Button.onClick = function() {
+      this.dialog.done(CompletionDialog_doneContinue);
+   }
+   this.keep_Button = new PushButton( this );
+   this.keep_Button.text = "Continue in FITSFileManager\nKeep checked files";
+   this.keep_Button.toolTip = "Keep checked files in input list";
+   this.keep_Button.enabled = true;
+   this.keep_Button.onClick = function() {
+      this.dialog.done(CompletionDialog_doneKeep);
+   }
+   this.remove_Button = new PushButton( this );
+   this.remove_Button.text = "Continue in FITSFileManager\nRemove checked files";
+   this.remove_Button.toolTip = "Remove checked files from input list";
+   this.remove_Button.enabled = true;
+   this.remove_Button.onClick = function() {
+      this.dialog.done(CompletionDialog_doneRemove);
+   }
+   this.leave_Button = new PushButton( this );
+   this.leave_Button.text = "Leave FITSFileManager";
+   this.leave_Button.toolTip = "Exit FITS file manager";
+   this.leave_Button.enabled = true;
+   this.leave_Button.onClick = function() {
+      this.dialog.done(CompletionDialog_doneLeave);
+   }
+
+
+
+   // Sizer for Operation List and Actions section
+
+   this.buttonSizer = new HorizontalSizer;
+   this.buttonSizer.spacing = 2;
+   this.buttonSizer.add( this.continue_Button);
+   this.buttonSizer.add( this.keep_Button);
+   this.buttonSizer.add( this.remove_Button);
+   this.buttonSizer.add( this.leave_Button);
+   this.buttonSizer.addStretch();
+
+
+   this.sizer = new VerticalSizer;
+   this.sizer.margin = 6;
+   this.sizer.add( this.resultBox );
+   this.sizer.add( this.buttonSizer );
+   this.setVariableSize();
+   this.adjustToContents();
+
+   this.setResultText = function (text) {
+      this.resultBox.text = text;
+   }
+   this.setResultModeMove = function() {
+      this.continue_Button.enabled = true;
+      this.keep_Button.enabled = false;
+      this.remove_Button.enabled = false;
+   }
+   this.setResultModeCopy = function () {
+      this.continue_Button.enabled = false;
+      this.keep_Button.enabled = true;
+      this.remove_Button.enabled = true;
+   }
+}
+
+CompletionDialog.prototype = new Dialog;
 
 
 
