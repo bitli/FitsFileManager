@@ -476,7 +476,6 @@ var shownSyntheticComments = ['Type of image (flat, bias, ...)',
 
 
 
-
 // Extract the variables to form group names and file names from the file name and the FITS keywords
 function makeSynthethicVariables(inputFile, keys) {
 
@@ -528,10 +527,11 @@ function makeSynthethicVariables(inputFile, keys) {
 
    //  &night;     EXPERIMENTAL
    var longObs = findKeyWord(keys,'LONG-OBS'); // East in degree
+   // longObs = -110;
    // TODO Support default longObs
    var jd = findKeyWord(keys,'JD');
    if (longObs && jd) {
-      var jdLocal = Number(jd) + (360.0 / Number(longObs)) ;
+      var jdLocal = Number(jd) + (Number(longObs) / 360.0) ;
       var nightText = (Math.floor(jdLocal) % 1000).toString();
       variables['night'] = nightText;
    }
