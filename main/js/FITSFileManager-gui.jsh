@@ -1279,7 +1279,7 @@ function MainDialog(engine, guiParameters) {
    // Support methods
    //----------------------------------------------------------------------------------
 
-   var synthKeyList = ['type','binning','temp','filter','exposure'];
+   var synthKeyList = ['type','binning','temp','filter','exposure','night'];
 
    // -- Hide columns of unchecked keywords (called to apply changes)
    this.hideKey = function () {
@@ -1832,6 +1832,11 @@ function FITSKeysDialog( parentDialog, engine)
          var variable = variables[keyName];
          if (variable !== null) {
             synthRootNode.child(i).setTextColor(0,0x00000000);
+            // TODO ADHOC TEMPORAR TEST
+            if (typeof variable !== 'string') {
+               variable = '?[' + typeof variable +  ']';
+            }
+
             synthRootNode.child(i).setText(1,variable);
             synthRootNode.child(i).setText(2,'');
             synthRootNode.child(i).setText(3,shownSyntheticComments[i]);

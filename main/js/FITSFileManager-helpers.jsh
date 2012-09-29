@@ -466,12 +466,13 @@ var variableRegExp = /&[^&]+;/g;
 
 
 // --- Variable handling
-var shownSyntheticVariables = ['type','filter','exposure','temp','binning'];
+var shownSyntheticVariables = ['type','filter','exposure','temp','binning','night'];
 var shownSyntheticComments = ['Type of image (flat, bias, ...)',
    'Filter (clear, red, ...)',
    'Exposure in seconds',
    'Temperature in C',
-   'Binning as 1x1, 2x2, ...'];
+   'Binning as 1x1, 2x2, ...',
+   'night (experimental)'];
 
 
 
@@ -525,7 +526,16 @@ function makeSynthethicVariables(inputFile, keys) {
    var imageType = findKeyWord(keys,'IMAGETYP');
    variables['type'] = convertType(imageType);
 
-   //   &FITSKW;     (NOT IMPLEMENTED)
+   //  &night;     EXPERIMENTAL
+   var longObs = findKeyWord(keys,'LONG-OBS'); // East in degree
+   // TODO Support default longObs
+   var jd = findKeyWord(keys,'JD');
+   if (longObs && jd) {
+      var jdLocal = Number(jd) + (360.0 / Number(longObs)) ;
+      var nightText = (Math.floor(jdLocal) % 1000).toString();
+      variables['night'] = nightText;
+   }
+
 
 #ifdef DEBUG
    debug("makeSynthethicVariables: made " + Object.keys(variables).length + " synthetics keys for file " + inputFileName);

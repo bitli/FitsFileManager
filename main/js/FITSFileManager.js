@@ -129,21 +129,26 @@ function debug(str) {
 // Add FITS keywords as variables, with formatting options
 // Add sequence of optional text to ignore if missing variable value ()
 // Generate an 'orderBy' column
-// Show only selected sythethic keys
+// Show only selected synthethic keys (as FITS keys)
 // Hide common header part of source folders to make file name more visible
 // Add a way to use directory of source file as variable  &filedir, &filedirparent for template matching and group names
 // Support date formatting, number formatting
 // Create a log file for record the source files
 // Request confirmation for move (or move and copy)
 // Possibility to add FITS keywords to copied files (to replace erroneous values or add missing ones)
+// Add bar for action on fits header: add, add if missing, add or replace, replace if present, remove, remove all
 // Allow to open selected files (not required, part of new file manager)
 // Configurable list of transformation, especially for filters (ha, ..)
 // Normalize directory (remove .., redundant /)
 // Check that move is on one drive
 // Check # of images in file (when using load image), or use direct wrtiee to update fits headers
-// Add action remove copid and add targets on completion
-// Add bar for action on fits header: add, add if missing, add or replace, replace if present, remoe, remove all
 // add .* as last action for conversion
+// Change cursor to mark busy during move/copy
+// Use - standard as collapsed title of conversions
+// Possibility to add a 'tag'
+// Document ad add dfault for long-obs and night
+
+
 
 
 // Select the first sequence without -_. or the whole name in &1; (second group is non capturing)
