@@ -1258,25 +1258,28 @@ function MainDialog(engine, guiParameters) {
          //write name of the file to first column
          node.setText( 0, this.engine.inputFiles[i] );
          node.checked = true;
+         // col 1 is filename
+         var colOffset = 1;
 
 #ifdef DEBUG
          debug("rebuildFilesTreeBox: adding " + Object.keys(syntheticKeyWords) + " synthetics keys, " + keys.length + " FITS keys to row " + i);
 #endif
          for (var iSynthKey = 0; iSynthKey<synthKeyList.length; iSynthKey++) {
             var name = synthKeyList[iSynthKey];
-            // col 1 is filename
             var textSynthKey = syntheticKeyWords[name];
-            node.setText(iSynthKey+1, textSynthKey ? textSynthKey : "");
+            node.setText(iSynthKey+colOffset, textSynthKey ? textSynthKey : "");
          }
+         // Skip next columns
+         colOffset += synthKeyList.length;
 
 #ifdef DEBUG
-         debug("rebuildFilesTreeBox: setting " + keys.length + " FITS keys to row " + i);
+         debug("rebuildFilesTreeBox: setting " + keys.length + " FITS keys to row " + i + ", colOffset=" +colOffset);
 #endif
 
          for ( var iKeyOfFile = 0; iKeyOfFile<keys.length; iKeyOfFile++) {
             var name = keys[iKeyOfFile].name; //name of Keyword from file
-            var k = this.engine.keyTable.indexOf(name);// find index of "name" in keyTable
-            if (k < 0)  {
+            var indexOfKey = this.engine.keyTable.indexOf(name);// find index of "name" in keyTable
+            if (indexOfKey < 0)  {
                // new keyName
 #ifdef DEBUG_COLUMNS
                debug("rebuildFilesTreeBox: Creating new column " + this.filesTreeBox.numberOfColumns + " for '"  + name + "', total col len " + this.engine.keyTable.length);
@@ -1288,12 +1291,16 @@ function MainDialog(engine, guiParameters) {
                this.engine.keyEnabled.push (this.engine.defaultKey.indexOf(name)> -1);//compare with default enabled keywords
 
                //this.filesTreeBox.showColumn( this.filesTreeBox.numberOfColumns, this.keyEnabled[k]);
+               indexOfKey = this.filesTreeBox.numberOfColumns-colOffset-1;
             }
+#ifdef DEBUG_COLUMNS
+               debug("rebuildFilesTreeBox: Set column, colOffset " + colOffset + ", index "  + indexOfKey + ", value " + keys[iKeyOfFile].value);
+#endif
             // TODO Supports other formatting (dates ?) or show raw text
             if (keys[iKeyOfFile].isNumeric) {
-               node.setText(this.filesTreeBox.numberOfColumns-1, Number(keys[iKeyOfFile].value).toFixed(3) );
+               node.setText(colOffset + indexOfKey, Number(keys[iKeyOfFile].value).toFixed(3) );
             } else {
-               node.setText( this.filesTreeBox.numberOfColumns-1, keys[iKeyOfFile].value.trim() );
+               node.setText(colOffset + indexOfKey, keys[iKeyOfFile].value.trim() );
             }
          }
       }

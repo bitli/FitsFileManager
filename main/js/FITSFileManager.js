@@ -55,7 +55,7 @@
 // Thanks to Nikolay for sharing the original FITSKey
 
 
-#define VERSION   "0.6"
+#define VERSION   "0.7-snapshot"
 #define TITLE     "FITSFileManager"
 
 // --- Debugging control ----------------
@@ -107,7 +107,7 @@ function debug(str) {
 //     Check for missing key values, show message
 //     Source file list is refreshed after a move
 //     Supressed Export FITS keys as incompletely implemented and may be integrated in 1.8
-// 2012-09-xx - 0.6 - Performance enhancements
+// 2012-09-26 - 0.6 - Many enhancements
 //     Use TreeBox instead of TextBox
 //     Added button to check/uncheck boxes
 //     List types in keyword table
@@ -115,6 +115,8 @@ function debug(str) {
 //     Added predefined templates and regexps
 //     Added copy via FITS load/save with added KEYWORD
 //     Show conversion definitions
+// 2012-09-xx - 0.7 -
+//     Corrected bug on display of FITS keyword in image table
 
 
 
@@ -139,7 +141,6 @@ function debug(str) {
 // Check that move is on one drive
 // Check # of images in file (when using load image), or use direct wrtiee to update fits headers
 // Message on completon with # moved, etc.. and select choice of next action (exit, remove copied, add targets...)
-// On list by keyword, select selected image as default
 // Add bar for action on fits header: add, add if missing, add or replace, replace if present, remoe, remove all
 // add .* as last action for conversion
 
