@@ -392,8 +392,23 @@ function SectionBar( parent, initialyCollapsed )
          }
          this.updateTitle();
          this.updateIcon();
+         // >> workaround for Mac dialog layout issue (from mschuster)
+         var isFixedHeight = this.dialog.isFixedHeight;
+         var sectionHeight = this.section.height + this.dialog.sizer.spacing;
+         this.dialog.setMinHeight(
+            this.dialog.height + (this.section.visible ? sectionHeight : -sectionHeight)
+         );
+
+         // Original adjustToContent
          this.dialog.adjustToContents();
+
+         // workaround for Mac dialog layout issue
+         if (isFixedHeight) {
+            this.dialog.setFixedHeight();
+         }
+         // << end of workaround
          this.setVariableWidth();
+
       }
    };
 
