@@ -55,7 +55,7 @@
 // Thanks to Nikolay for sharing the original FITSKey
 
 
-#define VERSION   "0.7-snapshot"
+#define VERSION   "0.8-snapshot"
 #define TITLE     "FITSFileManager"
 
 // --- Debugging control ----------------
