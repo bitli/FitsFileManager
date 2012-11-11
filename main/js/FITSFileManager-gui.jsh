@@ -116,6 +116,20 @@ var CompletionDialog_doneRemove = 2;
 var CompletionDialog_doneLeave= 3;
 
 
+// TODO Should not be a global
+// --- List of all synthethic variables and their comments (2 parallel arrays)
+// They are present in the TreeBox even if not shown)
+var syntheticVariableNames = ['type','filter','exposure','temp','binning','object','night'];
+var syntheticVariableComments = ['Type of image (flat, bias, ...)',
+   'Filter (clear, red, ...)',
+   'Exposure in seconds',
+   'Temperature in C',
+   'Binning as 1x1, 2x2, ...',
+   'Object name',
+   'night (experimental)'];
+
+
+
 // ------------------------------------------------------------------------------------------------------------------------
 // User Interface Parameters
 // ------------------------------------------------------------------------------------------------------------------------
@@ -133,6 +147,14 @@ function FFM_GUIParameters() {
       this.sourceFileNameRegExp = FFM_DEFAULT_SOURCE_FILENAME_REGEXP;
 
       this.orderBy = "&rank;" // UNUSED
+
+
+      // This is the list of keys shown by default (in addition to the synthethic keywords)
+      // A possibly empty column is created for all these keywords, so that they are always present
+      // in the same order and that the use can see that the column has no value
+      this.defaultListOfShownFITSKeyWords = ["SET-TEMP","EXPOSURE","IMAGETYP","FILTER","XBINNING","YBINNING","OBJECT"];
+
+
 
       // Create templates (use defaults if not yet specified), precompile them
       this.groupByTemplate = FFM_DEFAULT_GROUP_TEMPLATE;
@@ -466,6 +488,7 @@ function MainDialog(engine, guiParameters) {
    this.__base__ = Dialog;
    this.__base__();
    this.engine = engine;
+   this.guiParameters = guiParameters;
 
    var labelWidth = this.font.width( "MMMMMMMMMMMMMM" ) ;
 
@@ -1285,15 +1308,11 @@ function MainDialog(engine, guiParameters) {
    // Support methods
    //----------------------------------------------------------------------------------
 
-   // List of synthethic keywords columns (they are present even if not shown)
-   // The list of shown keywords is in shownSyntheticVariables in FITSFileManager-helper.js)
-   // It is assumed that the synthethic keywords are shown before the FITS keywords
-   var synthKeyList = ['type','binning','temp','filter','exposure','object','night'];
 
    // -- Set visibility of FITS keywords columns (called to apply changes)
    this.showOrHideFITSkey = function () {
       for (var i = 0; i<this.engine.keyEnabled.length;i++) {
-         var c = i + 1 + synthKeyList.length;
+         var c = i + 1 + syntheticVariableNames.length;
          this.filesTreeBox.showColumn( c, this.engine.keyEnabled[i]);
       }
    }
@@ -1313,8 +1332,8 @@ function MainDialog(engine, guiParameters) {
       this.engine.keyEnabled = []; // clear
 
       // Add the synthetic keys columns
-      for (var iSynthKey = 0; iSynthKey<synthKeyList.length; iSynthKey++) {
-         var name = synthKeyList[iSynthKey];
+      for (var iSynthKey = 0; iSynthKey<syntheticVariableNames.length; iSynthKey++) {
+         var name = syntheticVariableNames[iSynthKey];
          this.filesTreeBox.numberOfColumns++;// add new column
          this.filesTreeBox.setHeaderText(this.filesTreeBox.numberOfColumns-1, name);//set name of new column
 #ifdef DEBUG
@@ -1352,13 +1371,34 @@ function MainDialog(engine, guiParameters) {
 #ifdef DEBUG
          debug("rebuildFilesTreeBox: adding " + Object.keys(syntheticKeyWords) + " synthetics keys, " + keys.length + " FITS keys to row " + i);
 #endif
-         for (var iSynthKey = 0; iSynthKey<synthKeyList.length; iSynthKey++) {
-            var name = synthKeyList[iSynthKey];
+         for (var iSynthKey = 0; iSynthKey<syntheticVariableNames.length; iSynthKey++) {
+            var name = syntheticVariableNames[iSynthKey];
             var textSynthKey = syntheticKeyWords[name];
             node.setText(iSynthKey+colOffset, textSynthKey ? textSynthKey : "");
          }
          // Skip next columns
-         colOffset += synthKeyList.length;
+         colOffset += syntheticVariableNames.length;
+
+         // TODO - Make optional, move out of loop, use separate list from default list
+         // Add columns for default FITS keys, so that they are always in the same order and at the beginning,
+         // and are also present even of the image does not have the corresponding keyword.
+         // They will be populated as normal columns
+         for (var iDefaultKeys = 0; iDefaultKeys < this.guiParameters.defaultListOfShownFITSKeyWords.length; ++iDefaultKeys) {
+            var name = this.guiParameters.defaultListOfShownFITSKeyWords[iDefaultKeys];
+            var indexOfKey = this.engine.allFITSKeyNames.indexOf(name);// find index of "name" in allFITSKeyNames
+            if (indexOfKey < 0)  {
+               // First image, new FITS keyword, not yet mapped to a column
+#ifdef DEBUG_COLUMNS
+               debug("rebuildFilesTreeBox: Creating new default column " + this.filesTreeBox.numberOfColumns + " for '"  + name + "', total col len " + this.engine.allFITSKeyNames.length);
+#endif
+               this.engine.allFITSKeyNames.push(name);//add keyword name to table
+               this.filesTreeBox.numberOfColumns++;// add new column
+               this.filesTreeBox.setHeaderText(this.filesTreeBox.numberOfColumns-1, name);//set name of new column
+               //console.writeln("*** " + this.filesTreeBox.numberOfColumns + " " + name);
+               this.engine.keyEnabled.push (true);// This is a default column
+            }
+         }
+
 
          // Adding FITS keyword columns (based on FITS keywords in current file and map of keywords to clumn index)
 #ifdef DEBUG
@@ -1376,7 +1416,7 @@ function MainDialog(engine, guiParameters) {
                this.filesTreeBox.numberOfColumns++;// add new column
                this.filesTreeBox.setHeaderText(this.filesTreeBox.numberOfColumns-1, name);//set name of new column
                //console.writeln("*** " + this.filesTreeBox.numberOfColumns + " " + name);
-               this.engine.keyEnabled.push (this.engine.defaultListOfShownFITSKeyWords.indexOf(name)> -1);//compare with default enabled keywords
+               this.engine.keyEnabled.push (this.guiParameters.defaultListOfShownFITSKeyWords.indexOf(name)> -1);// Mark enabled if in the list of default columns
 
                //this.filesTreeBox.showColumn( this.filesTreeBox.numberOfColumns, this.keyEnabled[k]);
                indexOfKey = this.filesTreeBox.numberOfColumns-colOffset-1;
@@ -1787,9 +1827,9 @@ function FITSKeysDialog( parentDialog, engine)
 
 
       // Fill list of keywords global variable
-      for (var i =0; i<shownSyntheticVariables.length; i++) {
+      for (var i =0; i<syntheticVariableNames.length; i++) {
          var node = new TreeBoxNode(synthRoootNode);
-         node.setText( 0, shownSyntheticVariables[i] );
+         node.setText( 0, syntheticVariableNames[i] );
          node.checked = true;
       }
 
@@ -1848,20 +1888,20 @@ function FITSKeysDialog( parentDialog, engine)
       // Update the values of the synthethic keywords from a predefined list and engine values
       var synthRootNode = this.keyword_TreeBox.child(0);
 
-      for (var i =0; i<shownSyntheticVariables.length; i++) {
-         var keyName = shownSyntheticVariables[i];
+      for (var i =0; i<syntheticVariableNames.length; i++) {
+         var keyName = syntheticVariableNames[i];
          var variables = engine.inputVariables[index];
          var variable = variables[keyName];
          if (variable !== null) {
             synthRootNode.child(i).setTextColor(0,0x00000000);
-            // TODO ADHOC TEMPORAR TEST
+            // TODO ADHOC TEMPORARY TEST
             if (typeof variable !== 'string') {
                variable = '?[' + typeof variable +  ']';
             }
 
             synthRootNode.child(i).setText(1,variable);
             synthRootNode.child(i).setText(2,'');
-            synthRootNode.child(i).setText(3,shownSyntheticComments[i]);
+            synthRootNode.child(i).setText(3,syntheticVariableComments[i]);
          } else {
             synthRootNode.child(i).setTextColor(0,0x00FF0000);
             synthRootNode.child(i).setText(1,'');

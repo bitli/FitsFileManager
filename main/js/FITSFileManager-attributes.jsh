@@ -4,6 +4,7 @@
 
 #include <pjsr/DataType.jsh>
 
+// *************** REFACTORING IN PROGRESS - THIS FILE IS NOT CURRENTY USED ******************
 
 var ffM_Attributes = (function() {
 

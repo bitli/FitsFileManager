@@ -465,16 +465,6 @@ var variableRegExp = /&[^&]+;/g;
 
 
 
-// --- Variable handling (seems redundant with synthKeyList in FITSFileManager-gui.sj)
-var shownSyntheticVariables = ['type','filter','exposure','temp','binning','object','night'];
-var shownSyntheticComments = ['Type of image (flat, bias, ...)',
-   'Filter (clear, red, ...)',
-   'Exposure in seconds',
-   'Temperature in C',
-   'Binning as 1x1, 2x2, ...',
-   'Object name',
-   'night (experimental)'];
-
 
 
 // Extract the variables to form group names and file names from the file name and the FITS keywords

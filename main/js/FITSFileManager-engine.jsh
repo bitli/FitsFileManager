@@ -16,10 +16,6 @@ function FFM_Engine(guiParameters) {
   this.outputDirectory = "C:/temp";
 #endif
 
-   // TODO Make a global parameter
-   // This is the list of keys shown by default(in addition to the synthethic keywords)
-   this.defaultListOfShownFITSKeyWords = ["SET-TEMP","EXPOSURE","IMAGETYP","FILTER  ","XBINNING","YBINNING","OBJECT  "];
-
 
    // Variables that can be reset (when doing clear all)
    this.reset = function() {
