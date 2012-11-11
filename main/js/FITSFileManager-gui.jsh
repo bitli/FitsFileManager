@@ -34,6 +34,8 @@ Keywords (like  &amp;keyword;) are replaced by values defined from the file info
    <dt>&amp;extension;</dt><dd>The extension of the source file (with the dot.), will use input extension if not specified<\dd>\
    <dt>&amp;filename;</dt><dd>The file name part of the source file.<\dd>\
    <dt>&amp;filter;</dt><dd>The filter name from FILTER as lower case trimmed normalized name.<\dd>\
+   <dt>&amp;night;</dt><dd>An integer identifying the night, requires JD and LONG-OBS - EXPERIMENTAL.<\dd>\
+   <dt>&amp;object;</dt><dd>The OBJECT keyword, reformatted for use in file name.<\dd>\
    <dt>&amp;temp;</dt><dd>The SET-TEMP temperature in C as an integer.<\dd>\
    <dt>&amp;type;</dt><dd>The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'.<\dd>\
    <dt>&amp;FITSKW;</dt><dd>(NOT IMPLEMENTED).<\dd>\
@@ -118,7 +120,7 @@ var CompletionDialog_doneLeave= 3;
 
 // TODO Should not be a global
 // --- List of all synthethic variables and their comments (2 parallel arrays)
-// They are present in the TreeBox even if not shown)
+// They are currently always added to the TreeBox
 var syntheticVariableNames = ['type','filter','exposure','temp','binning','object','night'];
 var syntheticVariableComments = ['Type of image (flat, bias, ...)',
    'Filter (clear, red, ...)',
@@ -129,12 +131,15 @@ var syntheticVariableComments = ['Type of image (flat, bias, ...)',
    'night (experimental)'];
 
 
+#define USE_ALTERNATE_KW false
+
+
 
 // ------------------------------------------------------------------------------------------------------------------------
 // User Interface Parameters
 // ------------------------------------------------------------------------------------------------------------------------
 
-// The obhect FFM_GUIParameters keeps track of the parameters that are saved between executions
+// The object FFM_GUIParameters keeps track of the parameters that are saved between executions
 // or that could (eventually) be saved.
 function FFM_GUIParameters() {
 
@@ -148,11 +153,40 @@ function FFM_GUIParameters() {
 
       this.orderBy = "&rank;" // UNUSED
 
+      // Map to remap keywords used to create synthethic keywords to other values
+      var remappedFITSkeywords = new Object
+      // Original names
+      remappedFITSkeywords["SET-TEMP"] = "SET-TEMP";
+      remappedFITSkeywords["EXPOSURE"] = "EXPOSURE";
+      remappedFITSkeywords["IMAGETYP"] = "IMAGETYP";
+      remappedFITSkeywords["FILTER"]   = "FILTER";
+      remappedFITSkeywords["XBINNING"] = "XBINNING";
+      remappedFITSkeywords["YBINNING"] = "YBINNING";
+      remappedFITSkeywords["OBJECT"]   = "OBJECT";
+      remappedFITSkeywords["LONG-OBS"] = "LONG-OBS";
+      remappedFITSkeywords["JD"]       = "JD";
+      this.remappedFITSkeywords = remappedFITSkeywords;
+
+      if (USE_ALTERNATE_KW) {
+         remappedFITSkeywords["SET-TEMP"] = "CCDTEMP";
+         remappedFITSkeywords["EXPOSURE"] = "EXPTIME";
+         remappedFITSkeywords["IMAGETYP"] = "IMAGETYP";
+         remappedFITSkeywords["FILTER"]   = "INSFLNAM";
+         remappedFITSkeywords["XBINNING"] = "CDELT1";
+         remappedFITSkeywords["YBINNING"] = "CDELT2";
+         remappedFITSkeywords["OBJECT"]   = "OBJECT";
+         remappedFITSkeywords["LONG-OBS"] = "CAHA TEL GEOLON";
+         remappedFITSkeywords["JD"]       = "JUL-DATE";
+      }
+
 
       // This is the list of keys shown by default (in addition to the synthethic keywords)
       // A possibly empty column is created for all these keywords, so that they are always present
-      // in the same order and that the use can see that the column has no value
-      this.defaultListOfShownFITSKeyWords = ["SET-TEMP","EXPOSURE","IMAGETYP","FILTER","XBINNING","YBINNING","OBJECT"];
+      // in the same order and that the use can see that the column has no value.
+      // By default only show the keywords that are significantly transformed by the conversion to synthethic keywords
+      this.defaultListOfShownFITSKeyWords = [remappedFITSkeywords["IMAGETYP"],
+            remappedFITSkeywords["FILTER"],remappedFITSkeywords["OBJECT"]];
+      //this.defaultListOfShownFITSKeyWords = ["SET-TEMP","EXPOSURE","IMAGETYP","FILTER","XBINNING","YBINNING","OBJECT"];
 
 
 
@@ -1198,7 +1232,7 @@ function MainDialog(engine, guiParameters) {
 
    this.loadSave_Button = new PushButton( this );
    this.loadSave_Button.text = "Load / SaveAs files";
-   this.loadSave_Button.toolTip = "Load the checked files and save them in the output directory.\nAdd ORIGFILE keyword with original file name if not already present.";
+   this.loadSave_Button.toolTip = "Load the checked files and save them in the output directory.\nAdd ORIGFILE keyword with original file name if not already present.\n(Does not work for files with multiple images)\n";
    this.loadSave_Button.enabled = false;
    this.loadSave_Button.onClick = function() {
       var listOfFiles = this.parent.makeListOfCheckedFiles();

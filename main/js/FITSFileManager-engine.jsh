@@ -13,7 +13,7 @@ function FFM_Engine(guiParameters) {
    // This is from the GUI
    this.outputDirectory = "";
 #ifdef DEBUG
-  this.outputDirectory = "C:/temp";
+   this.outputDirectory = "C:/temp";
 #endif
 
 
@@ -47,6 +47,7 @@ function FFM_Engine(guiParameters) {
       this.nmbFilesSkipped = 0;
     };
 
+
    // -- Add a list of files
    this.addFiles = function (fileNames) {
 
@@ -60,12 +61,13 @@ function FFM_Engine(guiParameters) {
 #ifdef DEBUG
          debug("addFiles: Check for duplicate and add fileNames[" + i + "] " + fileNames[i]);
 #endif
-         if (this.inputFiles.indexOf(fileNames[i]) < 0) //Add file only one times
+         if (this.inputFiles.indexOf(fileNames[i]) < 0) // Skip files already in the list
          {
             var keys = loadFITSKeywords(fileNames[i]);
             this.inputFiles.push(fileNames[i]);
             this.inputFITSKeyWords.push(keys);
-            var variables = makeSynthethicVariables(fileNames[i], keys);
+            // Create the synthethic variables using the desired rules
+            var variables = makeSynthethicVariables(fileNames[i], keys, guiParameters.remappedFITSkeywords);
 
             this.inputVariables.push(variables);
             nmbFilesAdded++;

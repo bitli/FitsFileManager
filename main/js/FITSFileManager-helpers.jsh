@@ -5,6 +5,8 @@
 #include <pjsr/DataType.jsh>
 
 
+
+
 // ------------------------------------------------------------------------------------------------------------------------
 // String utility functions
 // ------------------------------------------------------------------------------------------------------------------------
@@ -128,7 +130,7 @@ function loadFITSKeywords( fitsFilePath )
    function searchCommentSeparator( b )
    {
       var inString = false;
-      for ( var i = 9; i < 80; ++i )
+      for ( var i = 10; i < 80; ++i )
          switch ( b.at( i ) )
          {
          case 39: // single quote
@@ -138,6 +140,20 @@ function loadFITSKeywords( fitsFilePath )
             if ( !inString )
                return i;
             break;
+         }
+      return -1;
+   }
+   function searchHierarchValueIndicator( b )
+   {
+      for ( var i = 9; i < 80; ++i )
+         switch ( b.at( i ) )
+         {
+         case 39: // single quote, = cannot be later
+            return -1;
+         case 47: // slash, cannot be later
+            return -1;
+         case 61: // =, may be value indicator after all
+            return i;
          }
       return -1;
    }
@@ -166,16 +182,35 @@ function loadFITSKeywords( fitsFilePath )
          if ( cmtPos < 0 ) // no comment separator?
             cmtPos = 80;
          value = rawData.toString( 9, cmtPos-9 ); // value substring
-         if ( cmtPos < 80 )
+         if ( cmtPos < 80 ) {
             comment = rawData.toString( cmtPos+1, 80-cmtPos-1 ); // comment substring
-         else
+         } else {
             comment = new String;
+         }
       }
-      else
+      else if (name === 'HIERARCH')
       {
+         var hasValue = false;
+         var viPos = searchHierarchValueIndicator(rawData);
+         if (viPos > 0) {
+            hasValue = true;
+            name = rawData.toString(9, viPos-10).trim();
+            var cmtPos = searchCommentSeparator( rawData ); // find comment separator slash
+            if ( cmtPos < 0 ) // no comment separator?
+               cmtPos = 80;
+            value = rawData.toString( viPos+1, cmtPos-viPos-1 ); // value substring
+            if ( cmtPos < 80 ) {
+               comment = rawData.toString( cmtPos+1, 80-cmtPos-1 ); // comment substring
+            } else {
+               comment = new String;
+            }
+         }
+
          // No value in this keyword
-         value = new String;
-         comment = rawData.toString( 8, 80-8 );
+         if (! hasValue) {
+            value = new String;
+            comment = rawData.toString( 8, 80-8 );
+         }
       }
 
 #ifdef DEBUG_FITS
@@ -193,7 +228,7 @@ function loadFITSKeywords( fitsFilePath )
    return keywords;
 }
 
-// Find a FITS keyword by name in an array of FITSKeywords, return its value or null if undefined
+// Find a FITS keyword value by name in an array of FITSKeywords, return its value or null if undefined
 function findKeyWord(fitsKeyWordsArray, name) {
    // keys = array of all FITSKeyword of a file
    // for in all keywords of the file
@@ -212,6 +247,7 @@ function findKeyWord(fitsKeyWordsArray, name) {
 #endif
    return null;
 }
+
 
 
 // ------------------------------------------------------------------------------------------------------------------------
@@ -469,16 +505,16 @@ var variableRegExp = /&[^&]+;/g;
 
 // Extract the variables to form group names and file names from the file name and the FITS keywords
 // They act as 'synthethic' keywords (the purpose is to normalize their representation for ease of use)
-// The list of all keywords must be in array synthKeyList in FITSFIleManager-gui.js
-function makeSynthethicVariables(inputFile, keys) {
+// The list of all keywords must be in the global array syntheticVariableNames in FITSFileManager-gui.js
+function makeSynthethicVariables(inputFile, keys, remappedFITSkeywords) {
 
    var inputFileName =  File.extractName(inputFile);
 
    var variables = [];
 
    //   &binning     Binning from XBINNING and YBINNING formated as a pair of integers, like 2x2.
-   var xBinning = parseInt(findKeyWord(keys,'XBINNING'));
-   var yBinning = parseInt(findKeyWord(keys,'YBINNING'));
+   var xBinning = parseInt(findKeyWord(keys,remappedFITSkeywords['XBINNING']));
+   var yBinning = parseInt(findKeyWord(keys,remappedFITSkeywords['YBINNING']));
    if (isNaN(xBinning) || isNaN(yBinning)) {
       variables['binning'] = null;
    } else {
@@ -487,7 +523,7 @@ function makeSynthethicVariables(inputFile, keys) {
 
 
    //   &exposure;   The exposure from EXPOSURE, formatted as an integer (assume seconds)
-   var exposure = findKeyWord(keys,'EXPOSURE');
+   var exposure = findKeyWord(keys,remappedFITSkeywords['EXPOSURE']);
    var exposureF =  parseFloat(exposure);
    if (isNaN(exposureF)) {
       variables['exposure'] = null;
@@ -502,11 +538,11 @@ function makeSynthethicVariables(inputFile, keys) {
    variables['filename'] = inputFileName;
 
    //   &filter:     The filter name from FILTER as lower case trimmed normalized name.
-   var filter = findKeyWord(keys,'FILTER');
+   var filter = findKeyWord(keys,remappedFITSkeywords['FILTER']);
    variables['filter'] = convertFilter(filter);
 
    //   &temp;       The SET-TEMP temperature in C as an integer
-   var temp = findKeyWord(keys,'SET-TEMP');
+   var temp = findKeyWord(keys,remappedFITSkeywords['SET-TEMP']);
    var tempF = parseFloat(temp);
    if (isNaN(tempF)) {
       variables['temp'] = null;
@@ -515,21 +551,21 @@ function makeSynthethicVariables(inputFile, keys) {
    }
 
    //   &type:       The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'
-   var imageType = findKeyWord(keys,'IMAGETYP');
+   var imageType = findKeyWord(keys,remappedFITSkeywords['IMAGETYP']);
    variables['type'] = convertType(imageType);
 
    // &object:  the object name, formatted for file name compatibility
-   var objectName = findKeyWord(keys,'OBJECT');
+   var objectName = findKeyWord(keys,remappedFITSkeywords['OBJECT']);
    variables['object'] = filterObjectName(objectName);
 #ifdef DEBUG
    // debug("makeSynthethicVariables: object [" + objectName + "] as [" + variables['object'] + "]");
 #endif
 
    //  &night;     EXPERIMENTAL
-   var longObs = findKeyWord(keys,'LONG-OBS'); // East in degree
+   var longObs = findKeyWord(keys,remappedFITSkeywords['LONG-OBS']); // East in degree
    // longObs = -110;
    // TODO Support default longObs
-   var jd = findKeyWord(keys,'JD');
+   var jd = findKeyWord(keys,remappedFITSkeywords['JD']);
    if (longObs && jd) {
       var jdLocal = Number(jd) + (Number(longObs) / 360.0) ;
       var nightText = (Math.floor(jdLocal) % 1000).toString();
@@ -546,7 +582,11 @@ function makeSynthethicVariables(inputFile, keys) {
 }
 
 
-// Remvoe special characters from Object field to avoid bizare or illegal file names
+
+
+// Remove special characters from Object FITS key to avoid bizare or illegal file names
+// Leading and trailing invalid characters are removed
+// Embedded invalid characters are collapsed to one underline.
 function filterObjectName(objectName) {
    if (objectName === null) {
       return null;
@@ -558,6 +598,7 @@ function filterObjectName(objectName) {
    var mustAddUnderline = false;
    while (i<name.length) {
      var c = name.charAt(i);
+     // Adapt the list of characters as needed (for example add space, dash, ...)
      if ( ("0" <= c && c <= "9") || ("a" <= c && c <= "z") || ("A" <= c && c <= "Z") ) {
         if (mustAddUnderline) {
            result = result + '_';
