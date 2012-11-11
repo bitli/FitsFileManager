@@ -465,25 +465,28 @@ var variableRegExp = /&[^&]+;/g;
 
 
 
-// --- Variable handling
-var shownSyntheticVariables = ['type','filter','exposure','temp','binning','night'];
+// --- Variable handling (seems redundant with synthKeyList in FITSFileManager-gui.sj)
+var shownSyntheticVariables = ['type','filter','exposure','temp','binning','object','night'];
 var shownSyntheticComments = ['Type of image (flat, bias, ...)',
    'Filter (clear, red, ...)',
    'Exposure in seconds',
    'Temperature in C',
    'Binning as 1x1, 2x2, ...',
+   'Object name',
    'night (experimental)'];
 
 
 
 // Extract the variables to form group names and file names from the file name and the FITS keywords
+// They act as 'synthethic' keywords (the purpose is to normalize their representation for ease of use)
+// The list of all keywords must be in array synthKeyList in FITSFIleManager-gui.js
 function makeSynthethicVariables(inputFile, keys) {
 
    var inputFileName =  File.extractName(inputFile);
 
    var variables = [];
 
-   //   &binning     Binning from XBINNING and YBINNING as integers, like 2x2.
+   //   &binning     Binning from XBINNING and YBINNING formated as a pair of integers, like 2x2.
    var xBinning = parseInt(findKeyWord(keys,'XBINNING'));
    var yBinning = parseInt(findKeyWord(keys,'YBINNING'));
    if (isNaN(xBinning) || isNaN(yBinning)) {
@@ -493,7 +496,7 @@ function makeSynthethicVariables(inputFile, keys) {
    }
 
 
-   //   &exposure;   The exposure from EXPOSURE, as an integer (assume seconds)
+   //   &exposure;   The exposure from EXPOSURE, formatted as an integer (assume seconds)
    var exposure = findKeyWord(keys,'EXPOSURE');
    var exposureF =  parseFloat(exposure);
    if (isNaN(exposureF)) {
@@ -525,6 +528,13 @@ function makeSynthethicVariables(inputFile, keys) {
    var imageType = findKeyWord(keys,'IMAGETYP');
    variables['type'] = convertType(imageType);
 
+   // &object:  the object name, formatted for file name compatibility
+   var objectName = findKeyWord(keys,'OBJECT');
+   variables['object'] = filterObjectName(objectName);
+#ifdef DEBUG
+   // debug("makeSynthethicVariables: object [" + objectName + "] as [" + variables['object'] + "]");
+#endif
+
    //  &night;     EXPERIMENTAL
    var longObs = findKeyWord(keys,'LONG-OBS'); // East in degree
    // longObs = -110;
@@ -544,6 +554,36 @@ function makeSynthethicVariables(inputFile, keys) {
    return variables;
 
 }
+
+
+// Remvoe special characters from Object field to avoid bizare or illegal file names
+function filterObjectName(objectName) {
+   if (objectName === null) {
+      return null;
+   }
+   var name = unQuote(objectName);
+   var result = '';
+   var i = 0;
+   var hadValidChar = false;
+   var mustAddUnderline = false;
+   while (i<name.length) {
+     var c = name.charAt(i);
+     if ( ("0" <= c && c <= "9") || ("a" <= c && c <= "z") || ("A" <= c && c <= "Z") ) {
+        if (mustAddUnderline) {
+           result = result + '_';
+           mustAddUnderline = false;
+        };
+        result = result + c;
+        hadValidChar = true;
+     } else if (hadValidChar) {
+        mustAddUnderline = true;
+     }
+     i++;
+
+   }
+   return result;
+}
+
 
 // NOT YET USED
 // From mschuster

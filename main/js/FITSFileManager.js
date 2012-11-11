@@ -62,7 +62,7 @@
 // Set to false when doing hasardous developments...
 #define EXECUTE_COMMANDS true
 // Tracing - define DEBUG if you define any other
-//#define DEBUG
+#define DEBUG
 //#define DEBUG_EVENTS
 //#define DEBUG_FITS
 //#define DEBUG_VARS
@@ -115,9 +115,11 @@ function debug(str) {
 //     Added predefined templates and regexps
 //     Added copy via FITS load/save with added KEYWORD
 //     Show conversion definitions
-// 2012-09-xx - 0.7 -
+// 2012-11-xx - 0.7 - Bug correction, keyword enhancements
 //     Corrected bug on display of FITS keyword in image table
 //     Add the input &extension if the output file has no extension
+//     Added &object as a synthethic keyword
+//     Added &night as an experimental keyword
 
 
 
@@ -146,7 +148,7 @@ function debug(str) {
 // Change cursor to mark busy during move/copy
 // Use - standard as collapsed title of conversions
 // Possibility to add a 'tag'
-// Document ad add dfault for long-obs and night
+// Document and add default for long-obs and night
 
 
 

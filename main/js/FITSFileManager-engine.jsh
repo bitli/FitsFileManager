@@ -17,19 +17,20 @@ function FFM_Engine(guiParameters) {
 #endif
 
    // TODO Make a global parameter
-   this.defaultKey = ["SET-TEMP","EXPOSURE","IMAGETYP","FILTER  ", "XBINNING","YBINNING"];
+   // This is the list of keys shown by default(in addition to the synthethic keywords)
+   this.defaultListOfShownFITSKeyWords = ["SET-TEMP","EXPOSURE","IMAGETYP","FILTER  ","XBINNING","YBINNING","OBJECT  "];
 
 
    // Variables that can be reset (when doing clear all)
    this.reset = function() {
-      // Cache of file information. 3parallel arrays, the order is usually NOT the same as in the GUI
-      this.inputFiles = []; //Array of filename with full path
-      this.inputKeys = [];  // Array of an array of FITSKeywords for the corresponding file
-      this.inputVariables = [];  // Array of Map of stable synthethic variables for the corresponding file
+      // Cache of file information. 3 parallel array. The order of the elements is usually NOT the same as shown in the GUI
+      this.inputFiles = []; // Array of the full path of the input files
+      this.inputFITSKeyWords = [];  // Array of an array of FITSKeywords for the corresponding input file
+      this.inputVariables = [];  // Array of Map of stable synthethic variables for the corresponding input file
 
-      // Cache global FITS key information (two parallel arrays)
-      this.keyTable = [];   //accumulated names of keywords from all files
-      this.keyEnabled = []; //true === selected keywords
+      // Cache global FITS key information (two parallel arrays, the index of the name give also the column offset in the GUI)
+      this.allFITSKeyNames = [];   // array of names of all accumulated FITS keywords from all files
+      this.keyEnabled = []; // true === selected keywords
 
       this.resetTarget();
     };
@@ -67,7 +68,7 @@ function FFM_Engine(guiParameters) {
          {
             var keys = loadFITSKeywords(fileNames[i]);
             this.inputFiles.push(fileNames[i]);
-            this.inputKeys.push(keys);
+            this.inputFITSKeyWords.push(keys);
             var variables = makeSynthethicVariables(fileNames[i], keys);
 
             this.inputVariables.push(variables);
@@ -88,7 +89,7 @@ function FFM_Engine(guiParameters) {
          throw ("SCRIPT ERROR : removeFiles: file " + fileName + " not in inputFiles");
       }
       this.inputFiles.splice(index,1);
-      this.inputKeys.splice(index,1);
+      this.inputFITSKeyWords.splice(index,1);
       this.inputVariables.splice(index,1);
    }
 
@@ -475,21 +476,21 @@ function FFM_Engine(guiParameters) {
       }
       f.create(t);
 
-      //output header (tab separated selected fits keyword + 'Filename')
-      for ( var i =0; i<this.keyTable.length; i++) {
+      // output header (tab separated selected fits keyword + 'Filename')
+      for ( var i =0; i<this.allFITSKeyNames.length; i++) {
          if (!this.keyEnabled[i]) continue;
-         f.outTextLn(this.keyTable[i]+tab);
+         f.outTextLn(this.allFITSKeyNames[i]+tab);
       }
       f.outTextLn("Filename"+String.fromCharCode(10,13));
 
-      //output FITS data
+      // output FITS data
       for ( var j =0; j< this.targetFilesIndices.length; j++) {
          var inputIndex = this.targetFilesIndices[i];
 
-         var key = this.inputKeys[inputIndex];
-         for ( var i = 0; i< this.keyTable.length; i++) {
+         var key = this.inputFITSKeyWords[inputIndex];
+         for ( var i = 0; i< this.allFITSKeyNames.length; i++) {
             if (!this.keyEnabled[i]) continue;
-            var name = this.keyTable[i];
+            var name = this.allFITSKeyNames[i];
             for (var k in key) {
                if (!(key[k].name === name)) continue;
                if (key[k].isNumeric) {

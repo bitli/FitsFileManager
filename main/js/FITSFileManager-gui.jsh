@@ -120,8 +120,8 @@ var CompletionDialog_doneLeave= 3;
 // User Interface Parameters
 // ------------------------------------------------------------------------------------------------------------------------
 
-// The GUI parameters keeps track of the parameters that are saved between executions
-
+// The obhect FFM_GUIParameters keeps track of the parameters that are saved between executions
+// or that could (eventually) be saved.
 function FFM_GUIParameters() {
 
    this.reset = function () {
@@ -133,9 +133,9 @@ function FFM_GUIParameters() {
       this.sourceFileNameRegExp = FFM_DEFAULT_SOURCE_FILENAME_REGEXP;
 
       this.orderBy = "&rank;" // UNUSED
-      // Default template to create groups
-      this.groupByTemplate = FFM_DEFAULT_GROUP_TEMPLATE;
 
+      // Create templates (use defaults if not yet specified), precompile them
+      this.groupByTemplate = FFM_DEFAULT_GROUP_TEMPLATE;
       var templateErrors = [];
       this.targetFileNameCompiledTemplate = ffM_template.analyzeTemplate(templateErrors, FFM_DEFAULT_TARGET_FILENAME_TEMPLATE);
       this.groupByCompiledTemplate = ffM_template.analyzeTemplate(templateErrors, FFM_DEFAULT_GROUP_TEMPLATE);
@@ -143,8 +143,9 @@ function FFM_GUIParameters() {
          throw "PROGRAMMING ERROR - default built in templates invalid";
       }
 
-      // The predefined templates and regexp, an array of value and an arary of comments
-      // In theGUI parameters as they could be made configurable by the user
+      // Prepare list of regexp, groupBy template and target file template for use by the user interface.
+      // The first element of the list is the last one selected, the others are predefiend elements
+      // (currently hardcoded here - could eventually be made editable)
       this.regexpItemListText = [
          regExpToString(this.sourceFileNameRegExp), // Must be adapted after parameter loading
          FFM_DEFAULT_SOURCE_FILENAME_REGEXP,
@@ -306,6 +307,7 @@ FFM_GUIParameters.prototype.regexpSelection = [
 
 // ------------------------------------------------------------------------------------------------------------------------
 // SectionBar Control from Juan: http://pixinsight.com/forum/index.php?topic=4610.msg32012#msg32012
+// This does not work well on Mac, unfortunately
 // ------------------------------------------------------------------------------------------------------------------------
 
 #define contract_icon   new Bitmap( ":/images/icons/contract_v.png" )
@@ -521,9 +523,9 @@ function MainDialog(engine, guiParameters) {
    this.keyButton.icon = new Bitmap( ":/images/icons/text.png" );
    this.keyButton.toolTip = "KeyWord Dialog";
    this.keyButton.onClick = function() {
-   if (this.dialog.engine.keyTable.length) {
+   if (this.dialog.engine.allFITSKeyNames.length) {
          this.dialog.fitsKeysDialog.execute();
-         this.dialog.hideKey();
+         this.dialog.showOrHideFITSkey();
       }
    }
 
@@ -683,12 +685,13 @@ function MainDialog(engine, guiParameters) {
    this.barInput.setSection( this.inputFiles_GroupBox );
 
 
+
+
    //----------------------------------------------------------------------------------
    // Rules section
    //----------------------------------------------------------------------------------
 
    // Target template --------------------------------------------------------------------------------------
-
 
    this.targetFileTemplate_ComboBox = new ComboBox( this );
    this.targetFileTemplate_ComboBox.toolTip = TARGET_TEMPLATE_TOOLTIP;
@@ -807,7 +810,6 @@ function MainDialog(engine, guiParameters) {
 
 
    // Group template --------------------------------------------------------------------------------------
-
 
    this.groupTemplate_ComboBox = new ComboBox( this );
    this.groupTemplate_ComboBox.toolTip = GROUP_TEMPLATE_TOOLTIP;
@@ -1283,10 +1285,13 @@ function MainDialog(engine, guiParameters) {
    // Support methods
    //----------------------------------------------------------------------------------
 
-   var synthKeyList = ['type','binning','temp','filter','exposure','night'];
+   // List of synthethic keywords columns (they are present even if not shown)
+   // The list of shown keywords is in shownSyntheticVariables in FITSFileManager-helper.js)
+   // It is assumed that the synthethic keywords are shown before the FITS keywords
+   var synthKeyList = ['type','binning','temp','filter','exposure','object','night'];
 
-   // -- Hide columns of unchecked keywords (called to apply changes)
-   this.hideKey = function () {
+   // -- Set visibility of FITS keywords columns (called to apply changes)
+   this.showOrHideFITSkey = function () {
       for (var i = 0; i<this.engine.keyEnabled.length;i++) {
          var c = i + 1 + synthKeyList.length;
          this.filesTreeBox.showColumn( c, this.engine.keyEnabled[i]);
@@ -1298,13 +1303,13 @@ function MainDialog(engine, guiParameters) {
       var i, keys, node, name, iKeyOfFile, k;
 
 #ifdef DEBUG
-         debug("rebuildFilesTreeBox: rebuilding filesTreeBox - " + this.engine.inputFiles.length + " input files");
+      debug("rebuildFilesTreeBox: rebuilding filesTreeBox - " + this.engine.inputFiles.length + " input files");
 #endif
 
       this.filesTreeBox.clear();
       this.filesTreeBox.numberOfColumns = 1; // Filename
 
-      this.engine.keyTable = []; // clear
+      this.engine.allFITSKeyNames = []; // clear
       this.engine.keyEnabled = []; // clear
 
       // Add the synthetic keys columns
@@ -1313,29 +1318,37 @@ function MainDialog(engine, guiParameters) {
          this.filesTreeBox.numberOfColumns++;// add new column
          this.filesTreeBox.setHeaderText(this.filesTreeBox.numberOfColumns-1, name);//set name of new column
 #ifdef DEBUG
-         debug("rebuildFilesTreeBox: added synth key header '" + name +  "' as col " + this.filesTreeBox.numberOfColumns);
+         debug("rebuildFilesTreeBox: added synthetic key header '" + name +  "' as col " + this.filesTreeBox.numberOfColumns);
 #endif
       }
 
 
 
-      // Accumulate all unique FITS keys in keyTable
+      // Add all lines (nodes), one for each file
+      // The node will contain the file name, then the synthethic keys, then the FITS keys.
+      // All synthethic and FITS keys are added, even if they are not shown or used (this simplifies some code,
+      // but maybe could be optimized).
+      // The list of sythethic key is fixed. FITS keys coluns are added as needed when an image
+      // has a FITS keyword not yet mapped to a column. The mapping of key name to column index
+      // is built on the fly.
       var longestFileName = "          "; // Column will have at least 10 characters
+
       for (var i = 0; i < this.engine.inputFiles.length; ++i) {
 
          if (this.engine.inputFiles[i].length>longestFileName.length) {longestFileName = this.engine.inputFiles[i];}
 
-         var keys = this.engine.inputKeys[i]; // keywords of one file
-         var syntheticKeyWords = this.engine.inputVariables[i];
+         var keys = this.engine.inputFITSKeyWords[i]; // all FITS keywords/Values of the current file
+         var syntheticKeyWords = this.engine.inputVariables[i]; // Map of all synthethic keywords and values of the current file
 
-         // Create TreeBoxNode for file
+         // Create TreeBoxNode (line) for the current file
          var node = new TreeBoxNode( this.filesTreeBox );
-         //write name of the file to first column
+         // put name of the file int the first column
          node.setText( 0, this.engine.inputFiles[i] );
          node.checked = true;
-         // col 1 is filename
+         // Reserve column for file name
          var colOffset = 1;
 
+         // Add synthethic keyword columns (based on fixed list of syntethic keywords)
 #ifdef DEBUG
          debug("rebuildFilesTreeBox: adding " + Object.keys(syntheticKeyWords) + " synthetics keys, " + keys.length + " FITS keys to row " + i);
 #endif
@@ -1347,31 +1360,32 @@ function MainDialog(engine, guiParameters) {
          // Skip next columns
          colOffset += synthKeyList.length;
 
+         // Adding FITS keyword columns (based on FITS keywords in current file and map of keywords to clumn index)
 #ifdef DEBUG
          debug("rebuildFilesTreeBox: setting " + keys.length + " FITS keys to row " + i + ", colOffset=" +colOffset);
 #endif
-
          for ( var iKeyOfFile = 0; iKeyOfFile<keys.length; iKeyOfFile++) {
             var name = keys[iKeyOfFile].name; //name of Keyword from file
-            var indexOfKey = this.engine.keyTable.indexOf(name);// find index of "name" in keyTable
+            var indexOfKey = this.engine.allFITSKeyNames.indexOf(name);// find index of "name" in allFITSKeyNames
             if (indexOfKey < 0)  {
-               // new keyName
+               // new FITS keyword, not yet mapped to a column
 #ifdef DEBUG_COLUMNS
-               debug("rebuildFilesTreeBox: Creating new column " + this.filesTreeBox.numberOfColumns + " for '"  + name + "', total col len " + this.engine.keyTable.length);
+               debug("rebuildFilesTreeBox: Creating new column " + this.filesTreeBox.numberOfColumns + " for '"  + name + "', total col len " + this.engine.allFITSKeyNames.length);
 #endif
-               this.engine.keyTable.push(name);//add keyword name to table
+               this.engine.allFITSKeyNames.push(name);//add keyword name to table
                this.filesTreeBox.numberOfColumns++;// add new column
                this.filesTreeBox.setHeaderText(this.filesTreeBox.numberOfColumns-1, name);//set name of new column
                //console.writeln("*** " + this.filesTreeBox.numberOfColumns + " " + name);
-               this.engine.keyEnabled.push (this.engine.defaultKey.indexOf(name)> -1);//compare with default enabled keywords
+               this.engine.keyEnabled.push (this.engine.defaultListOfShownFITSKeyWords.indexOf(name)> -1);//compare with default enabled keywords
 
                //this.filesTreeBox.showColumn( this.filesTreeBox.numberOfColumns, this.keyEnabled[k]);
                indexOfKey = this.filesTreeBox.numberOfColumns-colOffset-1;
             }
+            // Set column content to value of keyword
 #ifdef DEBUG_COLUMNS
-               debug("rebuildFilesTreeBox: Set column, colOffset " + colOffset + ", index "  + indexOfKey + ", value " + keys[iKeyOfFile].value);
+            debug("rebuildFilesTreeBox: Set column, colOffset " + colOffset + ", index "  + indexOfKey + ", value " + keys[iKeyOfFile].value);
 #endif
-            // TODO Supports other formatting (dates ?) or show raw text
+            // TODO Supports other formatting (dates ?) or show raw text or format depending on keyword
             if (keys[iKeyOfFile].isNumeric) {
                node.setText(colOffset + indexOfKey, Number(keys[iKeyOfFile].value).toFixed(3) );
             } else {
@@ -1379,18 +1393,20 @@ function MainDialog(engine, guiParameters) {
             }
          }
       }
-      this.hideKey(); //hide the columns of unchecked FITS keywords
+
+      // hide the columns of unchecked FITS keywords
+      this.showOrHideFITSkey();
+
       // Keep the File name colmn reasonably sized
       if (longestFileName.length > 80) {
          longestFileName=longestFileName.substr(0,80);
       }
-
       this.filesTreeBox.setColumnWidth(0,this.font.width(longestFileName + "MMMM") );
 
    }
 
 
-   // -- enable/disable operation buttons
+   // -- enable/disable operation buttons depending on context
    this.updateButtonState = function()
    {
       var enabled = this.dialog.engine.canDoOperation();
@@ -1402,7 +1418,8 @@ function MainDialog(engine, guiParameters) {
 #endif
    }
 
-   // -- Add a list of files to the TreeBox (remove duplicates)
+
+   // -- Add a list of files to the TreeBox, refresh the TreeBox
    this.addFilesAction = function (fileNames)
    {
       this.engine.addFiles(fileNames);
@@ -1414,10 +1431,11 @@ function MainDialog(engine, guiParameters) {
       this.dialog.updateTotal();
 
       this.refreshTargetFiles();
-      //this.hideKey(); // *** TEST
+      //this.showOrHideFITSkey(); // *** TEST
    }
 
-   // -- update the input file list total after each add/remove/check toogle
+
+   // -- Update the input file list total after each add/remove/check toggle
    this.updateTotal = function() {
       // Should be same as this.engine.inputFiles.length
       var countTotal = this.filesTreeBox.numberOfChildren;
@@ -1440,7 +1458,7 @@ function MainDialog(engine, guiParameters) {
    }
 
 
-   //.. return an array of files that are checked (ticked)
+   // -- Return an array of the files that with chekd box ticked
    this.makeListOfCheckedFiles = function() {
       var listOfFiles = [];
 
@@ -1524,7 +1542,7 @@ function MainDialog(engine, guiParameters) {
     }
 
 
-    // -- Support for refresh and move, remove all input files that are not present anymore
+    // -- Support for refresh and move, remove all input files that are not present anymore in the file system
     this.removeDeletedFiles = function() {
       for ( var iTreeBox = this.dialog.filesTreeBox.numberOfChildren; --iTreeBox >= 0; ) {
 
@@ -1686,7 +1704,7 @@ function FITSKeysDialog( parentDialog, engine)
    this.file_ComboBox.onItemSelected = function( index ) {
       // Assume that index in combox is same as index in inputfiles
 #ifdef DEBUG
-      debug("FITSKeysDialog: file_ComboBox: onItemSelected - " + index + " key table length = " + engine.keyTable.length);
+      debug("FITSKeysDialog: file_ComboBox: onItemSelected - " + index + " key table length = " + engine.allFITSKeyNames.length);
 #endif
 
      this.dialog.populate(index);
@@ -1723,7 +1741,7 @@ function FITSKeysDialog( parentDialog, engine)
       debug("FITSKeysDialog: ok_Button: onClick");
 #endif
       var fitsRoootNode = this.parent.keyword_TreeBox.child(1);
-      for (var i =0; i< engine.keyTable.length; i++) {
+      for (var i =0; i< engine.allFITSKeyNames.length; i++) {
          var checked = fitsRoootNode.child(i).checked;
          engine.keyEnabled[i] = checked;
       }
@@ -1781,10 +1799,10 @@ function FITSKeysDialog( parentDialog, engine)
       fitsRoootNode.setText(0,"FITS keywords");
 
 
-      // Fill FITS keyword names from keyTable (accumulated name of all keywords)
-      for (var i =0; i<engine.keyTable.length; i++) {
+      // Fill FITS keyword names from allFITSKeyNames (accumulated name of all keywords)
+      for (var i =0; i<engine.allFITSKeyNames.length; i++) {
          var node = new TreeBoxNode(fitsRoootNode);
-         node.setText( 0, engine.keyTable[i] );
+         node.setText( 0, engine.allFITSKeyNames[i] );
          node.checked = engine.keyEnabled[i];
       }
 
@@ -1855,9 +1873,9 @@ function FITSKeysDialog( parentDialog, engine)
       // Update FITS key words values from engine information
       var fitsRoootNode = this.keyword_TreeBox.child(1);
 
-      for (var i = 0; i<engine.keyTable.length; i++) {
-         var keyName = engine.keyTable[i];
-         var keys = engine.inputKeys[index];
+      for (var i = 0; i<engine.allFITSKeyNames.length; i++) {
+         var keyName = engine.allFITSKeyNames[i];
+         var keys = engine.inputFITSKeyWords[index];
          // TODO - Refactor lookup to engine
          var keyWord = null;
          for (var j = 0; j<keys.length; j++) {
