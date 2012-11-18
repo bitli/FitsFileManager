@@ -4,16 +4,16 @@
 
 #include <pjsr/DataType.jsh>
 
-// *************** REFACTORING IN PROGRESS - THIS FILE IS NOT CURRENTY USED ******************
+// *************** REFACTORING IN PROGRESS - THIS FILE IS NOT CURRENTLY USED ******************
 
 var ffM_Attributes = (function() {
 
-
-   // Code from FitsKey and/or other examples
+   // Code adapted from FitsKey and other scripts
    // Read the FITS keywords of an image file, supports the HIERARCH convention
    // Input: The full path of a file
    // Return: An array FITSKeyword
-   // The value of a FITSKeyWord value is the empty string if the keeyword had no value
+   // Throws Error if bad format
+   // The value of a FITSKeyWord value is the empty string if the keyword had no value
    var loadFITSKeywordsList =  function(fitsFilePath ) {
 
    function searchCommentSeparator( b ) {
@@ -31,6 +31,7 @@ var ffM_Attributes = (function() {
          }
       return -1;
    }
+
    function searchHierarchValueIndicator( b ) {
       for ( var i = 9; i < 80; ++i )
          switch ( b.at( i ) )
@@ -53,6 +54,8 @@ var ffM_Attributes = (function() {
    {
       var rawData = f.read( DataType_ByteArray, 80 );
 
+      // Console.writeln(rawData.toString());
+
       var name = rawData.toString( 0, 8 );
       if ( name.toUpperCase() === "END     " ) // end of HDU keyword list?
          break;
@@ -60,11 +63,14 @@ var ffM_Attributes = (function() {
       if ( f.isEOF )
          throw new Error( "Unexpected end of file: " + fitsFilePath );
 
-      var value;
-      var comment;
+      var value = "";
+      var comment = "";
+      var hasValue = false;
+
       // value separator (an equal sign at byte 8) present?
       if ( rawData.at( 8 ) === 61 ) {
          // This is a valued keyword
+         hasValue = true;
          // find comment separator slash
          var cmtPos = searchCommentSeparator( rawData );
          if ( cmtPos < 0) {
@@ -76,12 +82,8 @@ var ffM_Attributes = (function() {
          if ( cmtPos < 80 ) {
             // comment substring
             comment = rawData.toString( cmtPos+1, 80-cmtPos-1 );
-         } else {
-            comment = new String;
          }
-      }
-      else if (name === 'HIERARCH') {
-         var hasValue = false;
+      } else if (name === 'HIERARCH') {
          var viPos = searchHierarchValueIndicator(rawData);
          if (viPos > 0) {
             hasValue = true;
@@ -97,17 +99,15 @@ var ffM_Attributes = (function() {
             if ( cmtPos < 80 ) {
                // comment substring
                comment = rawData.toString( cmtPos+1, 80-cmtPos-1 );
-            } else {
-               comment = new String;
             }
          }
-
-         // If mo value in this keyword
-         if (! hasValue) {
-            value = new String;
-            comment = rawData.toString( 8, 80-8 ).trim();
-         }
       }
+
+      // If no value in this keyword
+      if (! hasValue) {
+         comment = rawData.toString( 8, 80-8 ).trim();
+      }
+
 
 #ifdef DEBUG_FITS
       debug("loadFITSKeywords: - name[" + name + "],["+value+ "],["+comment+"]");
