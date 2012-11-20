@@ -132,15 +132,18 @@ var ffM_allTests = {
    },
 
 
+   // Test the Object methods
 
-   test_ffM_create: function() {
-      pT_assertEquals("toto", ffM_Attributes.makeImageAttributes("toto").filePath);
-   },
    test_ffM_load_fits: function() {
-      var attrs = ffM_Attributes.makeImageAttributes("C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/m31_Green_0028.fit");
-      pT_assertEquals(0, attrs.fitsKeyWordsList.length);
-      attrs.loadFitsKeywords();
+      var attrs = ffm_keywordsOfFile.makefromFile("C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/m31_Green_0028.fit");
       pT_assertEquals(26, attrs.fitsKeyWordsList.length);
+      // Only some are keywords with value
+      pT_assertEquals(14, Object.getOwnPropertyNames(attrs.fitsKeyWordsMap).length);
+      // Check with an arbitratry key
+      pT_assertEquals(158,attrs.getKeyValue("NAXIS2").numericValue);
+      // Old array based look-up provided directly the string value
+      pT_assertEquals("158",ffM_findKeyWord(attrs.fitsKeyWordsList,"NAXIS2"));
+      pT_assertEquals(null,attrs.getKeyValue("nothere"));
    },
 
 

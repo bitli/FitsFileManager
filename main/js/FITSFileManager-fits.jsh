@@ -5,12 +5,15 @@
 #include <pjsr/DataType.jsh>
 
 
+// ------------------------------------------------------------------------------------------------------------------------
 // Read the FITS keywords of an image file, supports the HIERARCH convention
+// ------------------------------------------------------------------------------------------------------------------------
 // Input:  The full path of a file
 // Return: An array FITSKeyword, identical to what would be returned by ImageWindow.open().keywords
 // Throws: Error if bad format
 // The value of a FITSKeyWord value is the empty string if the keyword had no value
 // Code adapted from FitsKey and other scripts
+// ------------------------------------------------------------------------------------------------------------------------
 var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
 
    function searchCommentSeparator( b ) {
@@ -44,6 +47,10 @@ var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
       return -1;
    }
 
+#ifdef DEBUG_FITS
+      debug("ffM_loadFITSKeywordsList: - loading '" + fitsFilePath + "'");
+#endif
+
    var f = new File;
    f.openForReading( fitsFilePath );
    try {
@@ -59,7 +66,7 @@ var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
          break;
       }
       if ( f.isEOF ) {
-         throw new Error( "Unexpected end of file: " + fitsFilePath );
+         throw new Error( "Unexpected end of file reading FITS keywords, file: " + fitsFilePath );
       }
 
       var value = "";
@@ -109,7 +116,7 @@ var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
 
 
 #ifdef DEBUG_FITS
-      debug("loadFITSKeywords: - name[" + name + "],["+value+ "],["+comment+"]");
+      debug("ffM_loadFITSKeywordsList: - name[" + name + "],["+value+ "],["+comment+"]");
 #endif
       // Perform a naive sanity check: a valid FITS file must begin with a SIMPLE=T keyword.
       if ( keywords.length === 0 ) {
@@ -128,66 +135,104 @@ var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
 };
 
 
-// Find a FITS keyword value by name in an array of FITSKeywords, return its value or null if undefined
+// ------------------------------------------------------------------------------------------------------------------------
+// Find a FITS keyword value by name
+// fitsKeyWordsArray: an array of FITSKeywords
+// name: The (trimed) name of the keyword
+// return the value of the first keyword of the specified name (empty string if it has no value) or null if the
+// keyword is undefined
+// intended to use to find regular (single value) keywords
+// ------------------------------------------------------------------------------------------------------------------------
 function ffM_findKeyWord(fitsKeyWordsArray, name) {
-   // keys = array of all FITSKeyword of a file
-   // for in all keywords of the file
    for (var k =0; k<fitsKeyWordsArray.length; k++) {
-      //debug("kw: '" + keys[k].name + "' '"+ keys[k].value + "'");
       if (fitsKeyWordsArray[k].name === name)  {
          // keyword found in the file >> extract value
 #ifdef DEBUG_FITS
-         debug("findKeyWord: '" + fitsKeyWordsArray[k].name + "' found '"+ fitsKeyWordsArray[k].value + "'");
+         debug("ffM_findKeyWord: '" + fitsKeyWordsArray[k].name + "' found '"+ fitsKeyWordsArray[k].value + "'");
 #endif
          return (fitsKeyWordsArray[k].value)
       }
    }
 #ifdef DEBUG_FITS
-   debug("findKeyWord: '" +name + "' not found");
+   debug("ffM_findKeyWord: '" +name + "' not found");
 #endif
    return null;
 }
 
 
-var ffM_Attributes = (function() {
+// ------------------------------------------------------------------------------------------------------------------------
+// Global object to contains the FITS utility methods
+var ffm_keywordsOfFile = (function() {
 
-   // Common method for ImageAttribute
-   var imageAttributesPrototype = {
+// ------------------------------------------------------------------------------------------------------------------------
+// imageKeywords keeps track of the FITS keywords of a file, both as an array in the order
+// in the file, and as a map of values keywords for quick looked
+// ------------------------------------------------------------------------------------------------------------------------
+   // Common method for imageKeywords
+   var imageKeywordsPrototype = {
 
-      // Load or reload the FITS keywords from the file
+      // -- Load or reload the FITS keywords from the file, building the value map too
       loadFitsKeywords:  function() {
-         var imageAttributes = this;
+         var imageKeywords = this;
          var name, fitsKeyFromList, i;
-         imageAttributes.fitsKeyWordsList = ffM_loadFITSKeywordsList(imageAttributes.filePath);
-         imageAttributes.fitsKeyWordsMap = {};
-         for (i=0; i<imageAttributes.fitsKeyWordsList.length; i++) {
-            fitsKeyFromList = imageAttributes.fitsKeyWordsList[i];
-            name = fitsKeyFromList.name;
-            if  (imageAttributes.fitsKeyWordsMap[name]) {
-               if (typeof imageAttributes.fitsKeyWordsMap[name].prototype === 'Array') {
-                  imageAttributes.fitsKeyWordsMap[name].push(fitsKeyFromList);
-               } else {
-                  imageAttributes.fitsKeyWordsMap[name] = fitsKeyFromList;
-               }
-            } else {
-               imageAttributes.fitsKeyWordsMap[name] = fitsKeyFromList;
+         imageKeywords.fitsKeyWordsList = ffM_loadFITSKeywordsList(imageKeywords.filePath);
+         // Make a map of all fits keywords with a value (this remove the comment keywords)
+         imageKeywords.fitsKeyWordsMap = {};
+         for (i=0; i<imageKeywords.fitsKeyWordsList.length; i++) {
+            fitsKeyFromList = imageKeywords.fitsKeyWordsList[i];
+            if (!fitsKeyFromList.isNull) {
+               name = fitsKeyFromList.name;
+               // IMPORTANT: FitsKey is shared with the list
+               // TODO Check for duplicates (not supported)
+               imageKeywords.fitsKeyWordsMap[name] = fitsKeyFromList;
             }
          }
+         //Console.writeln("************** " + Object.getOwnPropertyNames(imageAttributes.fitsKeyWordsMap));
       },
+
+      // -- return the keyword by name (if keyword has a value), null otherwise
+      getKeyValue: function(name) {
+         var imageKeywords = this;
+         if (imageKeywords.fitsKeyWordsMap.hasOwnProperty(name)) {
+            return imageKeywords.fitsKeyWordsMap[name];
+         } else {
+            return null;
+         }
+      }
 
    };
 
    // Factory method of an ImageAttributes
-   var makeImageAttributes = function makeImageAttributes(filePath) {
-      var imageAttributes = Object.create(imageAttributesPrototype);
-      imageAttributes.filePath = filePath;
-      imageAttributes.fitsKeyWordsMap = {};
-      imageAttributes.fitsKeyWordsList = [];
-      return imageAttributes;
+   var makefromFile = function makefromFile(filePath) {
+      var imageKeywords = Object.create(imageKeywordsPrototype);
+      imageKeywords.filePath = filePath;
+      imageKeywords.fitsKeyWordsMap = {};
+      imageKeywords.fitsKeyWordsList = [];
+      imageKeywords.loadFitsKeywords();
+      return imageKeywords;
    };
 
+// Keeps track of all values keywords in a set of files, in a specific order
+   var keywordSetPrototype = {
+       putKeyword: function putKeyword(name) {
+           var keywordsSet = this;
+           if (!keywordsSet.allValueKeywordNames.hasOwnProperty(name)) {
+               keywordsSet.allValueKeywordNames[name] = keywordsSet.allValueKeywordNameList.length;
+               keywordsSet.allValueKeywordNameList.push(name);
+           }
+       }
+   }
+   var makeKeywordsSet = function makeKeywordsSet () {
+      var keywordsSet = Object.create(keywordSetPrototype);
+      keywordsSet.allValueKeywordNameList = [];
+      keywordsSet.allValueKeywordNames = {};
+      return keywordsSet;
+   }
+
+
+   // Return public methods of this module
    return {
-      makeImageAttributes: makeImageAttributes
+      makefromFile: makefromFile
    }
 
 
