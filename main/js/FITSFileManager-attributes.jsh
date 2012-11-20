@@ -6,15 +6,14 @@
 
 // *************** REFACTORING IN PROGRESS - THIS FILE IS NOT CURRENTLY USED ******************
 
-var ffM_Attributes = (function() {
 
-   // Code adapted from FitsKey and other scripts
-   // Read the FITS keywords of an image file, supports the HIERARCH convention
-   // Input: The full path of a file
-   // Return: An array FITSKeyword
-   // Throws Error if bad format
-   // The value of a FITSKeyWord value is the empty string if the keyword had no value
-   var loadFITSKeywordsList =  function(fitsFilePath ) {
+// Read the FITS keywords of an image file, supports the HIERARCH convention
+// Input:  The full path of a file
+// Return: An array FITSKeyword, identical to what would be returned by ImageWindow.open().keywords
+// Throws: Error if bad format
+// The value of a FITSKeyWord value is the empty string if the keyword had no value
+// Code adapted from FitsKey and other scripts
+var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
 
    function searchCommentSeparator( b ) {
       var inString = false;
@@ -32,6 +31,7 @@ var ffM_Attributes = (function() {
       return -1;
    }
 
+   // in HIERARCH the = sign is after the real keyword name
    function searchHierarchValueIndicator( b ) {
       for ( var i = 9; i < 80; ++i )
          switch ( b.at( i ) )
@@ -48,20 +48,21 @@ var ffM_Attributes = (function() {
 
    var f = new File;
    f.openForReading( fitsFilePath );
+   try {
 
    var keywords = [];
-   for ( ;; )
-   {
+   for ( ;; ) {
       var rawData = f.read( DataType_ByteArray, 80 );
 
       // Console.writeln(rawData.toString());
 
       var name = rawData.toString( 0, 8 );
-      if ( name.toUpperCase() === "END     " ) // end of HDU keyword list?
+      if ( name.toUpperCase() === "END     " ) { // end of HDU keyword list?
          break;
-
-      if ( f.isEOF )
+      }
+      if ( f.isEOF ) {
          throw new Error( "Unexpected end of file: " + fitsFilePath );
+      }
 
       var value = "";
       var comment = "";
@@ -122,10 +123,15 @@ var ffM_Attributes = (function() {
       // Add new keyword.
       keywords.push( new FITSKeyword( name.trim(), value.trim(), comment.trim() ) );
    }
+   } finally {
    f.close();
+   }
    return keywords;
 };
 
+
+
+var ffM_Attributes = (function() {
 
    // Common method for ImageAttribute
    var imageAttributesPrototype = {
@@ -134,7 +140,7 @@ var ffM_Attributes = (function() {
       loadFitsKeywords:  function() {
          var imageAttributes = this;
          var name, fitsKeyFromList, i;
-         imageAttributes.fitsKeyWordsList = loadFITSKeywordsList(imageAttributes.filePath);
+         imageAttributes.fitsKeyWordsList = ffM_loadFITSKeywordsList(imageAttributes.filePath);
          imageAttributes.fitsKeyWordsMap = {};
          for (i=0; i<imageAttributes.fitsKeyWordsList.length; i++) {
             fitsKeyFromList = imageAttributes.fitsKeyWordsList[i];

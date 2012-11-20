@@ -125,10 +125,10 @@ var ffM_allTests = {
 
    // Test loading keywords from file by PI
    test_ffM_compare_files_simple: function() {
-      compareTwoLoads(26,"C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/m31_Green_0028.fit");
+      pT_compareTwoLoads(26,"C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/m31_Green_0028.fit");
    },
    test_ffM_compare_files_hierarch: function() {
-      compareTwoLoads(153,"C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/dsaI_0008.fits");
+      pT_compareTwoLoads(153,"C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/dsaI_0008.fits");
    },
 
 
@@ -147,7 +147,7 @@ var ffM_allTests = {
 
 }
 
-function compareTwoLoads(nmbKws, sourceFilePath) {
+function pT_compareTwoLoads(nmbKws, sourceFilePath) {
 
       // Load by PI
       var images = ImageWindow.open( sourceFilePath,"test_ffM_compare_file_1", true );
