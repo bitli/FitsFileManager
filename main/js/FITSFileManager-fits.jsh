@@ -1,10 +1,8 @@
-// FITSFileManager-attributes.jsh
+// FITSFileManager-fits.jsh
 
 // This file is part of FITSFileManager, see copyrigh in FITSFileManager.js
 
 #include <pjsr/DataType.jsh>
-
-// *************** REFACTORING IN PROGRESS - THIS FILE IS NOT CURRENTLY USED ******************
 
 
 // Read the FITS keywords of an image file, supports the HIERARCH convention
@@ -129,6 +127,26 @@ var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
    return keywords;
 };
 
+
+// Find a FITS keyword value by name in an array of FITSKeywords, return its value or null if undefined
+function ffM_findKeyWord(fitsKeyWordsArray, name) {
+   // keys = array of all FITSKeyword of a file
+   // for in all keywords of the file
+   for (var k =0; k<fitsKeyWordsArray.length; k++) {
+      //debug("kw: '" + keys[k].name + "' '"+ keys[k].value + "'");
+      if (fitsKeyWordsArray[k].name === name)  {
+         // keyword found in the file >> extract value
+#ifdef DEBUG_FITS
+         debug("findKeyWord: '" + fitsKeyWordsArray[k].name + "' found '"+ fitsKeyWordsArray[k].value + "'");
+#endif
+         return (fitsKeyWordsArray[k].value)
+      }
+   }
+#ifdef DEBUG_FITS
+   debug("findKeyWord: '" +name + "' not found");
+#endif
+   return null;
+}
 
 
 var ffM_Attributes = (function() {

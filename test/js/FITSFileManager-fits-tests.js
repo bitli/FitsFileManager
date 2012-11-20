@@ -1,6 +1,6 @@
 "use strict";
 
-// FITSFileManager-attributes-tests
+// FITSFileManager-fits-tests
 
 
 // This file is part of FITSFileManager, see copyrigh in FITSFileManager.js
@@ -13,7 +13,7 @@
 
 #define VERSION "0.5-tests"
 
-#include "../../main/js/FITSFileManager-attributes.jsh"
+#include "../../main/js/FITSFileManager-fits.jsh"
 
 
 
@@ -147,23 +147,23 @@ var ffM_allTests = {
 
 }
 
-function pT_compareTwoLoads(nmbKws, sourceFilePath) {
+// Utility method to load FITS file keys by PI and by script and compare the result
+function pT_compareTwoLoads(expectedNumberOfKeywords, sourceFilePath) {
 
       // Load by PI
       var images = ImageWindow.open( sourceFilePath,"test_ffM_compare_file_1", true );
       var image = images[0];
       var piKeywords = image.keywords;
       image.close();
-      pT_assertEquals(nmbKws, piKeywords.length);
+      pT_assertEquals(expectedNumberOfKeywords, piKeywords.length);
 
       // Load by script
-      var attrs = ffM_Attributes.makeImageAttributes(sourceFilePath);
-      attrs.loadFitsKeywords();
-      pT_assertEquals( piKeywords.length, attrs.fitsKeyWordsList.length);
+      var jsKeywords = ffM_loadFITSKeywordsList(sourceFilePath);
+      pT_assertEquals( piKeywords.length, jsKeywords.length);
 
       for (var i=0; i< piKeywords.length; i++) {
          var kw1 = piKeywords[i];
-         var kw2 = attrs.fitsKeyWordsList[i];
+         var kw2 = jsKeywords[i];
 //       Console.writeln("pi: " +kw1);
 //       Console.writeln("fm: " +kw2);
 //       Console.writeln("value " + kw1.name + ": " + kw1.value + " " + kw2.value);

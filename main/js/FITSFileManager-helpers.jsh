@@ -119,134 +119,7 @@ function loadSaveFile( sourceFilePath, targetFilePath ) {
 
 
 
-// ------------------------------------------------------------------------------------------------------------------------
-// FITS keywords utility functions
-// ------------------------------------------------------------------------------------------------------------------------
 
-// Code from FitsKey and/or other examples
-// Read the fits keywords of a file, return an array FITSKeyword (value is empty string if there is no value)
-function loadFITSKeywords( fitsFilePath )
-{
-   function searchCommentSeparator( b )
-   {
-      var inString = false;
-      for ( var i = 10; i < 80; ++i )
-         switch ( b.at( i ) )
-         {
-         case 39: // single quote
-            inString ^= true;
-            break;
-         case 47: // slash
-            if ( !inString )
-               return i;
-            break;
-         }
-      return -1;
-   }
-   function searchHierarchValueIndicator( b )
-   {
-      for ( var i = 9; i < 80; ++i )
-         switch ( b.at( i ) )
-         {
-         case 39: // single quote, = cannot be later
-            return -1;
-         case 47: // slash, cannot be later
-            return -1;
-         case 61: // =, may be value indicator after all
-            return i;
-         }
-      return -1;
-   }
-
-   var f = new File;
-   f.openForReading( fitsFilePath );
-
-   var keywords = [];
-   for ( ;; )
-   {
-      var rawData = f.read( DataType_ByteArray, 80 );
-
-      var name = rawData.toString( 0, 8 );
-      if ( name.toUpperCase() === "END     " ) // end of HDU keyword list?
-         break;
-
-      if ( f.isEOF )
-         throw new Error( "Unexpected end of file: " + fitsFilePath );
-
-      var value;
-      var comment;
-      if ( rawData.at( 8 ) === 61 ) // value separator (an equal sign at byte 8) present?
-      {
-         // This is a valued keyword
-         var cmtPos = searchCommentSeparator( rawData ); // find comment separator slash
-         if ( cmtPos < 0 ) // no comment separator?
-            cmtPos = 80;
-         value = rawData.toString( 9, cmtPos-9 ); // value substring
-         if ( cmtPos < 80 ) {
-            comment = rawData.toString( cmtPos+1, 80-cmtPos-1 ); // comment substring
-         } else {
-            comment = new String;
-         }
-      }
-      else if (name === 'HIERARCH')
-      {
-         var hasValue = false;
-         var viPos = searchHierarchValueIndicator(rawData);
-         if (viPos > 0) {
-            hasValue = true;
-            name = rawData.toString(9, viPos-10).trim();
-            var cmtPos = searchCommentSeparator( rawData ); // find comment separator slash
-            if ( cmtPos < 0 ) // no comment separator?
-               cmtPos = 80;
-            value = rawData.toString( viPos+1, cmtPos-viPos-1 ); // value substring
-            if ( cmtPos < 80 ) {
-               comment = rawData.toString( cmtPos+1, 80-cmtPos-1 ); // comment substring
-            } else {
-               comment = new String;
-            }
-         }
-
-         // No value in this keyword
-         if (! hasValue) {
-            value = new String;
-            comment = rawData.toString( 8, 80-8 );
-         }
-      }
-
-#ifdef DEBUG_FITS
-   debug("loadFITSKeywords: - name[" + name + "],["+value+ "],["+comment+"]");
-#endif
-      // Perform a naive sanity check: a valid FITS file must begin with a SIMPLE=T keyword.
-      if ( keywords.length === 0 )
-         if ( name !== "SIMPLE  " && value.trim() !== 'T' )
-            throw new Error( "File does not seem a valid FITS file: " + fitsFilePath );
-
-      // Add new keyword.
-      keywords.push( new FITSKeyword( name.trim(), value.trim(), comment.trim() ) );
-   }
-   f.close();
-   return keywords;
-}
-
-// Find a FITS keyword value by name in an array of FITSKeywords, return its value or null if undefined
-function findKeyWord(fitsKeyWordsArray, name) {
-   // keys = array of all FITSKeyword of a file
-   // for in all keywords of the file
-   for (var k =0; k<fitsKeyWordsArray.length; k++) {
-      //debug("kw: '" + keys[k].name + "' '"+ keys[k].value + "'");
-      if (fitsKeyWordsArray[k].name === name)  {
-         // keyword found in the file >> extract value
-#ifdef DEBUG_FITS
-         debug("findKeyWord: '" + fitsKeyWordsArray[k].name + "' found '"+ fitsKeyWordsArray[k].value + "'");
-#endif
-         return (fitsKeyWordsArray[k].value)
-      }
-   }
-#ifdef DEBUG_FITS
-   debug("findKeyWord: '" +name + "' not found");
-#endif
-   return null;
-}
 
 
 
@@ -513,8 +386,8 @@ function makeSynthethicVariables(inputFile, keys, remappedFITSkeywords) {
    var variables = [];
 
    //   &binning     Binning from XBINNING and YBINNING formated as a pair of integers, like 2x2.
-   var xBinning = parseInt(findKeyWord(keys,remappedFITSkeywords['XBINNING']));
-   var yBinning = parseInt(findKeyWord(keys,remappedFITSkeywords['YBINNING']));
+   var xBinning = parseInt(ffM_findKeyWord(keys,remappedFITSkeywords['XBINNING']));
+   var yBinning = parseInt(ffM_findKeyWord(keys,remappedFITSkeywords['YBINNING']));
    if (isNaN(xBinning) || isNaN(yBinning)) {
       variables['binning'] = null;
    } else {
@@ -523,7 +396,7 @@ function makeSynthethicVariables(inputFile, keys, remappedFITSkeywords) {
 
 
    //   &exposure;   The exposure from EXPOSURE, formatted as an integer (assume seconds)
-   var exposure = findKeyWord(keys,remappedFITSkeywords['EXPOSURE']);
+   var exposure = ffM_findKeyWord(keys,remappedFITSkeywords['EXPOSURE']);
    var exposureF =  parseFloat(exposure);
    if (isNaN(exposureF)) {
       variables['exposure'] = null;
@@ -538,11 +411,11 @@ function makeSynthethicVariables(inputFile, keys, remappedFITSkeywords) {
    variables['filename'] = inputFileName;
 
    //   &filter:     The filter name from FILTER as lower case trimmed normalized name.
-   var filter = findKeyWord(keys,remappedFITSkeywords['FILTER']);
+   var filter = ffM_findKeyWord(keys,remappedFITSkeywords['FILTER']);
    variables['filter'] = convertFilter(filter);
 
    //   &temp;       The SET-TEMP temperature in C as an integer
-   var temp = findKeyWord(keys,remappedFITSkeywords['SET-TEMP']);
+   var temp = ffM_findKeyWord(keys,remappedFITSkeywords['SET-TEMP']);
    var tempF = parseFloat(temp);
    if (isNaN(tempF)) {
       variables['temp'] = null;
@@ -551,21 +424,21 @@ function makeSynthethicVariables(inputFile, keys, remappedFITSkeywords) {
    }
 
    //   &type:       The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'
-   var imageType = findKeyWord(keys,remappedFITSkeywords['IMAGETYP']);
+   var imageType = ffM_findKeyWord(keys,remappedFITSkeywords['IMAGETYP']);
    variables['type'] = convertType(imageType);
 
    // &object:  the object name, formatted for file name compatibility
-   var objectName = findKeyWord(keys,remappedFITSkeywords['OBJECT']);
+   var objectName = ffM_findKeyWord(keys,remappedFITSkeywords['OBJECT']);
    variables['object'] = filterObjectName(objectName);
 #ifdef DEBUG
    // debug("makeSynthethicVariables: object [" + objectName + "] as [" + variables['object'] + "]");
 #endif
 
    //  &night;     EXPERIMENTAL
-   var longObs = findKeyWord(keys,remappedFITSkeywords['LONG-OBS']); // East in degree
+   var longObs = ffM_findKeyWord(keys,remappedFITSkeywords['LONG-OBS']); // East in degree
    // longObs = -110;
    // TODO Support default longObs
-   var jd = findKeyWord(keys,remappedFITSkeywords['JD']);
+   var jd = ffM_findKeyWord(keys,remappedFITSkeywords['JD']);
    if (longObs && jd) {
       var jdLocal = Number(jd) + (Number(longObs) / 360.0) ;
       var nightText = (Math.floor(jdLocal) % 1000).toString();

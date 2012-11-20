@@ -122,6 +122,8 @@ function debug(str) {
 //     Added &night as an experimental keyword
 //     Added alternate FITS keywords for creation of synthetic keywords
 //     Load HIERARCH FITS keywords
+// 2012-11-19 - 0.8 - Refactor, bug corrections
+//     Refactored FITS keyword loading (separate js file)
 
 
 
@@ -162,6 +164,7 @@ function debug(str) {
 #define FFM_DEFAULT_GROUP_TEMPLATE "&targetDir;"
 
 
+#include "FITSFileManager-fits.jsh"
 #include "FITSFileManager-helpers.jsh"
 #include "FITSFileManager-engine.jsh"
 #include "FITSFileManager-gui.jsh"

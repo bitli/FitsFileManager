@@ -63,7 +63,7 @@ function FFM_Engine(guiParameters) {
 #endif
          if (this.inputFiles.indexOf(fileNames[i]) < 0) // Skip files already in the list
          {
-            var keys = loadFITSKeywords(fileNames[i]);
+            var keys = ffM_loadFITSKeywordsList(fileNames[i]);
             this.inputFiles.push(fileNames[i]);
             this.inputFITSKeyWords.push(keys);
             // Create the synthethic variables using the desired rules
