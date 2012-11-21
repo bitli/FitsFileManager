@@ -21,7 +21,7 @@ function FFM_Engine(guiParameters) {
    this.reset = function() {
       // Cache of file information. 3 parallel array. The order of the elements is usually NOT the same as shown in the GUI
       this.inputFiles = []; // Array of the full path of the input files
-      this.inputFITSKeyWords = [];  // Array of 'imageKeywords' for the corresponding input file
+      this.inputFITSKeywords = [];  // Array of 'imageKeywords' for the corresponding input file
       this.inputVariables = [];  // Array of Map of stable synthethic variables for the corresponding input file
 
       // Cache global FITS key information (two parallel arrays, the index of the name give also the column offset in the GUI)
@@ -65,7 +65,7 @@ function FFM_Engine(guiParameters) {
          {
             var keys = ffm_keywordsOfFile.makeImageKeywordsfromFile(fileNames[i]);
             this.inputFiles.push(fileNames[i]);
-            this.inputFITSKeyWords.push(keys);
+            this.inputFITSKeywords.push(keys);
             // Create the synthethic variables using the desired rules
             var variables = makeSynthethicVariables(fileNames[i], keys, guiParameters.remappedFITSkeywords);
 
@@ -87,7 +87,7 @@ function FFM_Engine(guiParameters) {
          throw ("SCRIPT ERROR : removeFiles: file " + fileName + " not in inputFiles");
       }
       this.inputFiles.splice(index,1);
-      this.inputFITSKeyWords.splice(index,1);
+      this.inputFITSKeywords.splice(index,1);
       this.inputVariables.splice(index,1);
    }
 
@@ -458,7 +458,7 @@ function FFM_Engine(guiParameters) {
 
 #ifdef IMPLEMENTS_FITS_EXPORT
    // -- Export the keywords of a list of files
-   this.exportFITSKeyWords = function() {
+   this.exportFITSKeywords = function() {
       var tab = String.fromCharCode(9);
       var f = new File();
       var fileName = "FITS_keys";
@@ -485,7 +485,7 @@ function FFM_Engine(guiParameters) {
       for ( var j =0; j< this.targetFilesIndices.length; j++) {
          var inputIndex = this.targetFilesIndices[i];
 
-         var key = this.inputFITSKeyWords[inputIndex].fitsKeyWordsList;
+         var key = this.inputFITSKeywords[inputIndex].fitsKeywordsList;
          for ( var i = 0; i< this.allFITSKeyNames.length; i++) {
             if (!this.keyEnabled[i]) continue;
             var name = this.allFITSKeyNames[i];

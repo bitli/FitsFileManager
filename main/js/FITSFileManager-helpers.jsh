@@ -386,8 +386,8 @@ function makeSynthethicVariables(inputFile, keys, remappedFITSkeywords) {
    var variables = [];
 
    //   &binning     Binning from XBINNING and YBINNING formated as a pair of integers, like 2x2.
-   var xBinning = parseInt(ffM_findKeyWord(keys,remappedFITSkeywords['XBINNING']));
-   var yBinning = parseInt(ffM_findKeyWord(keys,remappedFITSkeywords['YBINNING']));
+   var xBinning = parseInt(ffM_findKeyword(keys,remappedFITSkeywords['XBINNING']));
+   var yBinning = parseInt(ffM_findKeyword(keys,remappedFITSkeywords['YBINNING']));
    if (isNaN(xBinning) || isNaN(yBinning)) {
       variables['binning'] = null;
    } else {
@@ -396,7 +396,7 @@ function makeSynthethicVariables(inputFile, keys, remappedFITSkeywords) {
 
 
    //   &exposure;   The exposure from EXPOSURE, formatted as an integer (assume seconds)
-   var exposure = ffM_findKeyWord(keys,remappedFITSkeywords['EXPOSURE']);
+   var exposure = ffM_findKeyword(keys,remappedFITSkeywords['EXPOSURE']);
    var exposureF =  parseFloat(exposure);
    if (isNaN(exposureF)) {
       variables['exposure'] = null;
@@ -411,11 +411,11 @@ function makeSynthethicVariables(inputFile, keys, remappedFITSkeywords) {
    variables['filename'] = inputFileName;
 
    //   &filter:     The filter name from FILTER as lower case trimmed normalized name.
-   var filter = ffM_findKeyWord(keys,remappedFITSkeywords['FILTER']);
+   var filter = ffM_findKeyword(keys,remappedFITSkeywords['FILTER']);
    variables['filter'] = convertFilter(filter);
 
    //   &temp;       The SET-TEMP temperature in C as an integer
-   var temp = ffM_findKeyWord(keys,remappedFITSkeywords['SET-TEMP']);
+   var temp = ffM_findKeyword(keys,remappedFITSkeywords['SET-TEMP']);
    var tempF = parseFloat(temp);
    if (isNaN(tempF)) {
       variables['temp'] = null;
@@ -424,21 +424,21 @@ function makeSynthethicVariables(inputFile, keys, remappedFITSkeywords) {
    }
 
    //   &type:       The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'
-   var imageType = ffM_findKeyWord(keys,remappedFITSkeywords['IMAGETYP']);
+   var imageType = ffM_findKeyword(keys,remappedFITSkeywords['IMAGETYP']);
    variables['type'] = convertType(imageType);
 
    // &object:  the object name, formatted for file name compatibility
-   var objectName = ffM_findKeyWord(keys,remappedFITSkeywords['OBJECT']);
+   var objectName = ffM_findKeyword(keys,remappedFITSkeywords['OBJECT']);
    variables['object'] = filterObjectName(objectName);
 #ifdef DEBUG
    // debug("makeSynthethicVariables: object [" + objectName + "] as [" + variables['object'] + "]");
 #endif
 
    //  &night;     EXPERIMENTAL
-   var longObs = ffM_findKeyWord(keys,remappedFITSkeywords['LONG-OBS']); // East in degree
+   var longObs = ffM_findKeyword(keys,remappedFITSkeywords['LONG-OBS']); // East in degree
    // longObs = -110;
    // TODO Support default longObs
-   var jd = ffM_findKeyWord(keys,remappedFITSkeywords['JD']);
+   var jd = ffM_findKeyword(keys,remappedFITSkeywords['JD']);
    if (longObs && jd) {
       var jdLocal = Number(jd) + (Number(longObs) / 360.0) ;
       var nightText = (Math.floor(jdLocal) % 1000).toString();

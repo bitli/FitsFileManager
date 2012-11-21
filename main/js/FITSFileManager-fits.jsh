@@ -11,7 +11,7 @@
 // Input:  The full path of a file
 // Return: An array FITSKeyword, identical to what would be returned by ImageWindow.open().keywords
 // Throws: Error if bad format
-// The value of a FITSKeyWord value is the empty string if the keyword had no value
+// The value of a FITSKeyword value is the empty string if the keyword had no value
 // Code adapted from FitsKey and other scripts
 // ------------------------------------------------------------------------------------------------------------------------
 var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
@@ -137,24 +137,24 @@ var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
 
 // ------------------------------------------------------------------------------------------------------------------------
 // Find a FITS keyword value by name
-// fitsKeyWordsArray: an array of FITSKeywords
+// fitsKeywordsArray: an array of FITSKeywords
 // name: The (trimed) name of the keyword
 // return the value of the first keyword of the specified name (empty string if it has no value) or null if the
 // keyword is undefined
 // intended to use to find regular (single value) keywords
 // ------------------------------------------------------------------------------------------------------------------------
-function ffM_findKeyWord(fitsKeyWordsArray, name) {
-   for (var k =0; k<fitsKeyWordsArray.length; k++) {
-      if (fitsKeyWordsArray[k].name === name)  {
+function ffM_findKeyword(fitsKeywordsArray, name) {
+   for (var k =0; k<fitsKeywordsArray.length; k++) {
+      if (fitsKeywordsArray[k].name === name)  {
          // keyword found in the file >> extract value
 #ifdef DEBUG_FITS
-         debug("ffM_findKeyWord: '" + fitsKeyWordsArray[k].name + "' found '"+ fitsKeyWordsArray[k].value + "'");
+         debug("ffM_findKeyword: '" + fitsKeywordsArray[k].name + "' found '"+ fitsKeywordsArray[k].value + "'");
 #endif
-         return (fitsKeyWordsArray[k].value)
+         return (fitsKeywordsArray[k].value)
       }
    }
 #ifdef DEBUG_FITS
-   debug("ffM_findKeyWord: '" +name + "' not found");
+   debug("ffM_findKeyword: '" +name + "' not found");
 #endif
    return null;
 }
@@ -175,8 +175,8 @@ var ffm_keywordsOfFile = (function() {
       reset: function reset() {
          var imageKeywords = this;
          // This two attributes may be accessed by the callers, but this is not recommended
-         imageKeywords.fitsKeyWordsMap = {};
-         imageKeywords.fitsKeyWordsList = [];
+         imageKeywords.fitsKeywordsMap = {};
+         imageKeywords.fitsKeywordsList = [];
       },
 
       // -- Clear and load the FITS keywords from the file, adding them to the value map too
@@ -184,16 +184,16 @@ var ffm_keywordsOfFile = (function() {
          var imageKeywords = this;
          this.reset();
          var name, fitsKeyFromList, i;
-         imageKeywords.fitsKeyWordsList = ffM_loadFITSKeywordsList(filePath);
+         imageKeywords.fitsKeywordsList = ffM_loadFITSKeywordsList(filePath);
          // Make a map of all fits keywords with a value (this remove the comment keywords)
-         imageKeywords.fitsKeyWordsMap = {};
-         for (i=0; i<imageKeywords.fitsKeyWordsList.length; i++) {
-            fitsKeyFromList = imageKeywords.fitsKeyWordsList[i];
+         imageKeywords.fitsKeywordsMap = {};
+         for (i=0; i<imageKeywords.fitsKeywordsList.length; i++) {
+            fitsKeyFromList = imageKeywords.fitsKeywordsList[i];
             if (!fitsKeyFromList.isNull) {
                name = fitsKeyFromList.name;
                // IMPORTANT: FitsKey is shared with the list
                // TODO Check for duplicates (not supported)
-               imageKeywords.fitsKeyWordsMap[name] = fitsKeyFromList;
+               imageKeywords.fitsKeywordsMap[name] = fitsKeyFromList;
             }
          }
       },
@@ -201,8 +201,8 @@ var ffm_keywordsOfFile = (function() {
       // -- return the FITS keyword by name (if keyword has a value), return null otherwise
       getValue: function getValue(name) {
          var imageKeywords = this;
-         if (imageKeywords.fitsKeyWordsMap.hasOwnProperty(name)) {
-            return imageKeywords.fitsKeyWordsMap[name];
+         if (imageKeywords.fitsKeywordsMap.hasOwnProperty(name)) {
+            return imageKeywords.fitsKeywordsMap[name];
          } else {
             return null;
          }
@@ -211,7 +211,7 @@ var ffm_keywordsOfFile = (function() {
       // -- return the name of all value key words
       getNamesOfValueKeywords: function getNamesOfValueKeywords() {
          var imageKeywords = this;
-         return Object.keys(imageKeywords.fitsKeyWordsMap);
+         return Object.keys(imageKeywords.fitsKeywordsMap);
       }
 
    };
@@ -245,7 +245,7 @@ var ffm_keywordsOfFile = (function() {
        },
        putAllImageKeywords: function putAllImageKeywords(imageKeywords) {
            var keywordsSet = this;
-           var kwList = imageKeywords.fitsKeyWordsList;
+           var kwList = imageKeywords.fitsKeywordsList;
            for (var i=0; i<kwList.length; i++) {
                if (!kwList[i].isNull) {
                    keywordsSet.putKeyword(kwList[i].name);

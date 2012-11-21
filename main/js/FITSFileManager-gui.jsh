@@ -184,9 +184,9 @@ function FFM_GUIParameters() {
       // A possibly empty column is created for all these keywords, so that they are always present
       // in the same order and that the use can see that the column has no value.
       // By default only show the keywords that are significantly transformed by the conversion to synthethic keywords
-      this.defaultListOfShownFITSKeyWords = [remappedFITSkeywords["IMAGETYP"],
+      this.defaultListOfShownFITSKeywords = [remappedFITSkeywords["IMAGETYP"],
             remappedFITSkeywords["FILTER"],remappedFITSkeywords["OBJECT"]];
-      //this.defaultListOfShownFITSKeyWords = ["SET-TEMP","EXPOSURE","IMAGETYP","FILTER","XBINNING","YBINNING","OBJECT"];
+      //this.defaultListOfShownFITSKeywords = ["SET-TEMP","EXPOSURE","IMAGETYP","FILTER","XBINNING","YBINNING","OBJECT"];
 
 
 
@@ -527,7 +527,7 @@ function MainDialog(engine, guiParameters) {
    var labelWidth = this.font.width( "MMMMMMMMMMMMMM" ) ;
 
 
-   // -- FITSKeyWord Dialog (opened as a child on request)
+   // -- FITSKeyword Dialog (opened as a child on request)
    this.fitsKeysDialog = new FITSKeysDialog( this, engine );
 
 
@@ -578,7 +578,7 @@ function MainDialog(engine, guiParameters) {
    // -- Open FITS keyword dialog
    this.keyButton = new ToolButton( this );
    this.keyButton.icon = new Bitmap( ":/images/icons/text.png" );
-   this.keyButton.toolTip = "Variables and FITS KeyWords management";
+   this.keyButton.toolTip = "Variables and FITS Keywords management";
    this.keyButton.onClick = function() {
    if (this.dialog.engine.allFITSKeyNames.length) {
          this.dialog.fitsKeysDialog.execute();
@@ -1280,7 +1280,7 @@ function MainDialog(engine, guiParameters) {
    this.txt_Button.toolTip = "For Checked files write FitKeywords value to file FITS.txt in output directory";
    this.txt_Button.enabled = false;
    this.txt_Button.onClick = function() {
-      this.parent.engine.exportFITSKeyWords();
+      this.parent.engine.exportFITSKeywords();
    }
 #endif
 
@@ -1392,9 +1392,9 @@ function MainDialog(engine, guiParameters) {
 
          if (this.engine.inputFiles[i].length>longestFileName.length) {longestFileName = this.engine.inputFiles[i];}
 
-         var imageKeywords = this.engine.inputFITSKeyWords[i]; // all FITS keywords/Values of the current file
-         var keys=imageKeywords.fitsKeyWordsList;
-         var syntheticKeyWords = this.engine.inputVariables[i]; // Map of all synthethic keywords and values of the current file
+         var imageKeywords = this.engine.inputFITSKeywords[i]; // all FITS keywords/Values of the current file
+         var keys=imageKeywords.fitsKeywordsList;
+         var syntheticKeywords = this.engine.inputVariables[i]; // Map of all synthethic keywords and values of the current file
 
          // Create TreeBoxNode (line) for the current file
          var node = new TreeBoxNode( this.filesTreeBox );
@@ -1406,11 +1406,11 @@ function MainDialog(engine, guiParameters) {
 
          // Add synthethic keyword columns (based on fixed list of syntethic keywords)
 #ifdef DEBUG
-         debug("rebuildFilesTreeBox: adding " + Object.keys(syntheticKeyWords) + " synthetics keys, " + keys.length + " FITS keys to row " + i);
+         debug("rebuildFilesTreeBox: adding " + Object.keys(syntheticKeywords) + " synthetics keys, " + keys.length + " FITS keys to row " + i);
 #endif
          for (var iSynthKey = 0; iSynthKey<syntheticVariableNames.length; iSynthKey++) {
             var name = syntheticVariableNames[iSynthKey];
-            var textSynthKey = syntheticKeyWords[name];
+            var textSynthKey = syntheticKeywords[name];
             node.setText(iSynthKey+colOffset, textSynthKey ? textSynthKey : "");
          }
          // Skip next columns
@@ -1420,8 +1420,8 @@ function MainDialog(engine, guiParameters) {
          // Add columns for default FITS keys, so that they are always in the same order and at the beginning,
          // and are also present even of the image does not have the corresponding keyword.
          // They will be populated as normal columns
-         for (var iDefaultKeys = 0; iDefaultKeys < this.guiParameters.defaultListOfShownFITSKeyWords.length; ++iDefaultKeys) {
-            var name = this.guiParameters.defaultListOfShownFITSKeyWords[iDefaultKeys];
+         for (var iDefaultKeys = 0; iDefaultKeys < this.guiParameters.defaultListOfShownFITSKeywords.length; ++iDefaultKeys) {
+            var name = this.guiParameters.defaultListOfShownFITSKeywords[iDefaultKeys];
             var indexOfKey = this.engine.allFITSKeyNames.indexOf(name);// find index of "name" in allFITSKeyNames
             if (indexOfKey < 0)  {
                // First image, new FITS keyword, not yet mapped to a column
@@ -1457,7 +1457,7 @@ function MainDialog(engine, guiParameters) {
                   this.filesTreeBox.numberOfColumns++;// add new column
                   this.filesTreeBox.setHeaderText(this.filesTreeBox.numberOfColumns-1, name);//set name of new column
                   //console.writeln("*** " + this.filesTreeBox.numberOfColumns + " " + name);
-                  this.engine.keyEnabled.push (this.guiParameters.defaultListOfShownFITSKeyWords.indexOf(name)> -1);// Mark enabled if in the list of default columns
+                  this.engine.keyEnabled.push (this.guiParameters.defaultListOfShownFITSKeywords.indexOf(name)> -1);// Mark enabled if in the list of default columns
 
                   //this.filesTreeBox.showColumn( this.filesTreeBox.numberOfColumns, this.keyEnabled[k]);
                   indexOfKey = this.filesTreeBox.numberOfColumns-colOffset-1;
@@ -1959,7 +1959,7 @@ function FITSKeysDialog( parentDialog, engine)
 
       for (var i = 0; i<engine.allFITSKeyNames.length; i++) {
          var keyName = engine.allFITSKeyNames[i];
-         var imageKeywords = engine.inputFITSKeyWords[index];
+         var imageKeywords = engine.inputFITSKeywords[index];
          var keyValue = imageKeywords.getValue(keyName);
 #ifdef DEBUG_FITS
          debug("FITSKeysDialog: file_ComboBox: onItemSelected - keyName=" + keyName + ",  keyValue=" + keyWord );
