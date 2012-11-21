@@ -172,14 +172,15 @@ var ffm_keywordsOfFile = (function() {
    // Common method for imageKeywords
    var imageKeywordsPrototype = {
 
-      reset: function() {
+      reset: function reset() {
          var imageKeywords = this;
+         // This two attributes may be accessed by the callers, but this is not recommended
          imageKeywords.fitsKeyWordsMap = {};
          imageKeywords.fitsKeyWordsList = [];
       },
 
       // -- Clear and load the FITS keywords from the file, adding them to the value map too
-      loadFitsKeywords:  function(filePath) {
+      loadFitsKeywords:  function loadFitsKeywords(filePath) {
          var imageKeywords = this;
          this.reset();
          var name, fitsKeyFromList, i;
@@ -198,7 +199,7 @@ var ffm_keywordsOfFile = (function() {
       },
 
       // -- return the FITS keyword by name (if keyword has a value), return null otherwise
-      getKeyValue: function(name) {
+      getValue: function getValue(name) {
          var imageKeywords = this;
          if (imageKeywords.fitsKeyWordsMap.hasOwnProperty(name)) {
             return imageKeywords.fitsKeyWordsMap[name];
@@ -207,17 +208,23 @@ var ffm_keywordsOfFile = (function() {
          }
       },
 
+      // -- return the name of all value key words
+      getNamesOfValueKeywords: function getNamesOfValueKeywords() {
+         var imageKeywords = this;
+         return Object.keys(imageKeywords.fitsKeyWordsMap);
+      }
+
    };
 
    // Factory method for an empty imageKeywords
-   var makeNew = function makeNew() {
+   var makeImageKeywords = function makeNew() {
       var imageKeywords = Object.create(imageKeywordsPrototype);
       return imageKeywords;
    }
 
    // Factory method of an imageKeywords
-   var makefromFile = function makefromFile(filePath) {
-      var imageKeywords = makeNew();
+   var makeImageKeywordsfromFile = function makeImageKeywordsfromFile(filePath) {
+      var imageKeywords = makeImageKeywords();
       imageKeywords.loadFitsKeywords(filePath);
       return imageKeywords;
    };
@@ -255,7 +262,7 @@ var ffm_keywordsOfFile = (function() {
 
    // Return public methods of this module
    return {
-      makefromFile: makefromFile,
+      makeImageKeywordsfromFile: makeImageKeywordsfromFile,
       makeKeywordsSet: makeKeywordsSet,
    }
 

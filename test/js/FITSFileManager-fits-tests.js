@@ -135,21 +135,22 @@ var ffM_allTests = {
    // Test the ffm_keywordsOfFile.fitsKeyWords
 
    test_ffM_load_fits: function() {
-      var attrs = ffm_keywordsOfFile.makefromFile("C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/m31_Green_0028.fit");
+      var attrs = ffm_keywordsOfFile.makeImageKeywordsfromFile("C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/m31_Green_0028.fit");
       pT_assertEquals(26, attrs.fitsKeyWordsList.length);
       // Only some are keywords with value
       pT_assertEquals(14, Object.getOwnPropertyNames(attrs.fitsKeyWordsMap).length);
+      pT_assertEquals(14, attrs.getNamesOfValueKeywords().length);
       // Check with an arbitratry key
-      pT_assertEquals(158,attrs.getKeyValue("NAXIS2").numericValue);
+      pT_assertEquals(158,attrs.getValue("NAXIS2").numericValue);
       // Old array based look-up provided directly the string value
       pT_assertEquals("158",ffM_findKeyWord(attrs.fitsKeyWordsList,"NAXIS2"));
-      pT_assertEquals(null,attrs.getKeyValue("nothere"));
+      pT_assertEquals(null,attrs.getValue("nothere"));
    },
 
 
    // Test the ffm_keywordsOfFile.keywordSet
    test_ffM_keywordsSet: function() {
-      var kwof = ffm_keywordsOfFile.makefromFile("C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/m31_Green_0028.fit");
+      var kwof = ffm_keywordsOfFile.makeImageKeywordsfromFile("C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/m31_Green_0028.fit");
       var kws = ffm_keywordsOfFile.makeKeywordsSet();
       kws.putAllImageKeywords(kwof);
       pT_assertEquals(14, Object.keys(kws.allValueKeywordNames).length);

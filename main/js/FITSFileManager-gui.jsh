@@ -1381,16 +1381,19 @@ function MainDialog(engine, guiParameters) {
       // The node will contain the file name, then the synthethic keys, then the FITS keys.
       // All synthethic and FITS keys are added, even if they are not shown or used (this simplifies some code,
       // but maybe could be optimized).
-      // The list of sythethic key is fixed. FITS keys coluns are added as needed when an image
+      // The list of synthethic keys is currently fixed.
+      // The list of FITS key is dynamic and FITS keys coluns are added as needed when an image
       // has a FITS keyword not yet mapped to a column. The mapping of key name to column index
       // is built on the fly.
+      // Only the keys with a value (not of type isNull) are considered (this skip comments)
       var longestFileName = "          "; // Column will have at least 10 characters
 
       for (var i = 0; i < this.engine.inputFiles.length; ++i) {
 
          if (this.engine.inputFiles[i].length>longestFileName.length) {longestFileName = this.engine.inputFiles[i];}
 
-         var keys = this.engine.inputFITSKeyWords[i]; // all FITS keywords/Values of the current file
+         var imageKeywords = this.engine.inputFITSKeyWords[i]; // all FITS keywords/Values of the current file
+         var keys=imageKeywords.fitsKeyWordsList;
          var syntheticKeyWords = this.engine.inputVariables[i]; // Map of all synthethic keywords and values of the current file
 
          // Create TreeBoxNode (line) for the current file
@@ -1434,36 +1437,41 @@ function MainDialog(engine, guiParameters) {
          }
 
 
-         // Adding FITS keyword columns (based on FITS keywords in current file and map of keywords to clumn index)
+         // Adding FITS keyword columns (based on FITS keywords in current file and map of keywords to column index)
 #ifdef DEBUG
          debug("rebuildFilesTreeBox: setting " + keys.length + " FITS keys to row " + i + ", colOffset=" +colOffset);
 #endif
          for ( var iKeyOfFile = 0; iKeyOfFile<keys.length; iKeyOfFile++) {
-            var name = keys[iKeyOfFile].name; //name of Keyword from file
-            var indexOfKey = this.engine.allFITSKeyNames.indexOf(name);// find index of "name" in allFITSKeyNames
-            if (indexOfKey < 0)  {
-               // new FITS keyword, not yet mapped to a column
-#ifdef DEBUG_COLUMNS
-               debug("rebuildFilesTreeBox: Creating new column " + this.filesTreeBox.numberOfColumns + " for '"  + name + "', total col len " + this.engine.allFITSKeyNames.length);
-#endif
-               this.engine.allFITSKeyNames.push(name);//add keyword name to table
-               this.filesTreeBox.numberOfColumns++;// add new column
-               this.filesTreeBox.setHeaderText(this.filesTreeBox.numberOfColumns-1, name);//set name of new column
-               //console.writeln("*** " + this.filesTreeBox.numberOfColumns + " " + name);
-               this.engine.keyEnabled.push (this.guiParameters.defaultListOfShownFITSKeyWords.indexOf(name)> -1);// Mark enabled if in the list of default columns
 
-               //this.filesTreeBox.showColumn( this.filesTreeBox.numberOfColumns, this.keyEnabled[k]);
-               indexOfKey = this.filesTreeBox.numberOfColumns-colOffset-1;
-            }
-            // Set column content to value of keyword
+            // Only work on the value keywords
+            if (! keys[iKeyOfFile].isNull) {
+               var name = keys[iKeyOfFile].name; //name of Keyword from file
+
+               var indexOfKey = this.engine.allFITSKeyNames.indexOf(name);// find index of "name" in allFITSKeyNames
+               if (indexOfKey < 0)  {
+               // new FITS keyword, not yet mapped to a column, add new value keyword
 #ifdef DEBUG_COLUMNS
-            debug("rebuildFilesTreeBox: Set column, colOffset " + colOffset + ", index "  + indexOfKey + ", value " + keys[iKeyOfFile].value);
+                  debug("rebuildFilesTreeBox: Creating new column " + this.filesTreeBox.numberOfColumns + " for value keywords '"  + name + "', total col len " + this.engine.allFITSKeyNames.length);
 #endif
-            // TODO Supports other formatting (dates ?) or show raw text or format depending on keyword
-            if (keys[iKeyOfFile].isNumeric) {
-               node.setText(colOffset + indexOfKey, Number(keys[iKeyOfFile].value).toFixed(3) );
-            } else {
-               node.setText(colOffset + indexOfKey, keys[iKeyOfFile].value.trim() );
+                  this.engine.allFITSKeyNames.push(name);//add keyword name to table
+                  this.filesTreeBox.numberOfColumns++;// add new column
+                  this.filesTreeBox.setHeaderText(this.filesTreeBox.numberOfColumns-1, name);//set name of new column
+                  //console.writeln("*** " + this.filesTreeBox.numberOfColumns + " " + name);
+                  this.engine.keyEnabled.push (this.guiParameters.defaultListOfShownFITSKeyWords.indexOf(name)> -1);// Mark enabled if in the list of default columns
+
+                  //this.filesTreeBox.showColumn( this.filesTreeBox.numberOfColumns, this.keyEnabled[k]);
+                  indexOfKey = this.filesTreeBox.numberOfColumns-colOffset-1;
+               }
+               // Set column content to value of keyword
+#ifdef DEBUG_COLUMNS
+               debug("rebuildFilesTreeBox: Set column, colOffset " + colOffset + ", index "  + indexOfKey + ", value " + keys[iKeyOfFile].value);
+#endif
+               // TODO Supports other formatting (dates ?) or show raw text or format depending on keyword
+               if (keys[iKeyOfFile].isNumeric) {
+                  node.setText(colOffset + indexOfKey, Number(keys[iKeyOfFile].value).toFixed(3) );
+               } else {
+                  node.setText(colOffset + indexOfKey, keys[iKeyOfFile].value.trim() );
+               }
             }
          }
       }
@@ -1949,15 +1957,8 @@ function FITSKeysDialog( parentDialog, engine)
 
       for (var i = 0; i<engine.allFITSKeyNames.length; i++) {
          var keyName = engine.allFITSKeyNames[i];
-         var keys = engine.inputFITSKeyWords[index];
-         // TODO - Refactor lookup to engine
-         var keyWord = null;
-         for (var j = 0; j<keys.length; j++) {
-            if (keys[j].name === keyName) {
-               keyWord = keys[j];
-               break;
-            }
-         }
+         var imageKeywords = engine.inputFITSKeyWords[index];
+         var keyWord = imageKeywords.getValue(keyName);
 #ifdef DEBUG_FITS
          debug("FITSKeysDialog: file_ComboBox: onItemSelected - keyName=" + keyName + ",  keyWord=" + keyWord );
 #endif

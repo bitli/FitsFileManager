@@ -21,7 +21,7 @@ function FFM_Engine(guiParameters) {
    this.reset = function() {
       // Cache of file information. 3 parallel array. The order of the elements is usually NOT the same as shown in the GUI
       this.inputFiles = []; // Array of the full path of the input files
-      this.inputFITSKeyWords = [];  // Array of an array of FITSKeywords for the corresponding input file
+      this.inputFITSKeyWords = [];  // Array of 'imageKeywords' for the corresponding input file
       this.inputVariables = [];  // Array of Map of stable synthethic variables for the corresponding input file
 
       // Cache global FITS key information (two parallel arrays, the index of the name give also the column offset in the GUI)
@@ -63,7 +63,7 @@ function FFM_Engine(guiParameters) {
 #endif
          if (this.inputFiles.indexOf(fileNames[i]) < 0) // Skip files already in the list
          {
-            var keys = ffM_loadFITSKeywordsList(fileNames[i]);
+            var keys = ffm_keywordsOfFile.makeImageKeywordsfromFile(fileNames[i]);
             this.inputFiles.push(fileNames[i]);
             this.inputFITSKeyWords.push(keys);
             // Create the synthethic variables using the desired rules
@@ -485,7 +485,7 @@ function FFM_Engine(guiParameters) {
       for ( var j =0; j< this.targetFilesIndices.length; j++) {
          var inputIndex = this.targetFilesIndices[i];
 
-         var key = this.inputFITSKeyWords[inputIndex];
+         var key = this.inputFITSKeyWords[inputIndex].fitsKeyWordsList;
          for ( var i = 0; i< this.allFITSKeyNames.length; i++) {
             if (!this.keyEnabled[i]) continue;
             var name = this.allFITSKeyNames[i];
