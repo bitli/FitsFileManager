@@ -164,18 +164,26 @@ function ffM_findKeyWord(fitsKeyWordsArray, name) {
 // Global object to contains the FITS utility methods
 var ffm_keywordsOfFile = (function() {
 
-// ------------------------------------------------------------------------------------------------------------------------
-// imageKeywords keeps track of the FITS keywords of a file, both as an array in the order
-// in the file, and as a map of values keywords for quick looked
-// ------------------------------------------------------------------------------------------------------------------------
+
+   // ------------------------------------------------------------------------------------------------------------------------
+   // imageKeywords keeps track of the FITS keywords of a file, both as an array ordered
+   // as in the file and as a map of name to keywords for the values keywords (non null) for quick lookup
+   // ------------------------------------------------------------------------------------------------------------------------
    // Common method for imageKeywords
    var imageKeywordsPrototype = {
 
-      // -- Load or reload the FITS keywords from the file, building the value map too
-      loadFitsKeywords:  function() {
+      reset: function() {
          var imageKeywords = this;
+         imageKeywords.fitsKeyWordsMap = {};
+         imageKeywords.fitsKeyWordsList = [];
+      },
+
+      // -- Clear and load the FITS keywords from the file, adding them to the value map too
+      loadFitsKeywords:  function(filePath) {
+         var imageKeywords = this;
+         this.reset();
          var name, fitsKeyFromList, i;
-         imageKeywords.fitsKeyWordsList = ffM_loadFITSKeywordsList(imageKeywords.filePath);
+         imageKeywords.fitsKeyWordsList = ffM_loadFITSKeywordsList(filePath);
          // Make a map of all fits keywords with a value (this remove the comment keywords)
          imageKeywords.fitsKeyWordsMap = {};
          for (i=0; i<imageKeywords.fitsKeyWordsList.length; i++) {
@@ -187,10 +195,9 @@ var ffm_keywordsOfFile = (function() {
                imageKeywords.fitsKeyWordsMap[name] = fitsKeyFromList;
             }
          }
-         //Console.writeln("************** " + Object.getOwnPropertyNames(imageAttributes.fitsKeyWordsMap));
       },
 
-      // -- return the keyword by name (if keyword has a value), null otherwise
+      // -- return the FITS keyword by name (if keyword has a value), return null otherwise
       getKeyValue: function(name) {
          var imageKeywords = this;
          if (imageKeywords.fitsKeyWordsMap.hasOwnProperty(name)) {
@@ -198,27 +205,43 @@ var ffm_keywordsOfFile = (function() {
          } else {
             return null;
          }
-      }
+      },
 
    };
 
-   // Factory method of an ImageAttributes
-   var makefromFile = function makefromFile(filePath) {
+   // Factory method for an empty imageKeywords
+   var makeNew = function makeNew() {
       var imageKeywords = Object.create(imageKeywordsPrototype);
-      imageKeywords.filePath = filePath;
-      imageKeywords.fitsKeyWordsMap = {};
-      imageKeywords.fitsKeyWordsList = [];
-      imageKeywords.loadFitsKeywords();
+      return imageKeywords;
+   }
+
+   // Factory method of an imageKeywords
+   var makefromFile = function makefromFile(filePath) {
+      var imageKeywords = makeNew();
+      imageKeywords.loadFitsKeywords(filePath);
       return imageKeywords;
    };
 
-// Keeps track of all values keywords in a set of files, in a specific order
+
+
+   // ------------------------------------------------------------------------------------------------------------------------
+   // Keeps track of all values keywords in a set of files, in a specific order
+   // ------------------------------------------------------------------------------------------------------------------------
    var keywordSetPrototype = {
        putKeyword: function putKeyword(name) {
            var keywordsSet = this;
            if (!keywordsSet.allValueKeywordNames.hasOwnProperty(name)) {
                keywordsSet.allValueKeywordNames[name] = keywordsSet.allValueKeywordNameList.length;
                keywordsSet.allValueKeywordNameList.push(name);
+           }
+       },
+       putAllImageKeywords: function putAllImageKeywords(imageKeywords) {
+           var keywordsSet = this;
+           var kwList = imageKeywords.fitsKeyWordsList;
+           for (var i=0; i<kwList.length; i++) {
+               if (!kwList[i].isNull) {
+                   keywordsSet.putKeyword(kwList[i].name);
+               }
            }
        }
    }
@@ -232,7 +255,8 @@ var ffm_keywordsOfFile = (function() {
 
    // Return public methods of this module
    return {
-      makefromFile: makefromFile
+      makefromFile: makefromFile,
+      makeKeywordsSet: makeKeywordsSet,
    }
 
 

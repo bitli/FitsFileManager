@@ -479,7 +479,7 @@ function FFM_Engine(guiParameters) {
          if (!this.keyEnabled[i]) continue;
          f.outTextLn(this.allFITSKeyNames[i]+tab);
       }
-      f.outTextLn("Filename"+String.fromCharCode(10,13));
+      f.outTextLn("Filename"+String.fromCharCode(10,13)); // LF, CR
 
       // output FITS data
       for ( var j =0; j< this.targetFilesIndices.length; j++) {

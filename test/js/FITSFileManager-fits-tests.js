@@ -132,7 +132,7 @@ var ffM_allTests = {
    },
 
 
-   // Test the Object methods
+   // Test the ffm_keywordsOfFile.fitsKeyWords
 
    test_ffM_load_fits: function() {
       var attrs = ffm_keywordsOfFile.makefromFile("C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/m31_Green_0028.fit");
@@ -147,6 +147,14 @@ var ffM_allTests = {
    },
 
 
+   // Test the ffm_keywordsOfFile.keywordSet
+   test_ffM_keywordsSet: function() {
+      var kwof = ffm_keywordsOfFile.makefromFile("C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/m31_Green_0028.fit");
+      var kws = ffm_keywordsOfFile.makeKeywordsSet();
+      kws.putAllImageKeywords(kwof);
+      pT_assertEquals(14, Object.keys(kws.allValueKeywordNames).length);
+      pT_assertEquals(14, kws.allValueKeywordNameList.length);
+   }
 
 }
 
