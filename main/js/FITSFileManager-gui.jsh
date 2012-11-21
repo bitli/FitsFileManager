@@ -578,7 +578,7 @@ function MainDialog(engine, guiParameters) {
    // -- Open FITS keyword dialog
    this.keyButton = new ToolButton( this );
    this.keyButton.icon = new Bitmap( ":/images/icons/text.png" );
-   this.keyButton.toolTip = "KeyWord Dialog";
+   this.keyButton.toolTip = "Variables and FITS KeyWords management";
    this.keyButton.onClick = function() {
    if (this.dialog.engine.allFITSKeyNames.length) {
          this.dialog.fitsKeysDialog.execute();
@@ -1857,39 +1857,7 @@ function FITSKeysDialog( parentDialog, engine)
       p.moveBy( 16,16 );
       this.position = p;
 
-
-      // -- Rebuild the list of keywords
-
-      this.keyword_TreeBox.clear();
-
-      // Create list of synthetic keywords as a fist subtree
-      var synthRoootNode = new TreeBoxNode(this.keyword_TreeBox);
-      synthRoootNode.expanded = true;
-      synthRoootNode.setText(0,"Synthetic keywords");
-
-
-      // Fill list of keywords global variable
-      for (var i =0; i<syntheticVariableNames.length; i++) {
-         var node = new TreeBoxNode(synthRoootNode);
-         node.setText( 0, syntheticVariableNames[i] );
-         node.checked = true;
-      }
-
-      // Create list of FITS keywords as a second subtree
-      var fitsRoootNode = new TreeBoxNode(this.keyword_TreeBox);
-      fitsRoootNode.expanded = true;
-      fitsRoootNode.setText(0,"FITS keywords");
-
-
-      // Fill FITS keyword names from allFITSKeyNames (accumulated name of all keywords)
-      for (var i =0; i<engine.allFITSKeyNames.length; i++) {
-         var node = new TreeBoxNode(fitsRoootNode);
-         node.setText( 0, engine.allFITSKeyNames[i] );
-         node.checked = engine.keyEnabled[i];
-      }
-
-
-      // -- Update the DropDown box - Fill list of files from parent list of files, t obe in the same order
+      // -- Update the DropDown box - Fill list of files from parent list of files, to be in the same order
       this.file_ComboBox.clear();
       for (i = 0; i<parentDialog.filesTreeBox.numberOfChildren; i++) {
          this.file_ComboBox.addItem(parentDialog.filesTreeBox.child(i).text(0));
@@ -1904,6 +1872,40 @@ function FITSKeysDialog( parentDialog, engine)
          selectedFileIndex = parentDialog.filesTreeBox.childIndex(parentDialog.filesTreeBox.selectedNodes[0]);
       }
       this.file_ComboBox.currentItem = selectedFileIndex;
+
+
+      // -- Rebuild the 3 lists of keywords in the tree box
+
+      this.keyword_TreeBox.clear();
+
+      // Create list of synthetic keywords as a fist subtree
+      var synthRootNode = new TreeBoxNode(this.keyword_TreeBox);
+      synthRootNode.expanded = true;
+      synthRootNode.setText(0,"Synthetic keywords");
+
+
+      // Fill the name column form a fixed list of synthetic keywords names
+      for (var i =0; i<syntheticVariableNames.length; i++) {
+         var node = new TreeBoxNode(synthRootNode);
+         node.setText( 0, syntheticVariableNames[i] );
+         node.checked = true;
+      }
+
+      // Create list of FITS keywords used as variables as a second subtree
+      var fitsVarRootNode = new TreeBoxNode(this.keyword_TreeBox);
+      fitsVarRootNode.expanded = true;
+      fitsVarRootNode.setText(0,"FITS keywords used as variable");
+
+
+      // Fill the name columns from the from allFITSKeyNames (accumulated names of all keywords)
+      for (var i =0; i<engine.allFITSKeyNames.length; i++) {
+         var node = new TreeBoxNode(fitsVarRootNode);
+         node.setText( 0, engine.allFITSKeyNames[i] );
+         node.checked = engine.keyEnabled[i];
+      }
+
+
+      // Populate with default file
       this.populate(selectedFileIndex);
 
 
@@ -1953,33 +1955,31 @@ function FITSKeysDialog( parentDialog, engine)
       }
 
       // Update FITS key words values from engine information
-      var fitsRoootNode = this.keyword_TreeBox.child(1);
+      var fitsVarRootNode = this.keyword_TreeBox.child(1);
 
       for (var i = 0; i<engine.allFITSKeyNames.length; i++) {
          var keyName = engine.allFITSKeyNames[i];
          var imageKeywords = engine.inputFITSKeyWords[index];
-         var keyWord = imageKeywords.getValue(keyName);
+         var keyValue = imageKeywords.getValue(keyName);
 #ifdef DEBUG_FITS
-         debug("FITSKeysDialog: file_ComboBox: onItemSelected - keyName=" + keyName + ",  keyWord=" + keyWord );
+         debug("FITSKeysDialog: file_ComboBox: onItemSelected - keyName=" + keyName + ",  keyValue=" + keyWord );
 #endif
-         if (keyWord !== null) {
-            fitsRoootNode.child(i).setTextColor(0,0x00000000);
-            fitsRoootNode.child(i).setText(1,keyWord.value);
-            fitsRoootNode.child(i).setText(2,this.getTypeString(keyWord));
-            fitsRoootNode.child(i).setText(3,keyWord.comment);
+         if (keyValue !== null) {
+            fitsVarRootNode.child(i).setTextColor(0,0x00000000);
+            fitsVarRootNode.child(i).setText(1,keyValue.value);
+            fitsVarRootNode.child(i).setText(2,this.getTypeString(keyValue));
+            fitsVarRootNode.child(i).setText(3,keyValue.comment);
          } else {
-            fitsRoootNode.child(i).setTextColor(0,0x00FF0000);
-            fitsRoootNode.child(i).setText(1,'');
-            fitsRoootNode.child(i).setText(2,'');
-            fitsRoootNode.child(i).setText(3,'');
+            fitsVarRootNode.child(i).setTextColor(0,0x00FF0000);
+            fitsVarRootNode.child(i).setText(1,'');
+            fitsVarRootNode.child(i).setText(2,'');
+            fitsVarRootNode.child(i).setText(3,'');
          }
       }
 
    }
 
 };
-
-
 
 
 FITSKeysDialog.prototype = new Dialog;

@@ -233,6 +233,7 @@ var ffm_keywordsOfFile = (function() {
 
    // ------------------------------------------------------------------------------------------------------------------------
    // Keeps track of all values keywords in a set of files, in a specific order
+   // NOT YET USED
    // ------------------------------------------------------------------------------------------------------------------------
    var keywordSetPrototype = {
        putKeyword: function putKeyword(name) {
