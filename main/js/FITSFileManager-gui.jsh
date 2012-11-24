@@ -580,7 +580,7 @@ function MainDialog(engine, guiParameters) {
    this.keyButton.icon = new Bitmap( ":/images/icons/text.png" );
    this.keyButton.toolTip = "Variables and FITS Keywords management";
    this.keyButton.onClick = function() {
-   if (this.dialog.engine.allFITSKeyNames.length) {
+   if (this.dialog.engine.keywordsSet.allValueKeywordNameList.length) {
          this.dialog.fitsKeysDialog.execute();
          this.dialog.showOrHideFITSkey();
       }
@@ -1345,10 +1345,10 @@ function MainDialog(engine, guiParameters) {
 
    // -- Set visibility of FITS keywords columns (called to apply changes)
    this.showOrHideFITSkey = function () {
-      for (var i = 0; i<this.engine.allFITSKeyNames.length;i++) {
+      var allFITSKeyNames = this.engine.keywordsSet.allValueKeywordNameList;
+      for (var i = 0; i<allFITSKeyNames.length;i++) {
          var c = i + 1 + syntheticVariableNames.length;
-         var name = this.engine.allFITSKeyNames[i];
-         this.filesTreeBox.showColumn( c, this.engine.shownFITSKeyNames.hasOwnProperty(name));
+         this.filesTreeBox.showColumn( c, this.engine.shownFITSKeyNames.hasOwnProperty(allFITSKeyNames[i]));
       }
    }
 
@@ -1363,7 +1363,7 @@ function MainDialog(engine, guiParameters) {
       this.filesTreeBox.clear();
       this.filesTreeBox.numberOfColumns = 1; // Filename
 
-      this.engine.allFITSKeyNames = []; // clear
+      this.engine.keywordsSet = ffm_keywordsOfFile.makeKeywordsSet(); // clear
       this.engine.shownFITSKeyNames = {}; // clear
 
       // Add the synthetic keys columns
@@ -1421,22 +1421,24 @@ function MainDialog(engine, guiParameters) {
          // and are also present even if the image does not have the corresponding keyword.
          // They will be populated as normal columns
          // TODO - Make optional, move out of loop, use separate list (order list) from default list
+#ifdef IMPLEMENT_OBSOLETE
          for (var iDefaultKeys = 0; iDefaultKeys < this.guiParameters.defaultListOfShownFITSKeywords.length; ++iDefaultKeys) {
             var name = this.guiParameters.defaultListOfShownFITSKeywords[iDefaultKeys];
-            var indexOfKey = this.engine.allFITSKeyNames.indexOf(name);// find index of "name" in allFITSKeyNames
+            var allFITSKeyNames = this.engine.keywordsSet.allValueKeywordNameList;
+            var indexOfKey = allFITSKeyNames.indexOf(name);// find index of "name" in allFITSKeyNames
             if (indexOfKey < 0)  {
                // First image, new FITS keyword, not yet mapped to a column
-#ifdef DEBUG_COLUMNS
-               debug("rebuildFilesTreeBox: Creating new default column " + this.filesTreeBox.numberOfColumns + " for '"  + name + "', total col len " + this.engine.allFITSKeyNames.length);
-#endif
-               this.engine.allFITSKeyNames.push(name);//add keyword name to table
+//#ifdef DEBUG_COLUMNS
+//               debug("rebuildFilesTreeBox: Creating new default column " + this.filesTreeBox.numberOfColumns + " for '"  + name + "', total col len " + this.engine.allFITSKeyNames.length);
+//#endif
+               allFITSKeyNames.push(name);//add keyword name to table
                this.filesTreeBox.numberOfColumns++;// add new column
                this.filesTreeBox.setHeaderText(this.filesTreeBox.numberOfColumns-1, name);//set name of new column
                //console.writeln("*** " + this.filesTreeBox.numberOfColumns + " " + name);
                this.engine.shownFITSKeyNames[name] = true;// This is a default column
             }
          }
-
+#endif
 
          // Adding FITS keyword columns (based on FITS keywords in current file and map of keywords to column index)
 #ifdef DEBUG
@@ -1447,23 +1449,16 @@ function MainDialog(engine, guiParameters) {
             // Only work on the value keywords
             if (! keys[iKeyOfFile].isNull) {
                var name = keys[iKeyOfFile].name; //name of Keyword from file
-
-               var indexOfKey = this.engine.allFITSKeyNames.indexOf(name);// find index of "name" in allFITSKeyNames
+               var allFITSKeyNames = this.engine.keywordsSet.allValueKeywordNameList;
+               var indexOfKey = allFITSKeyNames.indexOf(name);// find index of "name" in allFITSKeyNames
                if (indexOfKey < 0)  {
                // new FITS keyword, not yet mapped to a column, add new value keyword
 #ifdef DEBUG_COLUMNS
                   debug("rebuildFilesTreeBox: Creating new column " + this.filesTreeBox.numberOfColumns + " for value keywords '"  + name + "', total col len " + this.engine.allFITSKeyNames.length);
 #endif
-                  this.engine.allFITSKeyNames.push(name);//add keyword name to table
+                  allFITSKeyNames.push(name);//add keyword name to table
                   this.filesTreeBox.numberOfColumns++;// add new column
                   this.filesTreeBox.setHeaderText(this.filesTreeBox.numberOfColumns-1, name);//set name of new column
-                  //console.writeln("*** " + this.filesTreeBox.numberOfColumns + " " + name);
-                  // Mark enabled if in the list of default columns
-                  if (this.guiParameters.defaultListOfShownFITSKeywords.indexOf(name)> -1) {
-                     this.engine.shownFITSKeyNames[name] = true;
-                  } else {
-                     delete this.engine.shownFITSKeyNames[name];
-                  }
                   indexOfKey = this.filesTreeBox.numberOfColumns-colOffset-1;
                }
                // Set column content to value of keyword
@@ -1478,6 +1473,12 @@ function MainDialog(engine, guiParameters) {
                }
             }
          }
+      }
+
+      // Set 'is visible' for the list of default keywords
+      for (var iDefaultKeys = 0; iDefaultKeys < this.guiParameters.defaultListOfShownFITSKeywords.length; ++iDefaultKeys) {
+         var name = this.guiParameters.defaultListOfShownFITSKeywords[iDefaultKeys];
+          this.engine.shownFITSKeyNames[name] = true;
       }
 
       // hide the columns of unchecked FITS keywords
@@ -1790,7 +1791,7 @@ function FITSKeysDialog( parentDialog, engine)
    this.file_ComboBox.onItemSelected = function( index ) {
       // Assume that index in combox is same as index in inputfiles
 #ifdef DEBUG
-      debug("FITSKeysDialog: file_ComboBox: onItemSelected - " + index + " key table length = " + engine.allFITSKeyNames.length);
+      debug("FITSKeysDialog: file_ComboBox: onItemSelected - " + index + " key table length = " + engine.keywordsSet.allValueKeywordNameList.length);
 #endif
 
      this.dialog.populate(index);
@@ -1827,9 +1828,10 @@ function FITSKeysDialog( parentDialog, engine)
       debug("FITSKeysDialog: ok_Button: onClick");
 #endif
       var fitsRoootNode = this.parent.keyword_TreeBox.child(1);
-      for (var i =0; i< engine.allFITSKeyNames.length; i++) {
+      var allFITSKeyNames = engine.keywordsSet.allValueKeywordNameList;
+      for (var i =0; i< allFITSKeyNames.length; i++) {
          var checked = fitsRoootNode.child(i).checked;
-         var name = engine.allFITSKeyNames[i];
+         var name = allFITSKeyNames[i];
          if (checked) {
              engine.shownFITSKeyNames[name] = true;
          } else {
@@ -1907,10 +1909,11 @@ function FITSKeysDialog( parentDialog, engine)
 
 
       // Fill the name columns from the from allFITSKeyNames (accumulated names of all keywords)
-      for (var i =0; i<engine.allFITSKeyNames.length; i++) {
+      var allFITSKeyNames = engine.keywordsSet.allValueKeywordNameList;
+      for (var i =0; i<allFITSKeyNames.length; i++) {
          var node = new TreeBoxNode(fitsVarRootNode);
-         node.setText( 0, engine.allFITSKeyNames[i] );
-         node.checked = engine.shownFITSKeyNames.hasOwnProperty(engine.allFITSKeyNames[i]);
+         node.setText( 0, allFITSKeyNames[i] );
+         node.checked = engine.shownFITSKeyNames.hasOwnProperty(allFITSKeyNames[i]);
       }
 
 
@@ -1966,8 +1969,9 @@ function FITSKeysDialog( parentDialog, engine)
       // Update FITS key words values from engine information
       var fitsVarRootNode = this.keyword_TreeBox.child(1);
 
-      for (var i = 0; i<engine.allFITSKeyNames.length; i++) {
-         var keyName = engine.allFITSKeyNames[i];
+      var allFITSKeyNames = engine.keywordsSet.allValueKeywordNameList;
+      for (var i = 0; i<allFITSKeyNames.length; i++) {
+         var keyName = allFITSKeyNames[i];
          var imageKeywords = engine.inputFITSKeywords[index];
          var keyValue = imageKeywords.getValue(keyName);
 #ifdef DEBUG_FITS

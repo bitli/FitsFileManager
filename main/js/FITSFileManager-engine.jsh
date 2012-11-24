@@ -24,9 +24,9 @@ function FFM_Engine(guiParameters) {
       this.inputFITSKeywords = [];  // Array of 'imageKeywords' for the corresponding input file
       this.inputVariables = [];  // Array of Map of stable synthethic variables for the corresponding input file
 
-      // Cache global FITS key information (the index of the name give also the column offset in the GUI)
-      this.allFITSKeyNames = [];   // array of names of all accumulated FITS keywords from all files
-      this.shownFITSKeyNames = {}; // if name is a key of this object, the corresponding FITSKeyWord is shown in GUI windows
+      // Global FITS key information - (the index of the name in keywordsSet.allValueKeywordNameList give also the column offset in the GUI)
+      this.keywordsSet = ffm_keywordsOfFile.makeKeywordsSet();   // array of names of all accumulated FITS keywords from all files
+      this.shownFITSKeyNames = {}; // if its name is a key of this object, then the corresponding FITSKeyWord is shown in GUI windows
 
       this.resetTarget();
     };
@@ -475,8 +475,9 @@ function FFM_Engine(guiParameters) {
       f.create(t);
 
       // output header (tab separated selected fits keyword + 'Filename')
-      for ( var i =0; i<this.allFITSKeyNames.length; i++) {
-         var name = this.allFITSKeyNames[i];
+      var allFITSKeyNames = this.keywordsSet.allValueKeywordNameList;
+      for ( var i =0; i<allFITSKeyNames.length; i++) {
+         var name = allFITSKeyNames[i];
          if (this.shownFITSKeyNames.hasOwnProperty(name)) {
             f.outTextLn(key+tab);
          }
@@ -488,9 +489,9 @@ function FFM_Engine(guiParameters) {
          var inputIndex = this.targetFilesIndices[i];
 
          var key = this.inputFITSKeywords[inputIndex].fitsKeywordsList;
-         for ( var i = 0; i< this.allFITSKeyNames.length; i++) {
+         for ( var i = 0; i< allFITSKeyNames.length; i++) {
 
-            var name = this.allFITSKeyNames[i];
+            var name = allFITSKeyNames[i];
             if (!this.shownFITSKeyNames.hasOwnProperty(name)) continue;
             for (var k in key) {
                if (!(key[k].name === name)) continue;
