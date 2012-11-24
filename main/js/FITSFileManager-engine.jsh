@@ -59,7 +59,7 @@ function FFM_Engine(guiParameters) {
       var nmbFilesDuplicated = 0;
       for ( var i = 0; i<fileNames.length; i++ ) {
 #ifdef DEBUG
-         debug("addFiles: Check for duplicate and add fileNames[" + i + "] " + fileNames[i]);
+         debug("addFiles: Adding file " + i + ": '" + fileNames[i] + "', first check for duplicate, if ok add at " + this.inputFiles.length);
 #endif
          if (this.inputFiles.indexOf(fileNames[i]) < 0) // Skip files already in the list
          {

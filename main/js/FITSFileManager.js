@@ -64,6 +64,7 @@
 // Tracing - define DEBUG if you define any other
 //#define DEBUG
 //#define DEBUG_EVENTS
+//#define DEBUG_SHOW_FITS
 //#define DEBUG_FITS
 //#define DEBUG_VARS
 //#define DEBUG_COLUMNS
@@ -123,7 +124,8 @@ function debug(str) {
 //     Added alternate FITS keywords for creation of synthetic keywords
 //     Load HIERARCH FITS keywords
 // 2012-11-19 - 0.8 - Refactor, bug corrections
-//     Refactored FITS keyword loading (separate js file)
+//     Refactored FITS keyword loading (separate js file) and some processing
+//     Correcting error of selection of file in FITSKeyword window
 
 
 
@@ -174,6 +176,9 @@ function debug(str) {
 
 // -------------------------------------------------------------------------------------
 function ffM_main() {
+#ifdef DEBUG
+   Console.show();
+#endif
    var guiParameters = new FFM_GUIParameters();
    guiParameters.loadSettings();
 

@@ -47,8 +47,8 @@ var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
       return -1;
    }
 
-#ifdef DEBUG_FITS
-      debug("ffM_loadFITSKeywordsList: - loading '" + fitsFilePath + "'");
+#ifdef DEBUG_SHOW_FITS
+      debug("ffM_loadFITSKeywordsList: loading '" + fitsFilePath + "'");
 #endif
 
    var f = new File;
@@ -58,8 +58,9 @@ var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
    var keywords = [];
    for ( ;; ) {
       var rawData = f.read( DataType_ByteArray, 80 );
-
-      // Console.writeln(rawData.toString());
+#ifdef DEBUG_FITS
+      debug("ffM_loadFITSKeywordsList: line - '" + rawData.toString() + "'");
+#endif
 
       var name = rawData.toString( 0, 8 );
       if ( name.toUpperCase() === "END     " ) { // end of HDU keyword list?
@@ -115,9 +116,6 @@ var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
       }
 
 
-#ifdef DEBUG_FITS
-      debug("ffM_loadFITSKeywordsList: - name[" + name + "],["+value+ "],["+comment+"]");
-#endif
       // Perform a naive sanity check: a valid FITS file must begin with a SIMPLE=T keyword.
       if ( keywords.length === 0 ) {
          if ( name !== "SIMPLE  " && value.trim() !== 'T' ) {
@@ -126,11 +124,21 @@ var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
       }
 
       // Add new keyword.
-      keywords.push( new FITSKeyword( name.trim(), value.trim(), comment.trim() ) );
+      var fitsKeyWord = new FITSKeyword( name, value, comment);
+      fitsKeyWord.trim();
+      keywords.push(fitsKeyWord);
+#ifdef DEBUG_SHOW_FITS
+      debug("ffM_loadFITSKeywordsList: - " + fitsKeyWord);
+#endif
+
    }
    } finally {
    f.close();
    }
+#ifdef DEBUG_SHOW_FITS
+      debug("ffM_loadFITSKeywordsList: (end) ");
+#endif
+
    return keywords;
 };
 
@@ -253,6 +261,10 @@ var ffm_keywordsOfFile = (function() {
                    keywordsSet.putKeyword(kwList[i].name);
                }
            }
+       },
+       // Use size on purpose, as this is a function (length of array is a property)
+       size: function size() {
+         return this.allValueKeywordNameList.length;
        }
    }
    var makeKeywordsSet = function makeKeywordsSet () {

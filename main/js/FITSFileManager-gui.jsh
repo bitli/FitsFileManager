@@ -580,7 +580,7 @@ function MainDialog(engine, guiParameters) {
    this.keyButton.icon = new Bitmap( ":/images/icons/text.png" );
    this.keyButton.toolTip = "Variables and FITS Keywords management";
    this.keyButton.onClick = function() {
-   if (this.dialog.engine.keywordsSet.allValueKeywordNameList.length) {
+   if (this.dialog.engine.keywordsSet.size()) {
          this.dialog.fitsKeysDialog.execute();
          this.dialog.showOrHideFITSkey();
       }
@@ -1393,6 +1393,10 @@ function MainDialog(engine, guiParameters) {
 
          if (this.engine.inputFiles[i].length>longestFileName.length) {longestFileName = this.engine.inputFiles[i];}
 
+#ifdef DEBUG
+         debug("rebuildFilesTreeBox: adding file '" +this.engine.inputFiles[i] + "' to row " + i);
+#endif
+
          var imageKeywords = this.engine.inputFITSKeywords[i]; // all FITS keywords/Values of the current file
          var keys=imageKeywords.fitsKeywordsList;
          var syntheticKeywords = this.engine.inputVariables[i]; // Map of all synthethic keywords and values of the current file
@@ -1417,29 +1421,6 @@ function MainDialog(engine, guiParameters) {
          // Skip next columns
          colOffset += syntheticVariableNames.length;
 
-         // Add columns for default FITS keys, so that they are always in the same order and at the beginning,
-         // and are also present even if the image does not have the corresponding keyword.
-         // They will be populated as normal columns
-         // TODO - Make optional, move out of loop, use separate list (order list) from default list
-#ifdef IMPLEMENT_OBSOLETE
-         for (var iDefaultKeys = 0; iDefaultKeys < this.guiParameters.defaultListOfShownFITSKeywords.length; ++iDefaultKeys) {
-            var name = this.guiParameters.defaultListOfShownFITSKeywords[iDefaultKeys];
-            var allFITSKeyNames = this.engine.keywordsSet.allValueKeywordNameList;
-            var indexOfKey = allFITSKeyNames.indexOf(name);// find index of "name" in allFITSKeyNames
-            if (indexOfKey < 0)  {
-               // First image, new FITS keyword, not yet mapped to a column
-//#ifdef DEBUG_COLUMNS
-//               debug("rebuildFilesTreeBox: Creating new default column " + this.filesTreeBox.numberOfColumns + " for '"  + name + "', total col len " + this.engine.allFITSKeyNames.length);
-//#endif
-               allFITSKeyNames.push(name);//add keyword name to table
-               this.filesTreeBox.numberOfColumns++;// add new column
-               this.filesTreeBox.setHeaderText(this.filesTreeBox.numberOfColumns-1, name);//set name of new column
-               //console.writeln("*** " + this.filesTreeBox.numberOfColumns + " " + name);
-               this.engine.shownFITSKeyNames[name] = true;// This is a default column
-            }
-         }
-#endif
-
          // Adding FITS keyword columns (based on FITS keywords in current file and map of keywords to column index)
 #ifdef DEBUG
          debug("rebuildFilesTreeBox: setting " + keys.length + " FITS keys to row " + i + ", colOffset=" +colOffset);
@@ -1454,7 +1435,7 @@ function MainDialog(engine, guiParameters) {
                if (indexOfKey < 0)  {
                // new FITS keyword, not yet mapped to a column, add new value keyword
 #ifdef DEBUG_COLUMNS
-                  debug("rebuildFilesTreeBox: Creating new column " + this.filesTreeBox.numberOfColumns + " for value keywords '"  + name + "', total col len " + this.engine.allFITSKeyNames.length);
+                  debug("rebuildFilesTreeBox: Creating new column " + this.filesTreeBox.numberOfColumns + " for value keywords '"  + name + "', total col len " + this.engine.allFITSKeyNames.size());
 #endif
                   allFITSKeyNames.push(name);//add keyword name to table
                   this.filesTreeBox.numberOfColumns++;// add new column
@@ -1781,20 +1762,20 @@ function FITSKeysDialog( parentDialog, engine)
 {
    this.__base__ = Dialog;
    this.__base__();
-   this.windowTitle = "Select FITS keywords for report";
-
+   this.windowTitle = "Select FITS keywords to show in main window";
 
    // ComboBox to select the file to display values
    this.file_ComboBox = new ComboBox( this );
 
    // A file was selected (also called to initialize)
-   this.file_ComboBox.onItemSelected = function( index ) {
-      // Assume that index in combox is same as index in inputfiles
+   this.file_ComboBox.onItemSelected = function( indexInComboBox ) {
+      var fileName = this.itemText(indexInComboBox);
+      var indexInFiles = engine.inputFiles.indexOf(fileName);
 #ifdef DEBUG
-      debug("FITSKeysDialog: file_ComboBox: onItemSelected - " + index + " key table length = " + engine.keywordsSet.allValueKeywordNameList.length);
+      debug("FITSKeysDialog: file_ComboBox: onItemSelected(" + indexInComboBox + ") -  indexInFiles = " + indexInFiles + ", keywordsSet.size() = " + engine.keywordsSet.size());
 #endif
 
-     this.dialog.populate(index);
+     this.dialog.populate(indexInFiles);
 
    }
 
@@ -1813,7 +1794,7 @@ function FITSKeysDialog( parentDialog, engine)
    this.keyword_TreeBox.setColumnWidth(3,600);
 
 
-   // Export selected fits keywords for checked files
+   // Buttons
    this.cancel_Button = new PushButton( this );
    this.cancel_Button.text = "Cancel";
    this.cancel_Button.enabled = true;
@@ -1825,18 +1806,20 @@ function FITSKeysDialog( parentDialog, engine)
    this.ok_Button.enabled = true;
    this.ok_Button.onClick = function() {
 #ifdef DEBUG
-      debug("FITSKeysDialog: ok_Button: onClick");
+      debug("FITSKeysDialog: ok_Button: onClick - save check/uncheck status in shownFITSKeyNames ");
 #endif
       var fitsRoootNode = this.parent.keyword_TreeBox.child(1);
       var allFITSKeyNames = engine.keywordsSet.allValueKeywordNameList;
+      engine.shownFITSKeyNames = {};
       for (var i =0; i< allFITSKeyNames.length; i++) {
-         var checked = fitsRoootNode.child(i).checked;
+         var checked = fitsRoootNode.child(i).checked; // List and rows are in same order
          var name = allFITSKeyNames[i];
          if (checked) {
              engine.shownFITSKeyNames[name] = true;
-         } else {
-              delete engine.shownFITSKeyNames[name];
          }
+//         } else {
+//              delete engine.shownFITSKeyNames[name];
+//         }
       }
       parentDialog.setMinWidth(800);
       this.dialog.ok();
@@ -1863,25 +1846,38 @@ function FITSKeysDialog( parentDialog, engine)
    // This method recreate the columnsm key names, populate the list of file and call initializer for data
    this.onShow = function()
    {
+#ifdef DEBUG
+      debug("FITSKeysDialog: file_ComboBox: onShow()");
+#endif
       // -- Locate dialog
       var p = new Point( parentDialog.position );
       p.moveBy( 16,16 );
       this.position = p;
 
       // -- Update the DropDown box - Fill list of files from parent list of files, to be in the same order
+      // Note - this requires finding the proper index in inputFile[] when a selection is done, as order may be different
       this.file_ComboBox.clear();
       for (i = 0; i<parentDialog.filesTreeBox.numberOfChildren; i++) {
          this.file_ComboBox.addItem(parentDialog.filesTreeBox.child(i).text(0));
       }
+////    This is filling the list in the loaded file order
 //      for (i = 0; i< engine.inputFiles.length; i++) {
 //         this.file_ComboBox.addItem(engine.inputFiles[i]);
 //      }
 
       var selectedFileIndex = 0;
+      var fileIndex = 0;
       if (parentDialog.filesTreeBox.selectedNodes.length >0) {
          // Show first selected node
-         selectedFileIndex = parentDialog.filesTreeBox.childIndex(parentDialog.filesTreeBox.selectedNodes[0]);
+         var firstSelectedNode = parentDialog.filesTreeBox.selectedNodes[0];
+         var fileName = firstSelectedNode.text(0);
+         fileIndex = engine.inputFiles.indexOf(fileName);
+         selectedFileIndex = parentDialog.filesTreeBox.childIndex(firstSelectedNode);
+#ifdef DEBUG
+         debug("FITSKeysDialog: file_ComboBox: onShow - fileName="+fileName+", fileIndex=" + fileIndex+ ", selectedFileIndex=" + selectedFileIndex);
+#endif
       }
+      // Select the file in the combo box
       this.file_ComboBox.currentItem = selectedFileIndex;
 
 
@@ -1918,7 +1914,7 @@ function FITSKeysDialog( parentDialog, engine)
 
 
       // Populate with default file
-      this.populate(selectedFileIndex);
+      this.populate(fileIndex);
 
 
       this.setMinSize(700,600);
@@ -1938,8 +1934,12 @@ function FITSKeysDialog( parentDialog, engine)
 
    }
 
-   // Populate from information of inputFile[index]
+   // Populate from information of inputFile[index] and inputFITSKeywords[index]
    this.populate = function (index) {
+
+#ifdef DEBUG
+      debug("FITSKeysDialog: file_ComboBox: populate() - index=" + index + " for file " + engine.inputFiles[index] );
+#endif
 
       // Update the values of the synthethic keywords from a predefined list and engine values
       var synthRootNode = this.keyword_TreeBox.child(0);
@@ -1970,12 +1970,12 @@ function FITSKeysDialog( parentDialog, engine)
       var fitsVarRootNode = this.keyword_TreeBox.child(1);
 
       var allFITSKeyNames = engine.keywordsSet.allValueKeywordNameList;
+      var imageKeywords = engine.inputFITSKeywords[index];
       for (var i = 0; i<allFITSKeyNames.length; i++) {
          var keyName = allFITSKeyNames[i];
-         var imageKeywords = engine.inputFITSKeywords[index];
          var keyValue = imageKeywords.getValue(keyName);
 #ifdef DEBUG_FITS
-         debug("FITSKeysDialog: file_ComboBox: onItemSelected - keyName=" + keyName + ",  keyValue=" + keyWord );
+         debug("FITSKeysDialog: file_ComboBox: onItemSelected - keyName=" + keyName + ",  keyValue=" + keyValue );
 #endif
          if (keyValue !== null) {
             fitsVarRootNode.child(i).setTextColor(0,0x00000000);
