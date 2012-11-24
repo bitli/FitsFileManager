@@ -1345,9 +1345,10 @@ function MainDialog(engine, guiParameters) {
 
    // -- Set visibility of FITS keywords columns (called to apply changes)
    this.showOrHideFITSkey = function () {
-      for (var i = 0; i<this.engine.keyEnabled.length;i++) {
+      for (var i = 0; i<this.engine.allFITSKeyNames.length;i++) {
          var c = i + 1 + syntheticVariableNames.length;
-         this.filesTreeBox.showColumn( c, this.engine.keyEnabled[i]);
+         var name = this.engine.allFITSKeyNames[i];
+         this.filesTreeBox.showColumn( c, this.engine.shownFITSKeyNames.hasOwnProperty(name));
       }
    }
 
@@ -1363,7 +1364,7 @@ function MainDialog(engine, guiParameters) {
       this.filesTreeBox.numberOfColumns = 1; // Filename
 
       this.engine.allFITSKeyNames = []; // clear
-      this.engine.keyEnabled = []; // clear
+      this.engine.shownFITSKeyNames = {}; // clear
 
       // Add the synthetic keys columns
       for (var iSynthKey = 0; iSynthKey<syntheticVariableNames.length; iSynthKey++) {
@@ -1416,10 +1417,10 @@ function MainDialog(engine, guiParameters) {
          // Skip next columns
          colOffset += syntheticVariableNames.length;
 
-         // TODO - Make optional, move out of loop, use separate list from default list
          // Add columns for default FITS keys, so that they are always in the same order and at the beginning,
-         // and are also present even of the image does not have the corresponding keyword.
+         // and are also present even if the image does not have the corresponding keyword.
          // They will be populated as normal columns
+         // TODO - Make optional, move out of loop, use separate list (order list) from default list
          for (var iDefaultKeys = 0; iDefaultKeys < this.guiParameters.defaultListOfShownFITSKeywords.length; ++iDefaultKeys) {
             var name = this.guiParameters.defaultListOfShownFITSKeywords[iDefaultKeys];
             var indexOfKey = this.engine.allFITSKeyNames.indexOf(name);// find index of "name" in allFITSKeyNames
@@ -1432,7 +1433,7 @@ function MainDialog(engine, guiParameters) {
                this.filesTreeBox.numberOfColumns++;// add new column
                this.filesTreeBox.setHeaderText(this.filesTreeBox.numberOfColumns-1, name);//set name of new column
                //console.writeln("*** " + this.filesTreeBox.numberOfColumns + " " + name);
-               this.engine.keyEnabled.push (true);// This is a default column
+               this.engine.shownFITSKeyNames[name] = true;// This is a default column
             }
          }
 
@@ -1457,9 +1458,12 @@ function MainDialog(engine, guiParameters) {
                   this.filesTreeBox.numberOfColumns++;// add new column
                   this.filesTreeBox.setHeaderText(this.filesTreeBox.numberOfColumns-1, name);//set name of new column
                   //console.writeln("*** " + this.filesTreeBox.numberOfColumns + " " + name);
-                  this.engine.keyEnabled.push (this.guiParameters.defaultListOfShownFITSKeywords.indexOf(name)> -1);// Mark enabled if in the list of default columns
-
-                  //this.filesTreeBox.showColumn( this.filesTreeBox.numberOfColumns, this.keyEnabled[k]);
+                  // Mark enabled if in the list of default columns
+                  if (this.guiParameters.defaultListOfShownFITSKeywords.indexOf(name)> -1) {
+                     this.engine.shownFITSKeyNames[name] = true;
+                  } else {
+                     delete this.engine.shownFITSKeyNames[name];
+                  }
                   indexOfKey = this.filesTreeBox.numberOfColumns-colOffset-1;
                }
                // Set column content to value of keyword
@@ -1825,7 +1829,12 @@ function FITSKeysDialog( parentDialog, engine)
       var fitsRoootNode = this.parent.keyword_TreeBox.child(1);
       for (var i =0; i< engine.allFITSKeyNames.length; i++) {
          var checked = fitsRoootNode.child(i).checked;
-         engine.keyEnabled[i] = checked;
+         var name = engine.allFITSKeyNames[i];
+         if (checked) {
+             engine.shownFITSKeyNames[name] = true;
+         } else {
+              delete engine.shownFITSKeyNames[name];
+         }
       }
       parentDialog.setMinWidth(800);
       this.dialog.ok();
@@ -1901,7 +1910,7 @@ function FITSKeysDialog( parentDialog, engine)
       for (var i =0; i<engine.allFITSKeyNames.length; i++) {
          var node = new TreeBoxNode(fitsVarRootNode);
          node.setText( 0, engine.allFITSKeyNames[i] );
-         node.checked = engine.keyEnabled[i];
+         node.checked = engine.shownFITSKeyNames.hasOwnProperty(engine.allFITSKeyNames[i]);
       }
 
 

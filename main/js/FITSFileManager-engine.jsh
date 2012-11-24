@@ -24,9 +24,9 @@ function FFM_Engine(guiParameters) {
       this.inputFITSKeywords = [];  // Array of 'imageKeywords' for the corresponding input file
       this.inputVariables = [];  // Array of Map of stable synthethic variables for the corresponding input file
 
-      // Cache global FITS key information (two parallel arrays, the index of the name give also the column offset in the GUI)
+      // Cache global FITS key information (the index of the name give also the column offset in the GUI)
       this.allFITSKeyNames = [];   // array of names of all accumulated FITS keywords from all files
-      this.keyEnabled = []; // true === selected keywords
+      this.shownFITSKeyNames = {}; // if name is a key of this object, the corresponding FITSKeyWord is shown in GUI windows
 
       this.resetTarget();
     };
@@ -476,8 +476,10 @@ function FFM_Engine(guiParameters) {
 
       // output header (tab separated selected fits keyword + 'Filename')
       for ( var i =0; i<this.allFITSKeyNames.length; i++) {
-         if (!this.keyEnabled[i]) continue;
-         f.outTextLn(this.allFITSKeyNames[i]+tab);
+         var name = this.allFITSKeyNames[i];
+         if (this.shownFITSKeyNames.hasOwnProperty(name)) {
+            f.outTextLn(key+tab);
+         }
       }
       f.outTextLn("Filename"+String.fromCharCode(10,13)); // LF, CR
 
@@ -487,8 +489,9 @@ function FFM_Engine(guiParameters) {
 
          var key = this.inputFITSKeywords[inputIndex].fitsKeywordsList;
          for ( var i = 0; i< this.allFITSKeyNames.length; i++) {
-            if (!this.keyEnabled[i]) continue;
+
             var name = this.allFITSKeyNames[i];
+            if (!this.shownFITSKeyNames.hasOwnProperty(name)) continue;
             for (var k in key) {
                if (!(key[k].name === name)) continue;
                if (key[k].isNumeric) {

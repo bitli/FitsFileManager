@@ -160,6 +160,8 @@ function ffM_findKeyword(fitsKeywordsArray, name) {
 }
 
 
+// TODO Use var hasOwnProperty = Object.prototype.hasOwnProperty
+
 // ------------------------------------------------------------------------------------------------------------------------
 // Global object to contains the FITS utility methods
 var ffm_keywordsOfFile = (function() {
@@ -256,7 +258,7 @@ var ffm_keywordsOfFile = (function() {
    var makeKeywordsSet = function makeKeywordsSet () {
       var keywordsSet = Object.create(keywordSetPrototype);
       keywordsSet.allValueKeywordNameList = [];
-      keywordsSet.allValueKeywordNames = {};
+      keywordsSet.allValueKeywordNames = {}; // Name to index
       return keywordsSet;
    }
 
