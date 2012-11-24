@@ -1447,11 +1447,12 @@ function MainDialog(engine, guiParameters) {
                debug("rebuildFilesTreeBox: Set column, colOffset " + colOffset + ", index "  + indexOfKey + ", value " + keys[iKeyOfFile].value);
 #endif
                // TODO Supports other formatting (dates ?) or show raw text or format depending on keyword
-               if (keys[iKeyOfFile].isNumeric) {
-                  node.setText(colOffset + indexOfKey, Number(keys[iKeyOfFile].value).toFixed(3) );
-               } else {
-                  node.setText(colOffset + indexOfKey, keys[iKeyOfFile].value.trim() );
-               }
+//               if (keys[iKeyOfFile].isNumeric) {
+//                  node.setText(colOffset + indexOfKey, Number(keys[iKeyOfFile].value).toFixed(3) );
+//               } else {
+//                  node.setText(colOffset + indexOfKey, keys[iKeyOfFile].value.trim() );
+//               }
+               node.setText(colOffset + indexOfKey, keys[iKeyOfFile].strippedValue);
             }
          }
       }
@@ -1810,6 +1811,7 @@ function FITSKeysDialog( parentDialog, engine)
 #endif
       var fitsRoootNode = this.parent.keyword_TreeBox.child(1);
       var allFITSKeyNames = engine.keywordsSet.allValueKeywordNameList;
+      // Clear and rebuild list of keywords to show
       engine.shownFITSKeyNames = {};
       for (var i =0; i< allFITSKeyNames.length; i++) {
          var checked = fitsRoootNode.child(i).checked; // List and rows are in same order
@@ -1817,9 +1819,6 @@ function FITSKeysDialog( parentDialog, engine)
          if (checked) {
              engine.shownFITSKeyNames[name] = true;
          }
-//         } else {
-//              delete engine.shownFITSKeyNames[name];
-//         }
       }
       parentDialog.setMinWidth(800);
       this.dialog.ok();
@@ -1860,7 +1859,7 @@ function FITSKeysDialog( parentDialog, engine)
       for (i = 0; i<parentDialog.filesTreeBox.numberOfChildren; i++) {
          this.file_ComboBox.addItem(parentDialog.filesTreeBox.child(i).text(0));
       }
-////    This is filling the list in the loaded file order
+////    OLD: This is filling the list in the loaded file order
 //      for (i = 0; i< engine.inputFiles.length; i++) {
 //         this.file_ComboBox.addItem(engine.inputFiles[i]);
 //      }

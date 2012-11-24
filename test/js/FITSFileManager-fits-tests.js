@@ -128,7 +128,7 @@ var ffM_allTests = {
       pT_compareTwoLoads(26,"C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/m31_Green_0028.fit");
    },
    test_ffM_compare_files_hierarch: function() {
-      pT_compareTwoLoads(153,"C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/dsaI_0008.fits");
+      pT_compareTwoLoads(151,"C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/dsaI_0008.fits");
    },
 
 
@@ -147,6 +147,15 @@ var ffM_allTests = {
       pT_assertEquals(null,attrs.getValue("nothere"));
    },
 
+   test_ffM_load_bad_fits: function() {
+      try {
+         ffm_keywordsOfFile.makeImageKeywordsfromFile("C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/badfitsmissingend.fit");
+      } catch (error) {
+         pT_assertEquals(0,error.toString().indexOf("Error: Unexpected end of file reading FITS keywords"));
+         return;
+      }
+      throw "Bad fits not detected";
+   },
 
    // Test the ffm_keywordsOfFile.keywordSet
    test_ffM_keywordsSet: function() {
