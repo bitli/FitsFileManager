@@ -1363,7 +1363,6 @@ function MainDialog(engine, guiParameters) {
       this.filesTreeBox.numberOfColumns = 1; // Filename
 
       this.engine.keywordsSet = ffm_keywordsOfFile.makeKeywordsSet(); // clear
-      this.engine.shownFITSKeyNames = {}; // clear
 
       // Add the synthetic keys columns
       for (var iSynthKey = 0; iSynthKey<syntheticVariableNames.length; iSynthKey++) {
@@ -1968,7 +1967,7 @@ function FITSKeysDialog( parentDialog, engine) {
       var imageKeywords = engine.inputFITSKeywords[index];
       for (var i = 0; i<allFITSKeyNames.length; i++) {
          var keyName = allFITSKeyNames[i];
-         var keyValue = imageKeywords.getValue(keyName);
+         var keyValue = imageKeywords.getValueKeyword(keyName);
 #ifdef DEBUG_FITS
          debug("FITSKeysDialog: file_ComboBox: onItemSelected - keyName=" + keyName + ",  keyValue=" + keyValue );
 #endif

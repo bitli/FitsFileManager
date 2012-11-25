@@ -76,7 +76,8 @@ function FFM_Engine(guiParameters) {
          }
       }
 
-      Console.writeln("" + nmbFilesAdded + " files added, " + nmbFilesDuplicated + " duplicated file ignored");
+      Console.writeln("" + nmbFilesAdded + " file" + (nmbFilesAdded >1?"s":"") + " added" +
+         (nmbFilesDuplicated>0? (", " + nmbFilesDuplicated + " duplicated file(s) ignored.") : "."));
 
    }
 
