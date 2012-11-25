@@ -1385,7 +1385,7 @@ function MainDialog(engine, guiParameters) {
       // has a FITS keyword not yet mapped to a column. The mapping of key name to column index
       // is built on the fly.
       // Only the keys with a value (not of type isNull) are considered (this skip comments)
-      var longestFileName = "          "; // Column will have at least 10 characters
+      var longestFileName = "          "; // File name column will have at least 10 characters
 
       for (var i = 0; i < this.engine.inputFiles.length; ++i) {
 
@@ -1424,10 +1424,11 @@ function MainDialog(engine, guiParameters) {
          debug("rebuildFilesTreeBox: setting " + keys.length + " FITS keys to row " + i + ", colOffset=" +colOffset);
 #endif
          for ( var iKeyOfFile = 0; iKeyOfFile<keys.length; iKeyOfFile++) {
+            var key = keys[iKeyOfFile];
 
-            // Only work on the value keywords
+            // Only show the value keywords (not the comment keywords)
             if (! keys[iKeyOfFile].isNull) {
-               var name = keys[iKeyOfFile].name; //name of Keyword from file
+               var name = key.name; //name of Keyword from file
                var allFITSKeyNames = this.engine.keywordsSet.allValueKeywordNameList;
                var indexOfKey = allFITSKeyNames.indexOf(name);// find index of "name" in allFITSKeyNames
                if (indexOfKey < 0)  {
@@ -1444,13 +1445,18 @@ function MainDialog(engine, guiParameters) {
 #ifdef DEBUG_COLUMNS
                debug("rebuildFilesTreeBox: Set column, colOffset " + colOffset + ", index "  + indexOfKey + ", value " + keys[iKeyOfFile].value);
 #endif
-               // TODO Supports other formatting (dates ?) or show raw text or format depending on keyword
-//               if (keys[iKeyOfFile].isNumeric) {
-//                  node.setText(colOffset + indexOfKey, Number(keys[iKeyOfFile].value).toFixed(3) );
-//               } else {
-//                  node.setText(colOffset + indexOfKey, keys[iKeyOfFile].value.trim() );
-//               }
-               node.setText(colOffset + indexOfKey, keys[iKeyOfFile].strippedValue);
+               var formattedValue = key.strippedValue;
+               if (key.isNumeric) {
+                  // Remove leading 0 and trailing 0 of decimal values to use less space
+                  var n = key.numericValue;
+                  if (n % 1 === 0) {
+                     // Will be formatted without decimal point and leading 0
+                     formattedValue = n.toString();
+                  } else {
+                     // TODO Supress possible leading zero of floating (leave 1 before decimal point)
+                  }
+               }
+               node.setText(colOffset + indexOfKey, formattedValue);
             }
          }
       }
@@ -1777,7 +1783,7 @@ function FITSKeysDialog( parentDialog, engine) {
 
    // TreeBox to display list of FITS keywords
    this.keyword_TreeBox = new TreeBox( this );
-   this.keyword_TreeBox.toolTip = "Check mark to include in table\nname in red of keyword not in current file";
+   this.keyword_TreeBox.toolTip = "Check mark to include the keyword value in the input file table\nNames in red indicate that the keyword is not in current file, but appears in some files.";
    this.keyword_TreeBox.rootDecoration = false;
    this.keyword_TreeBox.numberOfColumns = 3;
    this.keyword_TreeBox.setHeaderText(0, "name");

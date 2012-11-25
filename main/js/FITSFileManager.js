@@ -62,7 +62,7 @@
 // Set to false when doing hasardous developments...
 #define EXECUTE_COMMANDS true
 // Tracing - define DEBUG if you define any other DEBUG_xxx
-#define DEBUG
+//#define DEBUG
 //#define DEBUG_EVENTS
 //#define DEBUG_SHOW_FITS
 //#define DEBUG_FITS
@@ -155,6 +155,7 @@ function debug(str) {
 // Use - standard as collapsed title of conversions
 // Possibility to add a 'tag'
 // Document and add default for long-obs and night
+// Check details of FITSKeywords, especialy type and null, processing of quoted characters and leading spaces.
 
 
 
