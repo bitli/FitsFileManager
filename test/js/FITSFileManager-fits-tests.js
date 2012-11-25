@@ -8,7 +8,12 @@
 
 #include "PJSR-unit-tests-support.jsh"
 
-#define DEBUG true
+// Tracing - define DEBUG if you define any other DEBUG_xxx
+#define DEBUG
+//#define DEBUG_EVENTS
+//#define DEBUG_SHOW_FITS
+//#define DEBUG_FITS
+//#define DEBUG_VARS
 
 
 #define VERSION "0.5-tests"
@@ -130,6 +135,9 @@ var ffM_allTests = {
    test_ffM_compare_files_hierarch: function() {
       pT_compareTwoLoads(151,"C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/dsaI_0008.fits");
    },
+   test_ffM_compare_files_manycases: function() {
+      pT_compareTwoLoads(151,"C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/manycases.fits");
+   },
 
 
    // Test the ffm_keywordsOfFile.fitsKeywords
@@ -141,9 +149,8 @@ var ffM_allTests = {
       pT_assertEquals(14, Object.getOwnPropertyNames(attrs.fitsKeywordsMap).length);
       pT_assertEquals(14, attrs.getNamesOfValueKeywords().length);
       // Check with an arbitratry key
-      pT_assertEquals(158,attrs.getValue("NAXIS2").numericValue);
-      // Old array based look-up provided directly the string value
-      pT_assertEquals("158",ffM_findKeyword(attrs.fitsKeywordsList,"NAXIS2"));
+      pT_assertEquals(158,attrs.getValueKeyword("NAXIS2").numericValue);
+      pT_assertEquals(null,attrs.getValueKeyword("nothere"));
       pT_assertEquals(null,attrs.getValue("nothere"));
    },
 
@@ -185,9 +192,9 @@ function pT_compareTwoLoads(expectedNumberOfKeywords, sourceFilePath) {
       for (var i=0; i< piKeywords.length; i++) {
          var kw1 = piKeywords[i];
          var kw2 = jsKeywords[i];
-//       Console.writeln("pi: " +kw1);
-//       Console.writeln("fm: " +kw2);
-//       Console.writeln("value " + kw1.name + ": " + kw1.value + " " + kw2.value);
+#ifdef DEBUG_FITS
+         debug("pT_compareTwoLoads: From PI: " + kw1  + ", from ffm: " + kw2);
+#endif
          pT_assertEquals(kw1.name, kw2.name);
          pT_assertEquals(kw1.value, kw2.value);
          pT_assertEquals(kw1.comment, kw2.comment);
@@ -208,4 +215,5 @@ function pT_compareTwoLoads(expectedNumberOfKeywords, sourceFilePath) {
 
 
 pT_executeTests(ffM_allTests);
+//pT_executeTests({'test': ffM_allTests.test_ffM_compare_files_manycases});
 

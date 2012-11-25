@@ -369,8 +369,7 @@ FFM_GUIParameters.prototype.regexpSelection = [
 #define contract_icon   new Bitmap( ":/images/icons/contract_v.png" )
 #define expand_icon     new Bitmap( ":/images/icons/expand_v.png" )
 
-function SectionBar( parent, initialyCollapsed )
-{
+function SectionBar( parent, initialyCollapsed ) {
    this.__base__ = Control;
    if ( parent )
       this.__base__( parent );
@@ -1642,8 +1641,7 @@ MainDialog.prototype = new Dialog;
 // See http://pixinsight.com/developer/pcl/doc/20120901/html/classpcl_1_1Console.html
 // for formatting instructions
 
-function HelpDialog( parentDialog, engine )
-{
+function HelpDialog( parentDialog, engine ) {
    this.__base__ = Dialog;
    this.__base__();
 
@@ -1670,8 +1668,7 @@ HelpDialog.prototype = new Dialog;
 // ------------------------------------------------------------------------------------------------------------------------
 
 
-function CompletionDialog( parentDialog, engine )
-{
+function CompletionDialog( parentDialog, engine ) {
    this.__base__ = Dialog;
    this.__base__();
 
@@ -1759,8 +1756,7 @@ CompletionDialog.prototype = new Dialog;
 //   A selection of the files (drop down)
 //   A list of  FITS keywords (selection box, keyword, value)  of the selected file, as a TreeBox
 // ---------------------------------------------------------------------------------------------------------
-function FITSKeysDialog( parentDialog, engine)
-{
+function FITSKeysDialog( parentDialog, engine) {
    this.__base__ = Dialog;
    this.__base__();
    this.windowTitle = "Select FITS keywords to show in main window";

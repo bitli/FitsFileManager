@@ -63,11 +63,11 @@ function FFM_Engine(guiParameters) {
 #endif
          if (this.inputFiles.indexOf(fileNames[i]) < 0) // Skip files already in the list
          {
-            var keys = ffm_keywordsOfFile.makeImageKeywordsfromFile(fileNames[i]);
+            var imageKeywords = ffm_keywordsOfFile.makeImageKeywordsfromFile(fileNames[i]);
             this.inputFiles.push(fileNames[i]);
-            this.inputFITSKeywords.push(keys);
+            this.inputFITSKeywords.push(imageKeywords);
             // Create the synthethic variables using the desired rules
-            var variables = makeSynthethicVariables(fileNames[i], keys, guiParameters.remappedFITSkeywords);
+            var variables = makeSynthethicVariables(fileNames[i], imageKeywords, guiParameters.remappedFITSkeywords);
 
             this.inputVariables.push(variables);
             nmbFilesAdded++;
@@ -488,6 +488,7 @@ function FFM_Engine(guiParameters) {
       for ( var j =0; j< this.targetFilesIndices.length; j++) {
          var inputIndex = this.targetFilesIndices[i];
 
+         // LIKEY NOT CORRECT
          var key = this.inputFITSKeywords[inputIndex].fitsKeywordsList;
          for ( var i = 0; i< allFITSKeyNames.length; i++) {
 

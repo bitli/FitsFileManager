@@ -9,7 +9,8 @@
 // Read the FITS keywords of an image file, supports the HIERARCH convention
 // ------------------------------------------------------------------------------------------------------------------------
 // Input:  The full path of a file
-// Return: An array FITSKeyword, identical to what would be returned by ImageWindow.open().keywords
+// Return: An array FITSKeyword, identical to what would be returned by ImageWindow.open().keywords.
+//         at least for correct keywords (errors and border line cases may be handled differently)
 // Throws: Error if bad format
 // The value of a FITSKeyword value is the empty string if the keyword had no value
 // Code adapted from FitsKey and other scripts
@@ -143,29 +144,6 @@ var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
 };
 
 
-// ------------------------------------------------------------------------------------------------------------------------
-// Find a FITS keyword value by name
-// fitsKeywordsArray: an array of FITSKeywords
-// name: The (trimed) name of the keyword
-// return the value of the first keyword of the specified name (empty string if it has no value) or null if the
-// keyword is undefined
-// intended to use to find regular (single value) keywords
-// ------------------------------------------------------------------------------------------------------------------------
-function ffM_findKeyword(fitsKeywordsArray, name) {
-   for (var k =0; k<fitsKeywordsArray.length; k++) {
-      if (fitsKeywordsArray[k].name === name)  {
-         // keyword found in the file >> extract value
-#ifdef DEBUG_FITS
-         debug("ffM_findKeyword: '" + fitsKeywordsArray[k].name + "' found '"+ fitsKeywordsArray[k].value + "'");
-#endif
-         return (fitsKeywordsArray[k].value)
-      }
-   }
-#ifdef DEBUG_FITS
-   debug("ffM_findKeyword: '" +name + "' not found");
-#endif
-   return null;
-}
 
 
 // TODO Use var hasOwnProperty = Object.prototype.hasOwnProperty
@@ -209,12 +187,20 @@ var ffm_keywordsOfFile = (function() {
       },
 
       // -- return the FITS keyword by name (if keyword has a value), return null otherwise
-      getValue: function getValue(name) {
+      getValueKeyword: function getValueKeyword(name) {
          var imageKeywords = this;
          if (imageKeywords.fitsKeywordsMap.hasOwnProperty(name)) {
             return imageKeywords.fitsKeywordsMap[name];
          } else {
             return null;
+         }
+      },
+      getValue: function getValue(name) {
+         var kw = this.getValueKeyword(name);
+         if (kw == null) {
+            return null;
+         } else {
+            return kw.value;
          }
       },
 

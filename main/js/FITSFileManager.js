@@ -61,7 +61,7 @@
 // --- Debugging control ----------------
 // Set to false when doing hasardous developments...
 #define EXECUTE_COMMANDS true
-// Tracing - define DEBUG if you define any other
+// Tracing - define DEBUG if you define any other DEBUG_xxx
 //#define DEBUG
 //#define DEBUG_EVENTS
 //#define DEBUG_SHOW_FITS
