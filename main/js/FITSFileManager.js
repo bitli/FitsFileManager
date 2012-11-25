@@ -83,7 +83,7 @@ function debug(str) {
 }
 #endif
 
-// FITS keyword implementation is not yet fully oK and could not be implemented as may be part of PI 1.8
+// FITS keyword implementation is not yet fully OK and could not be implemented as may be part of PI 1.8
 // #define IMPLEMENTS_FITS_EXPORT
 
 // Padding format
@@ -126,36 +126,49 @@ function debug(str) {
 // 2012-11-19 - 0.8 - Refactor, bug corrections
 //     Refactored FITS keyword loading (separate js file) and some processing
 //     Correcting error of selection of file in FITSKeyword window
+//     Small presentation enhancements
+//     Document &kw:present?absent;
+//     Show alternate FITS keyword in 'Remapping' section
 
 
 
 
 
 // TODO
-// keep list of recent templates used
-// Option for handling of minus and other special characters for form file name being valid PI ids
+// Option for handling of minus and other special characters to form a file name being valid PI ids
 // Add FITS keywords as variables, with formatting options
-// Add sequence of optional text to ignore if missing variable value ()
+// Add mark of sequence of text to ignore if missing variable value (in parentheses for example)
 // Generate an 'orderBy' column
-// Show only selected synthethic keys (as FITS keys)
 // Hide common header part of source folders to make file name more visible
 // Add a way to use directory of source file as variable  &filedir, &filedirparent for template matching and group names
 // Support date formatting, number formatting
-// Create a log file for record the source files
+// Create a log file to record the source files
 // Request confirmation for move (or move and copy)
 // Possibility to add FITS keywords to copied files (to replace erroneous values or add missing ones)
 // Add bar for action on fits header: add, add if missing, add or replace, replace if present, remove, remove all
 // Allow to open selected files (not required, part of new file manager)
-// Configurable list of transformation, especially for filters (ha, ..)
+// Rules set: Keep list of recent templates used (currently one 1 kept)
+//            Configurable list of transformation, especially for filters (ha, ..)
 // Normalize directory (remove .., redundant /)
 // Check that move is on one drive
-// Check # of images in file (when using load image), or use direct wrtiee to update fits headers
+// Check # of images in file (when using load image), or use direct writes to update fits headers
 // add .* as last action for conversion
 // Change cursor to mark busy during move/copy
 // Use - standard as collapsed title of conversions
-// Possibility to add a 'tag'
 // Document and add default for long-obs and night
 // Check details of FITSKeywords, especialy type and null, processing of quoted characters and leading spaces.
+// Display and management of alternate keywords for synthethic keywords
+// Allow selection of synthethic keywords in table, enhance table view
+
+// Format indicators
+// %<stuff>
+// %s (for maximum size, fixed sizre with padding)
+// %S For cleanup strings
+// %d decimal number (minimun size, 0 padding)
+// %b boolean T,F or two values)
+// % Y M D h m s t for date (conflic with %s) or %{params}d
+
+
 
 
 

@@ -21,13 +21,49 @@
 // For Help see http://pixinsight.com/forum/index.php?topic=4598.msg31979#msg31979
 //  It should support html 4 and some css
 
-// Help texts
+// Help texts (combined in various ways for field help and global help)
+
+#define BASE_HELP_TEXT "\
+<p>FITSFileManager allow to copy or move image files to new locations, building the \
+new location from a template and replacement of variables extracted from FITS keys \
+and other information.\
+<p/>You select the files to move/copy (files can be individually checked or un-checked) \
+and enter the template to generate the target name using variables to substitute values \
+based on image file name or keywords.\
+"
+#define VARIABLE_HELP_TEXT "\
+<p/>The variables have the general form &amp;name:present?absent;, although most of the time \
+they have simply the form &amp;name;. The 'name' represent the variable. \
+<ul><li>The 'present' part is the string that will be used as replacement value if the variable \
+is present - usually ':present' is not specified and the value of the variable is used as the replacement string. It can also \
+be empty (as &amp;name:;), in which case the variable is checked for presence (an error is \
+generated if the variable is missing but its value does not contribute to the target string).</li> \
+<li>The '?absent' part is used if the variable is not present in the file (for example '&type?light;'). \
+You can also have an empty 'absent' part (like '&amp;binning?;') in which case there is no error if the variable  \
+is not present. </li>\
+</ul><p>The variables are defined in the section 'target template' below. They are built from the FITS keywords, \
+the number of the file being processed or are result of a regular expression applied to the file name. \
+The regular expression can be used, for example, to extract the part of the file name \
+before the first dash. \
+<p/>The files are processed in the order they appear in the table (variable &amp;rank;). \
+In addition a 'group' string can be generated using the same template rules and a &amp;count; \
+variable is increased for each different group (for example each target directory). \
+"
 
 
-#define TARGET_TEMPLATE_TOOLTIP "\
+#define TARGET_TEMPLATE_TOOLTIP_A "\
 Define how the target file name will be generated. The text is copied \
-<em>as is</em> to the output except for keywords.<br\>\
-Keywords (like  &amp;keyword;) are replaced by values defined from the file information and FITS keywords as follows:\
+<em>as is</em> to the output except for variables.<br/>\
+"
+// Part used only in tooltip
+#define TARGET_TEMPLATE_TOOLTIP_B "\
+Variables (like  &amp;name; or &amp;name:present?absent;) are replaced by values defined from the file \
+information and FITS keywords. The details on variables, especially the use of 'present' and 'absent' \
+is defined in the help available by the icon at bottom right.<br/>\
+"
+
+#define TARGET_TEMPLATE_TOOLTIP_C "\
+The variables include the FITS keywords (not yet implemented) and the following synthethic variables:<\br/>\
 <dl>\
    <dt>&amp;binning;</dt><dd>Binning from XBINNING and YBINNING as integers, like 2x2.</dd>\
    <dt>&amp;exposure;</dt><dd>The exposure from EXPOSURE, but as an integer (assume seconds).<\dd>\
@@ -38,7 +74,6 @@ Keywords (like  &amp;keyword;) are replaced by values defined from the file info
    <dt>&amp;object;</dt><dd>The OBJECT keyword, reformatted for use in file name.<\dd>\
    <dt>&amp;temp;</dt><dd>The SET-TEMP temperature in C as an integer.<\dd>\
    <dt>&amp;type;</dt><dd>The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'.<\dd>\
-   <dt>&amp;FITSKW;</dt><dd>(NOT IMPLEMENTED).<\dd>\
    <dt>&amp;0; &amp;1;, ... </dt><dd>The corresponding match from the source file name template field.<\dd>\
 </dl>\
 <p>The following keywords are dynamic (their values depends on the file order):\
@@ -69,29 +104,6 @@ directory.' &filter;' count separetely for each filter. \
 You can enter the template or select one of the predefined one and optionaly modify it.\
 "
 
-#define BASE_HELP_TEXT "\
-<p>FITSFileManager allow to copy or move image files to new locations, building the \
-new location from a template and replacement of variables extracted from FITS keys \
-and other information.\
-<p/>You select the files to move/copy (files can be individually checked or un-checked) \
-and enter the template to generate the target name using variables to substitute values \
-based on image file name or keywords. \
-<p/>The variables have the general form &name:present?absent;. The 'name' represent the variable. \
-<ul><li>The 'present' part is the string that will be used if the variable \
-is present - usually ':present' is not specified and the value of the variable is used as the replacement string. It can also \
-be empty, in which case the variable is checked for presence (an error is generated if it is missing) \
-but its value does not contribute to the target string.</li> \
-<li>The '?absent' part is used if the variable is not present in the file (for example '&type?light;'). \
-You can also have an empty absent part (like '&binning?;') in which case there is no error if the variable  \
-is not present. </li>\
-</ul><p>The variables are defined in the section 'target template' below. They are built from the FITS keywords, \
-the number of the file being processed or are result of a regular expression applied to the file name. \
-The regular expression can be used, for example, to extract the part of the file name \
-before the first dash. \
-<p/>The files are processed in the order they appear in the table (variable &amp;rank;). \
-In addition a 'group' string can be generated using the same template rules and a &amp;count; \
-variable is increased for each different group (for example each target directory). \
-"
 
 #define HELP_OPERATIONS "<p>The operations Copy/Move copy or move the files directly, without \
 adding any FITS keywords.  The operation Load/SaveAs loads the image temporarily in the workspace, \
@@ -100,9 +112,11 @@ and save it to the new location. An ORIGFILE keyword with the original file name
 output directory is not specified).</p>\
 "
 
+// Combine help for global help
 #define HELP_TEXT ("<html>" + \
 "<h1><font color=\"#06F\">FITSFileManager</font></h1>" + BASE_HELP_TEXT + \
-"<h3><font color=\"#06F\">Target template</font></h3/>" + TARGET_TEMPLATE_TOOLTIP + \
+"<h3><font color=\"#06F\">Variables</font></h3/>" + VARIABLE_HELP_TEXT + \
+"<h3><font color=\"#06F\">Target template</font></h3/>" + TARGET_TEMPLATE_TOOLTIP_A + TARGET_TEMPLATE_TOOLTIP_C + \
 "</dl>Example of template:\<br\><tt>&nbsp;&nbsp;&nbsp;&amp;1;_&amp;binning;_&amp;temp;C_&amp;type;_&amp;exposure;s_&amp;filter;_&amp;count;&amp;extension;</tt>"+\
 "<h3><font color=\"#06F\">Source filename reg exp</font></h3>" + SOURCE_FILENAME_REGEXP_TOOLTIP + \
 "Example of regular expression:<br\><tt>&nbsp;&nbsp;&nbsp;([^-_.]+)(?:[._-]|$)</tt><p>" + \
@@ -163,7 +177,9 @@ function FFM_GUIParameters() {
       remappedFITSkeywords["XBINNING"] = "XBINNING";
       remappedFITSkeywords["YBINNING"] = "YBINNING";
       remappedFITSkeywords["OBJECT"]   = "OBJECT";
+      // Non standard
       remappedFITSkeywords["LONG-OBS"] = "LONG-OBS";
+      // We should really used DATE-OBS and convert
       remappedFITSkeywords["JD"]       = "JD";
       this.remappedFITSkeywords = remappedFITSkeywords;
 
@@ -175,7 +191,9 @@ function FFM_GUIParameters() {
          remappedFITSkeywords["XBINNING"] = "CDELT1";
          remappedFITSkeywords["YBINNING"] = "CDELT2";
          remappedFITSkeywords["OBJECT"]   = "OBJECT";
+         // Non standard
          remappedFITSkeywords["LONG-OBS"] = "CAHA TEL GEOLON";
+         // We should really used DATE-OBS (if available) and convert
          remappedFITSkeywords["JD"]       = "JUL-DATE";
       }
 
@@ -750,7 +768,7 @@ function MainDialog(engine, guiParameters) {
    // Target template --------------------------------------------------------------------------------------
 
    this.targetFileTemplate_ComboBox = new ComboBox( this );
-   this.targetFileTemplate_ComboBox.toolTip = TARGET_TEMPLATE_TOOLTIP;
+   this.targetFileTemplate_ComboBox.toolTip = TARGET_TEMPLATE_TOOLTIP_A+TARGET_TEMPLATE_TOOLTIP_B+TARGET_TEMPLATE_TOOLTIP_C;
    this.targetFileTemplate_ComboBox.enabled = true;
    this.targetFileTemplate_ComboBox.editEnabled = true;
    for (var it = 0; it<guiParameters.targetFileItemListText.length; it++) {
@@ -971,13 +989,30 @@ function MainDialog(engine, guiParameters) {
    // Conversion definition section
    //----------------------------------------------------------------------------------
 
-   // Convert type
+   // Keywords to use
+   var keywordNames_GroupBox = new GroupBox(this);
+
+   keywordNames_GroupBox.sizer = new VerticalSizer;
+   keywordNames_GroupBox.sizer.margin = 6;
+   keywordNames_GroupBox.sizer.spacing = 4;
+   keywordNames_GroupBox.title = "Keyword remapping ";
+
+   var remappedFITSkeywordsNames = Object.keys(guiParameters.remappedFITSkeywords);
+   for (var ic=0; ic<remappedFITSkeywordsNames.length; ic++) {
+      label = new Label();
+      label.text		=  remappedFITSkeywordsNames[ic] + " -> " + guiParameters.remappedFITSkeywords[remappedFITSkeywordsNames[ic]];
+      //label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
+      keywordNames_GroupBox.sizer.add(label);
+   }
+   keywordNames_GroupBox.sizer.addStretch(100);
+
+   // Conversion of type names
    var typeConversion_GroupBox = new GroupBox(this);
 
    typeConversion_GroupBox.sizer = new VerticalSizer;
    typeConversion_GroupBox.sizer.margin = 6;
    typeConversion_GroupBox.sizer.spacing = 4;
-   typeConversion_GroupBox.title = "Type conversions ";
+   typeConversion_GroupBox.title = "Remapping of IMAGETYP ";
 
    for (var ic=0; ic<typeConversions.length; ic++) {
       label = new Label();
@@ -985,18 +1020,21 @@ function MainDialog(engine, guiParameters) {
       //label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
       typeConversion_GroupBox.sizer.add(label);
    }
+   typeConversion_GroupBox.sizer.addStretch(100);
 
+   // Conversion of filter names
    var filterConversion_GroupBox = new GroupBox(this);
    filterConversion_GroupBox.sizer = new VerticalSizer;
    filterConversion_GroupBox.sizer.margin = 6;
    filterConversion_GroupBox.sizer.spacing = 4;
-   filterConversion_GroupBox.title = "Filter conversions";
+   filterConversion_GroupBox.title = "Remapping of FILTER";
    for (var ic=0; ic<filterConversions.length; ic++) {
       label = new Label();
       label.text		=  filterConversions[ic][0].toString() + " -> " + filterConversions[ic][1];
       //label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
       filterConversion_GroupBox.sizer.add(label);
    }
+   filterConversion_GroupBox.sizer.addStretch(100);
 
 
 
@@ -1006,11 +1044,12 @@ function MainDialog(engine, guiParameters) {
    this.conversion_GroupBox.sizer.margin = 6;
    this.conversion_GroupBox.sizer.spacing = 4;
 
+   this.conversion_GroupBox.sizer.add( keywordNames_GroupBox);
    this.conversion_GroupBox.sizer.add( typeConversion_GroupBox);
    this.conversion_GroupBox.sizer.add( filterConversion_GroupBox);
 
    this.barConversions = new SectionBar( this, true );
-   this.barConversions.setTitle( "Conversion definitions" );
+   this.barConversions.setTitle( "Remapping of keywords and values" );
    this.barConversions.setSection( this.conversion_GroupBox );
    //this.barConversions.toggleSection();
 
