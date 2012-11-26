@@ -554,6 +554,16 @@ function MainDialog(engine, guiParameters) {
    // -- CompletionDialog Dialog (opened as a child on request)
    this.completionDialog = new CompletionDialog( this, engine );
 
+      // Set 'is visible' for the list of default keywords
+      for (var i = 0; i < this.guiParameters.defaultListOfShownFITSKeywords.length; ++i) {
+          var name = this.guiParameters.defaultListOfShownFITSKeywords[i];
+          this.engine.shownFITSKeyNames[name] = true;
+      }
+      for (var i = 0; i<syntheticVariableNames.length;i++) {
+         var name = syntheticVariableNames[i];
+         this.engine.shownSyntheticKeyNames[name] = true;
+      }
+
 
    // -- HelpLabel
    var helpLabel = new Label( this );
@@ -1384,9 +1394,10 @@ function MainDialog(engine, guiParameters) {
    //----------------------------------------------------------------------------------
 
 
-   // -- Set visibility of FITS keywords columns (called to apply changes)
+   // -- Set visibility of synthetic and FITS keywords columns (called to apply changes)
    this.showOrHideFITSkey = function () {
       var allFITSKeyNames = this.engine.keywordsSet.allValueKeywordNameList;
+      // +1 as the file name is always visible
       for (var i = 0; i<syntheticVariableNames.length;i++) {
          var c = i + 1;
          this.filesTreeBox.showColumn( c, this.engine.shownSyntheticKeyNames.hasOwnProperty(syntheticVariableNames[i]));
@@ -1508,15 +1519,6 @@ function MainDialog(engine, guiParameters) {
          }
       }
 
-      // Set 'is visible' for the list of default keywords
-      for (var iDefaultKeys = 0; iDefaultKeys < this.guiParameters.defaultListOfShownFITSKeywords.length; ++iDefaultKeys) {
-          var name = this.guiParameters.defaultListOfShownFITSKeywords[iDefaultKeys];
-          this.engine.shownFITSKeyNames[name] = true;
-      }
-      for (var i = 0; i<syntheticVariableNames.length;i++) {
-         var name = syntheticVariableNames[i];
-         this.engine.shownSyntheticKeyNames[name] = true;
-      }
 
       // hide the columns of unchecked FITS keywords
       this.showOrHideFITSkey();
