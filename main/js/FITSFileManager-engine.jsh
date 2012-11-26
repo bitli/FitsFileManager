@@ -26,7 +26,8 @@ function FFM_Engine(guiParameters) {
 
       // Global FITS key information - (the index of the name in keywordsSet.allValueKeywordNameList give also the column offset in the GUI)
       this.keywordsSet = ffm_keywordsOfFile.makeKeywordsSet();   // array of names of all accumulated FITS keywords from all files
-      this.shownFITSKeyNames = {}; // if its name is a key of this object, then the corresponding FITSKeyWord is shown in GUI windows
+      this.shownFITSKeyNames = {}; // A FITSKeyWord is shown in the source file table if its name is a key of this object
+      this.shownSyntheticKeyNames = {}; // A synthethic variable is shown in the source file table if its name is a key of this object
 
       this.resetTarget();
     };

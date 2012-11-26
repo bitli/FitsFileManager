@@ -168,6 +168,7 @@ function debug(str) {
 // %b boolean T,F or two values)
 // % Y M D h m s t for date (conflic with %s) or %{params}d
 
+// See http://heasarc.gsfc.nasa.gov/docs/software/ftools/fitsverify/
 
 
 

@@ -24,36 +24,36 @@
 // Help texts (combined in various ways for field help and global help)
 
 #define BASE_HELP_TEXT "\
-<p>FITSFileManager allow to copy or move image files to new locations, building the \
-new location from a template and replacement of variables extracted from FITS keys \
+<p>FITSFileManager allow you to copy or move FITS image files to new locations, generating the \
+new location path from a template with the replacement of variables with values extracted from FITS keys \
 and other information.\
 <p/>You select the files to move/copy (files can be individually checked or un-checked) \
-and enter the template to generate the target name using variables to substitute values \
-based on image file name or keywords.\
+and select a predefined template or enter a new template to generate the target path using variables to substitute values \
+based on the source image file name, FITS keywords or synthethic variables.\
 "
 #define VARIABLE_HELP_TEXT "\
-<p/>The variables have the general form &amp;name:present?absent;, although most of the time \
-they have simply the form &amp;name;. The 'name' represent the variable. \
-<ul><li>The 'present' part is the string that will be used as replacement value if the variable \
-is present - usually ':present' is not specified and the value of the variable is used as the replacement string. It can also \
+<p/>The variables have the general form '&amp;name:present?absent;', although most of the time \
+they have simply the form '&amp;name;'. The 'name' identifies the variable. \
+<ul><li>The 'present' part is the string that will be used as the replacement value if the variable \
+has a value - usually ':present' is not specified and the value of the variable is used as the replacement string. It can also \
 be empty (as &amp;name:;), in which case the variable is checked for presence (an error is \
-generated if the variable is missing but its value does not contribute to the target string).</li> \
+generated if the variable is missing) but its value does not contribute to the target path.</li> \
 <li>The '?absent' part is used if the variable is not present in the file (for example '&type?light;'). \
 You can also have an empty 'absent' part (like '&amp;binning?;') in which case there is no error if the variable  \
-is not present. </li>\
+is has no value. </li>\
 </ul><p>The variables are defined in the section 'target template' below. They are built from the FITS keywords, \
 the number of the file being processed or are result of a regular expression applied to the file name. \
 The regular expression can be used, for example, to extract the part of the file name \
 before the first dash. \
-<p/>The files are processed in the order they appear in the table (variable &amp;rank;). \
-In addition a 'group' string can be generated using the same template rules and a &amp;count; \
+<p/>The files are processed in the order they appear in the table (variable '&amp;rank;'). \
+In addition a 'group' string can be generated using the same template rules and a '&amp;count;' \
 variable is increased for each different group (for example each target directory). \
 "
 
 
 #define TARGET_TEMPLATE_TOOLTIP_A "\
-Define how the target file name will be generated. The text is copied \
-<em>as is</em> to the output except for variables.<br/>\
+Define how the target file path will be generated. The text of this field is used \
+as the output path, except that the variables are replaced by their value.<br/>\
 "
 // Part used only in tooltip
 #define TARGET_TEMPLATE_TOOLTIP_B "\
@@ -63,7 +63,7 @@ is defined in the help available by the icon at bottom right.<br/>\
 "
 
 #define TARGET_TEMPLATE_TOOLTIP_C "\
-The variables include the FITS keywords (not yet implemented) and the following synthethic variables:<\br/>\
+The variables include the FITS keywords (not yet implemented) and the following synthet   ic variables:<\br/>\
 <dl>\
    <dt>&amp;binning;</dt><dd>Binning from XBINNING and YBINNING as integers, like 2x2.</dd>\
    <dt>&amp;exposure;</dt><dd>The exposure from EXPOSURE, but as an integer (assume seconds).<\dd>\
@@ -74,7 +74,7 @@ The variables include the FITS keywords (not yet implemented) and the following 
    <dt>&amp;object;</dt><dd>The OBJECT keyword, reformatted for use in file name.<\dd>\
    <dt>&amp;temp;</dt><dd>The SET-TEMP temperature in C as an integer.<\dd>\
    <dt>&amp;type;</dt><dd>The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'.<\dd>\
-   <dt>&amp;0; &amp;1;, ... </dt><dd>The corresponding match from the source file name template field.<\dd>\
+   <dt>&amp;0; &amp;1;, ... </dt><dd>The corresponding match from the source file name regular expression field.<\dd>\
 </dl>\
 <p>The following keywords are dynamic (their values depends on the file order):\
 <dl>\
@@ -85,28 +85,31 @@ The variables include the FITS keywords (not yet implemented) and the following 
 
 
 #define SOURCE_FILENAME_REGEXP_TOOLTIP "\
-Define  a regular expression (without the surround slashes) that will be applied to all file names \
+Defines a regular expression (without the surrounding slashes) that will be applied to all file names, \
 without the extension. The 'match' array resulting from the regular expression matching can be used \
-in the target file name template as &0; (whole expression), &1 (first group), ... \
+in the target file name template as numbered variables. '&0;' represent the whole matched expression, '&1' the first group, and so on \
 In case of error the field turns red. \
-You can enter the regexp or select one of the predefined one and optionaly modify it. \
+You can enter the regexp or select one of the predefined one and optionally modify it. \
 <br/>See https:\/\/developer.mozilla.org\/en-US\/docs\/JavaScript\/Guide\/Regular_Expressions for more informations on regular expresssions. \
-"
+<p>"
 
 
 #define GROUP_TEMPLATE_TOOLTIP "\
-Define the template to generate a group name used by &count;. \
-Each group has its own group number starting at 1. You can use the same variables \
-as for the target file name, except &count;. In addition you can use:\
-<dl><dt>&targetDir;</dt><dd>The directory part of the target file name (except that &count; is not replaced).</dd>\
-</dl>Leave blank or use a fixed name to have a single counter. For example '&targetDir;' count in each target \
-directory.' &filter;' count separetely for each filter. \
+Defines the template to generate a group name used by the synthetic variable '&count;'. \
+Each FITS image generate a group name exactly as it generates a path, but using the group template. \
+A count of image will be kept for each different group name and can be used as the variable '&count;' in the \
+target path template. \
+All variables can be used in the group template, except &count;. In addition you can use the following variable:\
+<dl><dt>&targetDir;</dt><dd>The directory part of the target file name.</dd>\
+</dl>Leave blank or use a fixed name have a single global counter.<br/>\
+Example: '&targetDir;' counts images in each target directory. \
+'&filter;' counts the images separetely for each filter (independently of the target directory).<br/> \
 You can enter the template or select one of the predefined one and optionaly modify it.\
 "
 
 
 #define HELP_OPERATIONS "<p>The operations Copy/Move copy or move the files directly, without \
-adding any FITS keywords.  The operation Load/SaveAs loads the image temporarily in the workspace, \
+adding any FITS keywords.  The operation Load/SaveAs loads each image temporarily in the workspace \
 and save it to the new location. An ORIGFILE keyword with the original file name is added if it is not already present. \
 <br/>The operation buttons may be disabled if the operation is not possible (for example if the \
 output directory is not specified).</p>\
@@ -117,9 +120,9 @@ output directory is not specified).</p>\
 "<h1><font color=\"#06F\">FITSFileManager</font></h1>" + BASE_HELP_TEXT + \
 "<h3><font color=\"#06F\">Variables</font></h3/>" + VARIABLE_HELP_TEXT + \
 "<h3><font color=\"#06F\">Target template</font></h3/>" + TARGET_TEMPLATE_TOOLTIP_A + TARGET_TEMPLATE_TOOLTIP_C + \
-"</dl>Example of template:\<br\><tt>&nbsp;&nbsp;&nbsp;&amp;1;_&amp;binning;_&amp;temp;C_&amp;type;_&amp;exposure;s_&amp;filter;_&amp;count;&amp;extension;</tt>"+\
+"</dl>Example of template:\<br/><tt>&nbsp;&nbsp;&nbsp;&amp;1;_&amp;binning;_&amp;temp;C_&amp;type;_&amp;exposure;s_&amp;filter;_&amp;count;&amp;extension;</tt>"+\
 "<h3><font color=\"#06F\">Source filename reg exp</font></h3>" + SOURCE_FILENAME_REGEXP_TOOLTIP + \
-"Example of regular expression:<br\><tt>&nbsp;&nbsp;&nbsp;([^-_.]+)(?:[._-]|$)</tt><p>" + \
+"Example of regular expression:<br/><tt>&nbsp;&nbsp;&nbsp;([^-_.]+)(?:[._-]|$)</tt><p>" + \
 "<h3><font color=\"#06F\">Group template</font></h3>" +  GROUP_TEMPLATE_TOOLTIP + \
 "Example of group definition:<br/><tt>&nbsp;&nbsp;&nbsp;&amp;targetdir;</tt><p> " + \
 "<h3><font color=\"#06F\">Operations</font></h3>" + HELP_OPERATIONS + \
@@ -179,7 +182,7 @@ function FFM_GUIParameters() {
       remappedFITSkeywords["OBJECT"]   = "OBJECT";
       // Non standard
       remappedFITSkeywords["LONG-OBS"] = "LONG-OBS";
-      // We should really used DATE-OBS and convert
+      // We should really use DATE-OBS and convert
       remappedFITSkeywords["JD"]       = "JD";
       this.remappedFITSkeywords = remappedFITSkeywords;
 
@@ -1384,11 +1387,16 @@ function MainDialog(engine, guiParameters) {
    // -- Set visibility of FITS keywords columns (called to apply changes)
    this.showOrHideFITSkey = function () {
       var allFITSKeyNames = this.engine.keywordsSet.allValueKeywordNameList;
+      for (var i = 0; i<syntheticVariableNames.length;i++) {
+         var c = i + 1;
+         this.filesTreeBox.showColumn( c, this.engine.shownSyntheticKeyNames.hasOwnProperty(syntheticVariableNames[i]));
+      }
       for (var i = 0; i<allFITSKeyNames.length;i++) {
          var c = i + 1 + syntheticVariableNames.length;
          this.filesTreeBox.showColumn( c, this.engine.shownFITSKeyNames.hasOwnProperty(allFITSKeyNames[i]));
       }
    }
+
 
    // -- Rebuild the TreeBox content
    this.rebuildFilesTreeBox = function () {
@@ -1502,8 +1510,12 @@ function MainDialog(engine, guiParameters) {
 
       // Set 'is visible' for the list of default keywords
       for (var iDefaultKeys = 0; iDefaultKeys < this.guiParameters.defaultListOfShownFITSKeywords.length; ++iDefaultKeys) {
-         var name = this.guiParameters.defaultListOfShownFITSKeywords[iDefaultKeys];
+          var name = this.guiParameters.defaultListOfShownFITSKeywords[iDefaultKeys];
           this.engine.shownFITSKeyNames[name] = true;
+      }
+      for (var i = 0; i<syntheticVariableNames.length;i++) {
+         var name = syntheticVariableNames[i];
+         this.engine.shownSyntheticKeyNames[name] = true;
       }
 
       // hide the columns of unchecked FITS keywords
@@ -1853,14 +1865,22 @@ function FITSKeysDialog( parentDialog, engine) {
       var allFITSKeyNames = engine.keywordsSet.allValueKeywordNameList;
       // Clear and rebuild list of keywords to show
       engine.shownFITSKeyNames = {};
-      for (var i =0; i< allFITSKeyNames.length; i++) {
+      for (var i = 0; i< allFITSKeyNames.length; i++) {
          var checked = fitsRoootNode.child(i).checked; // List and rows are in same order
          var name = allFITSKeyNames[i];
          if (checked) {
              engine.shownFITSKeyNames[name] = true;
          }
       }
-      parentDialog.setMinWidth(800);
+      var variableRoootNode = this.parent.keyword_TreeBox.child(0);
+      engine.shownSyntheticKeyNames = {};
+      for (var i = 0; i< syntheticVariableNames.length; i++) {
+         var checked = variableRoootNode.child(i).checked; // List and rows are in same order
+         var name = syntheticVariableNames[i];
+         if (checked) {
+             engine.shownSyntheticKeyNames[name] = true;
+         }
+      }
       this.dialog.ok();
    }
 
@@ -1934,7 +1954,7 @@ function FITSKeysDialog( parentDialog, engine) {
       for (var i =0; i<syntheticVariableNames.length; i++) {
          var node = new TreeBoxNode(synthRootNode);
          node.setText( 0, syntheticVariableNames[i] );
-         node.checked = true;
+         node.checked = engine.shownSyntheticKeyNames.hasOwnProperty(syntheticVariableNames[i]);;
       }
 
       // Create list of FITS keywords used as variables as a second subtree
