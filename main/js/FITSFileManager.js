@@ -129,6 +129,8 @@ function debug(str) {
 //     Small presentation enhancements
 //     Document &kw:present?absent;
 //     Show alternate FITS keyword in 'Remapping' section
+//     Allow selection of visibility of synthetic variable in inputFile table
+//     Accept FITS keywords as variables, clean the value result
 
 
 
@@ -136,7 +138,6 @@ function debug(str) {
 
 // TODO
 // Option for handling of minus and other special characters to form a file name being valid PI ids
-// Add FITS keywords as variables, with formatting options
 // Add mark of sequence of text to ignore if missing variable value (in parentheses for example)
 // Generate an 'orderBy' column
 // Hide common header part of source folders to make file name more visible

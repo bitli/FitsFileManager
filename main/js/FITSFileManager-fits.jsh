@@ -203,6 +203,14 @@ var ffm_keywordsOfFile = (function() {
             return kw.value;
          }
       },
+      getStrippedValue: function getStrippedValue(name) {
+         var kw = this.getValueKeyword(name);
+         if (kw == null) {
+            return null;
+         } else {
+            return kw.strippedValue;
+         }
+      },
 
       // -- return the name of all value key words
       getNamesOfValueKeywords: function getNamesOfValueKeywords() {

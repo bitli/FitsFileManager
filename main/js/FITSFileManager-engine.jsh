@@ -142,10 +142,11 @@ function FFM_Engine(guiParameters) {
       var group;
       var count;
       var expansionErrors;
-      // For use by variable resolver
+      // For use by variable resolver (they are updated at each loop iteration and accessed by the lexical scope)
       var variables;
       var rankString;
       var countString;
+      var fitsKeywords;
 
       // Replace variables, rank and regexp results (accessed by lexical scope)
       var targetDirectoryVariableResolver = function(v) {
@@ -156,12 +157,12 @@ function FFM_Engine(guiParameters) {
                } else if (regexpVariables.hasOwnProperty(v)) {
                   return regexpVariables[v];
                } else {
-                  return null;
+                  return filterFITSValue(fitsKeywords.getStrippedValue(v));
                }
       };
 
 
-      // Replace variables, rank, regexp results and targetDir  (accessed by lexical scope)
+      // Replace variables, rank, regexp results and targetDir (accessed by lexical scope)
       var groupByVariableResolver = function(v) {
                if (variables.hasOwnProperty(v)) {
                   return variables[v];
@@ -172,7 +173,7 @@ function FFM_Engine(guiParameters) {
                } else if (regexpVariables.hasOwnProperty(v) ) {
                   return regexpVariables[v];
                } else {
-                  return null;
+                  return filterFITSValue(fitsKeywords.getStrippedValue(v));
                }
       };
 
@@ -187,7 +188,7 @@ function FFM_Engine(guiParameters) {
                } else if (regexpVariables.hasOwnProperty(v) ) {
                   return regexpVariables[v];
                } else {
-                  return null;
+                  return filterFITSValue(fitsKeywords.getStrippedValue(v));
                }
       };
 
@@ -208,6 +209,7 @@ function FFM_Engine(guiParameters) {
             var inputFileName =  File.extractName(inputFile);
 
             variables = this.inputVariables[inputFileIndex];
+            fitsKeywords = this.inputFITSKeywords[inputFileIndex];
 
 
             // The file name part is calculated at each scan as the regxep may have been changed

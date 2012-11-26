@@ -240,7 +240,7 @@ var ffM_template = (function() {
      // Parse the expression of variable:present?missing parts, resulting in the corresponding elements in execResult
     var execResult = expression.match(variableRegExp);
     if (execResult === null) {
-       errors.push("Invalid variable expression '" + expression + "'");
+       templateErrors.push("Invalid variable expression '" + expression + "'");
        return null;
     } else {
         variableName = execResult[1];
@@ -367,7 +367,8 @@ var ffM_template = (function() {
 
 
 // Parsing the keywords in the targetFileNameTemplate (1 characters will be removed at
-// head (&) and tail (;), this is hard coded and must be modified if required
+// head (&) and tail (;), this is hard coded and must be modified if required.
+// We take everything between & and ;, as we may have -, _, etc...
 //var variableRegExp = /&[a-zA-Z0-9]+;/g;
 var variableRegExp = /&[^&]+;/g;
 
@@ -415,7 +416,7 @@ function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords)
    variables['filename'] = inputFileName;
 
    //   &filter:     The filter name from FILTER as lower case trimmed normalized name.
-   var filter = imageKeywords.getValue(remappedFITSkeywords['FILTER']);
+   var filter = imageKeywords.getStrippedValue(remappedFITSkeywords['FILTER']);
    variables['filter'] = convertFilter(filter);
 
    //   &temp;       The SET-TEMP temperature in C as an integer
@@ -428,12 +429,12 @@ function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords)
    }
 
    //   &type:       The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'
-   var imageType = imageKeywords.getValue(remappedFITSkeywords['IMAGETYP']);
+   var imageType = imageKeywords.getStrippedValue(remappedFITSkeywords['IMAGETYP']);
    variables['type'] = convertType(imageType);
 
    // &object:  the object name, formatted for file name compatibility
-   var objectName = imageKeywords.getValue(remappedFITSkeywords['OBJECT']);
-   variables['object'] = filterObjectName(objectName);
+   var objectName = imageKeywords.getStrippedValue(remappedFITSkeywords['OBJECT']);
+   variables['object'] = filterFITSValue(objectName);
 #ifdef DEBUG
    // debug("makeSynthethicVariables: object [" + objectName + "] as [" + variables['object'] + "]");
 #endif
@@ -461,22 +462,22 @@ function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords)
 
 
 
-// Remove special characters from Object FITS key to avoid bizare or illegal file names
+// Remove special characters from FITS key values to avoid bizare or illegal file names
 // Leading and trailing invalid characters are removed
 // Embedded invalid characters are collapsed to one underline.
-function filterObjectName(objectName) {
-   if (objectName === null) {
+function filterFITSValue(value) {
+   if (value === null) {
       return null;
    }
-   var name = unQuote(objectName);
+   var name = unQuote(value);
    var result = '';
    var i = 0;
    var hadValidChar = false;
    var mustAddUnderline = false;
    while (i<name.length) {
      var c = name.charAt(i);
-     // Adapt the list of characters as needed (for example add space, dash, ...)
-     if ( ("0" <= c && c <= "9") || ("a" <= c && c <= "z") || ("A" <= c && c <= "Z") ) {
+     // TODO Adapt the list of characters as needed (for example add space, dash, ...)
+     if ( ("0" <= c && c <= "9") || ("a" <= c && c <= "z") || ("A" <= c && c <= "Z") || (c === '-') || (c === '.') ) {
         if (mustAddUnderline) {
            result = result + '_';
            mustAddUnderline = false;

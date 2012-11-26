@@ -24,30 +24,33 @@
 // Help texts (combined in various ways for field help and global help)
 
 #define BASE_HELP_TEXT "\
-<p>FITSFileManager allow you to copy or move FITS image files to new locations, generating the \
+<p>FITSFileManager allows you to copy or move FITS image files to new locations, generating the \
 new location path from a template with the replacement of variables with values extracted from FITS keys \
 and other information.\
 <p/>You select the files to move/copy (files can be individually checked or un-checked) \
 and select a predefined template or enter a new template to generate the target path using variables to substitute values \
-based on the source image file name, FITS keywords or synthethic variables.\
+based on the source image file name, FITS keywords or synthethic variables. \
+Various other parameters can be adapted to fine tune the path generation. \
+The list of transformation is updated as you type templates and other parameters. \
 "
 #define VARIABLE_HELP_TEXT "\
-<p/>The variables have the general form '&amp;name:present?absent;', although most of the time \
-they have simply the form '&amp;name;'. The 'name' identifies the variable. \
-<ul><li>The 'present' part is the string that will be used as the replacement value if the variable \
-has a value - usually ':present' is not specified and the value of the variable is used as the replacement string. It can also \
-be empty (as &amp;name:;), in which case the variable is checked for presence (an error is \
+<p/>The variables have the general form '&amp;name:present?missing;', although most of the time \
+they have simply the form '&amp;name;'. The 'name' identifies the variable, it may be a FITS key or a synthetic variable name. \
+<ul><li>The optional 'present' part is the string that will be used as the replacement value if the variable \
+has a value, Usually ':present' is not specified and the value of the variable is used as the replacement string. You can also \
+have an empty 'present' value (as &amp;TELESCOP:;), in which case the variable is checked for presence (an error is \
 generated if the variable is missing) but its value does not contribute to the target path.</li> \
-<li>The '?absent' part is used if the variable is not present in the file (for example '&type?light;'). \
-You can also have an empty 'absent' part (like '&amp;binning?;') in which case there is no error if the variable  \
-is has no value. </li>\
-</ul><p>The variables are defined in the section 'target template' below. They are built from the FITS keywords, \
+<li>The optional '?missing' part is used if the variable is not present in the file (for example '&type?light;'). \
+You can also have an empty 'missing' value (like '&amp;binning?;') in which case there is no error if the variable  \
+has no value. </li>\
+</ul><p>The synthetic variables are described in the section 'target template' below. They are built from the FITS keywords, \
 the number of the file being processed or are result of a regular expression applied to the file name. \
-The regular expression can be used, for example, to extract the part of the file name \
-before the first dash. \
+The source file regular expression can be used, for example, to extract the part of the file name \
+before the first dash and use it as a prefix for all files. \
 <p/>The files are processed in the order they appear in the table (variable '&amp;rank;'). \
 In addition a 'group' string can be generated using the same template rules and a '&amp;count;' \
 variable is increased for each different group (for example each target directory). \
+The values are cleaned up of special characters, so that they form legal file names. \
 "
 
 
@@ -63,7 +66,7 @@ is defined in the help available by the icon at bottom right.<br/>\
 "
 
 #define TARGET_TEMPLATE_TOOLTIP_C "\
-The variables include the FITS keywords (not yet implemented) and the following synthet   ic variables:<\br/>\
+The variables include the FITS keywords and the following synthetic variables:<\br/>\
 <dl>\
    <dt>&amp;binning;</dt><dd>Binning from XBINNING and YBINNING as integers, like 2x2.</dd>\
    <dt>&amp;exposure;</dt><dd>The exposure from EXPOSURE, but as an integer (assume seconds).<\dd>\
