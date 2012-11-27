@@ -132,6 +132,7 @@ function debug(str) {
 //     Allow selection of visibility of synthetic variable in inputFile table
 //     Accept FITS keywords as variables, clean the value result
 //     Removed the &object; variable as this can now be done with &OBJECT;
+//     Added selection of mapping rules
 
 
 
@@ -141,6 +142,7 @@ function debug(str) {
 // Option for handling of minus and other special characters to form a file name being valid PI ids
 // Add mark of sequence of text to ignore if missing variable value (in parentheses for example)
 // Generate an 'orderBy' column
+// Recalculate all variables when rules changed
 // Hide common header part of source folders to make file name more visible
 // Add a way to use directory of source file as variable  &filedir, &filedirparent for template matching and group names
 // Support date formatting, number formatting

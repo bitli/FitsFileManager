@@ -165,7 +165,8 @@ var kwMappingDefault = {
       "JD"       : "JD",
 };
 
-var kwMappingCaha = {"SET-TEMP":"CCDTEMP",
+var kwMappingCaha = {
+      "SET-TEMP": "CCDTEMP",
       "EXPOSURE": "EXPTIME",
       "IMAGETYP": "IMAGETYP",
       "FILTER"  : "INSFLNAM",
@@ -218,7 +219,7 @@ function FFM_GUIParameters() {
       // Map to remap keywords used to create synthethic keywords to other values
       this.kwMappingCurrentIndex = KW_MAPPING_DEFAULT_INDEX;
 
-      this.remappedFITSkeywords = kwMappingTables[kwMappingList[kwMappingCurrentIndex]];
+      this.remappedFITSkeywords = kwMappingTables[kwMappingList[this.kwMappingCurrentIndex]];
 
 
       // This is the list of keys shown by default (in addition to the synthethic keywords)
@@ -1027,64 +1028,65 @@ function MainDialog(engine, guiParameters) {
 
 
 
-
-
    // Keywords to use
    var keywordNames_GroupBox = new GroupBox(this);
 
-   keywordNames_GroupBox.sizer = new VerticalSizer;
-   keywordNames_GroupBox.sizer.margin = 6;
-   keywordNames_GroupBox.sizer.spacing = 4;
    keywordNames_GroupBox.title = "Keyword remapping ";
    keywordNames_GroupBox.toolTip = "The left side are the keywords used by default,\nThe right side are the keywords used in the current configuration. ";
 
-   var refreshRemappedFITSkeywordsNames = function (keywordNames_GroupBox) {
-      var sizer =  keywordNames_GroupBox.sizer ;
+   var keywordNames_TreeBox = new TreeBox(keywordNames_GroupBox);
+   keywordNames_TreeBox.rootDecoration = false;
+   keywordNames_TreeBox.numberOfColumns = 2;
+   keywordNames_TreeBox.headerVisible = false;
+
+
+   var refreshRemappedFITSkeywordsNames = function (keywordNames_TreeBox) {
+      keywordNames_TreeBox.clear();
       var remappedFITSkeywordsNames = Object.keys(guiParameters.remappedFITSkeywords);
       for (var ic=0; ic<remappedFITSkeywordsNames.length; ic++) {
-         var label = new Label();
-         label.text		=  remappedFITSkeywordsNames[ic] + " -> " + guiParameters.remappedFITSkeywords[remappedFITSkeywordsNames[ic]];
-         //label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
-         sizer.add(label);
+         var node = new TreeBoxNode(keywordNames_TreeBox);
+         node.setText( 0, remappedFITSkeywordsNames[ic] );
+         node.setText( 1, guiParameters.remappedFITSkeywords[remappedFITSkeywordsNames[ic]] );
+         node.checkable = false;
       }
    }
 
-   refreshRemappedFITSkeywordsNames(keywordNames_GroupBox);
-   keywordNames_GroupBox.sizer.addStretch(100);
-
+   refreshRemappedFITSkeywordsNames(keywordNames_TreeBox);
    // Conversion of type names
    var typeConversion_GroupBox = new GroupBox(this);
 
-   typeConversion_GroupBox.sizer = new VerticalSizer;
-   typeConversion_GroupBox.sizer.margin = 6;
-   typeConversion_GroupBox.sizer.spacing = 4;
    typeConversion_GroupBox.title = "Remapping of IMAGETYP ";
    typeConversion_GroupBox.toolTip = "The value of the IMAGETYP keywords are tested with each regular expression in turn,\n" +
            "the result is the first match or the original value if none matched.";
 
+   var typeConversion_TreeBox = new TreeBox(typeConversion_GroupBox);
+   typeConversion_TreeBox.rootDecoration = false;
+   typeConversion_TreeBox.numberOfColumns = 2;
+   typeConversion_TreeBox.headerVisible = false;
+
    for (var ic=0; ic<typeConversions.length; ic++) {
-      label = new Label();
-      label.text		=  typeConversions[ic][0].toString() + " -> " + typeConversions[ic][1];
-      //label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
-      typeConversion_GroupBox.sizer.add(label);
+      var node = new TreeBoxNode(typeConversion_TreeBox);
+      node.setText( 0, typeConversions[ic][0].toString() );
+      node.setText( 1, typeConversions[ic][1] );
+      node.checkable = false;
    }
-   typeConversion_GroupBox.sizer.addStretch(100);
 
    // Conversion of filter names
    var filterConversion_GroupBox = new GroupBox(this);
-   filterConversion_GroupBox.sizer = new VerticalSizer;
-   filterConversion_GroupBox.sizer.margin = 6;
-   filterConversion_GroupBox.sizer.spacing = 4;
    filterConversion_GroupBox.title = "Remapping of FILTER";
    filterConversion_GroupBox.toolTip = "The value of the FILTER keywords are tested with each regular expression in turn,\n" +
            "the result is the first match or the original value if none matched.";
+
+   var filterConversion_TreeBox = new TreeBox(filterConversion_GroupBox);
+   filterConversion_TreeBox.rootDecoration = false;
+   filterConversion_TreeBox.numberOfColumns = 2;
+   filterConversion_TreeBox.headerVisible = false;
    for (var ic=0; ic<filterConversions.length; ic++) {
-      label = new Label();
-      label.text		=  filterConversions[ic][0].toString() + " -> " + filterConversions[ic][1];
-      //label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
-      filterConversion_GroupBox.sizer.add(label);
+      var node = new TreeBoxNode(filterConversion_TreeBox);
+      node.setText( 0, filterConversions[ic][0].toString() );
+      node.setText( 1, filterConversions[ic][1] );
+      node.checkable = false;
    }
-   filterConversion_GroupBox.sizer.addStretch(100);
 
    // Selection of mapping rules
    var mappingRules_ComboBox = new ComboBox( this );
@@ -1099,11 +1101,22 @@ function MainDialog(engine, guiParameters) {
       debug("mappingRules_ComboBox: onItemSelected " + this.currentItem );
 #endif
        guiParameters.kwMappingCurrentIndex = this.currentItem;
-       guiParameters.remappedFITSkeywords =  kwMappingTables[kwMappingList[kwMappingCurrentIndex]];
-       //refreshRemappedFITSkeywordsNames(keywordNames_GroupBox);
-#ifdef DEBUG
-       debug("mappingRules_ComboBox: onItemSelected - kwMappingCurrentIndex: '" + guiParameters.kwMappingCurrentIndex + "', " + guiParameters.remappedFITSkeywords);
-#endif
+       guiParameters.remappedFITSkeywords =  kwMappingTables[kwMappingList[guiParameters.kwMappingCurrentIndex]];
+       refreshRemappedFITSkeywordsNames(keywordNames_TreeBox);
+
+      // If the rules are changed, all variables must be recalculated
+      // TODO RECALCULATE VARIABLES
+      // TODO We can probably clear in one go
+      for ( var i = this.dialog.filesTreeBox.numberOfChildren; --i >= 0; ) {
+            this.dialog.filesTreeBox.remove( i );
+      }
+      this.dialog.engine.reset();
+
+      // TODO - Merge with action on add files
+      //this.dialog.rebuildFilesTreeBox();
+      this.dialog.updateButtonState();
+      this.dialog.updateTotal();
+      this.dialog.refreshTargetFiles();
     }
 
 
@@ -1118,6 +1131,8 @@ function MainDialog(engine, guiParameters) {
    currentState_GroupBox.sizer.add( keywordNames_GroupBox);
    currentState_GroupBox.sizer.add( typeConversion_GroupBox);
    currentState_GroupBox.sizer.add( filterConversion_GroupBox);
+   // TODO Find other way to fix minimal size
+   currentState_GroupBox.setMinHeight(150);
 
 
    // Group and create section bar
@@ -1129,7 +1144,7 @@ function MainDialog(engine, guiParameters) {
    this.conversion_GroupBox.sizer.spacing = 4;
 
    this.conversion_GroupBox.sizer.add( mappingRules_ComboBox);
-   this.conversion_GroupBox.sizer.add( currentState_GroupBox);
+   this.conversion_GroupBox.sizer.add( currentState_GroupBox, 100);
 
    this.barConversions = new SectionBar( this, true );
    this.barConversions.setTitle( "Remapping of keywords and values" );
