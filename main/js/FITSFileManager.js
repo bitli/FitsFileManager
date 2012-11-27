@@ -62,7 +62,7 @@
 // Set to false when doing hasardous developments...
 #define EXECUTE_COMMANDS true
 // Tracing - define DEBUG if you define any other DEBUG_xxx
-//#define DEBUG
+#define DEBUG
 //#define DEBUG_EVENTS
 //#define DEBUG_SHOW_FITS
 //#define DEBUG_FITS
@@ -131,6 +131,7 @@ function debug(str) {
 //     Show alternate FITS keyword in 'Remapping' section
 //     Allow selection of visibility of synthetic variable in inputFile table
 //     Accept FITS keywords as variables, clean the value result
+//     Removed the &object; variable as this can now be done with &OBJECT;
 
 
 

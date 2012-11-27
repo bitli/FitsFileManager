@@ -40,7 +40,7 @@ they have simply the form '&amp;name;'. The 'name' identifies the variable, it m
 has a value, Usually ':present' is not specified and the value of the variable is used as the replacement string. You can also \
 have an empty 'present' value (as &amp;TELESCOP:;), in which case the variable is checked for presence (an error is \
 generated if the variable is missing) but its value does not contribute to the target path.</li> \
-<li>The optional '?missing' part is used if the variable is not present in the file (for example '&type?light;'). \
+<li>The optional '?missing' part is used if the variable is not present in the file (for example '&OBJECT?unknown;'). \
 You can also have an empty 'missing' value (like '&amp;binning?;') in which case there is no error if the variable  \
 has no value. </li>\
 </ul><p>The synthetic variables are described in the section 'target template' below. They are built from the FITS keywords, \
@@ -74,7 +74,6 @@ The variables include the FITS keywords and the following synthetic variables:<\
    <dt>&amp;filename;</dt><dd>The file name part of the source file.<\dd>\
    <dt>&amp;filter;</dt><dd>The filter name from FILTER as lower case trimmed normalized name.<\dd>\
    <dt>&amp;night;</dt><dd>An integer identifying the night, requires JD and LONG-OBS - EXPERIMENTAL.<\dd>\
-   <dt>&amp;object;</dt><dd>The OBJECT keyword, reformatted for use in file name.<\dd>\
    <dt>&amp;temp;</dt><dd>The SET-TEMP temperature in C as an integer.<\dd>\
    <dt>&amp;type;</dt><dd>The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'.<\dd>\
    <dt>&amp;0; &amp;1;, ... </dt><dd>The corresponding match from the source file name regular expression field.<\dd>\
@@ -141,17 +140,59 @@ var CompletionDialog_doneLeave= 3;
 // TODO Should not be a global
 // --- List of all synthethic variables and their comments (2 parallel arrays)
 // They are currently always added to the TreeBox
-var syntheticVariableNames = ['type','filter','exposure','temp','binning','object','night'];
+var syntheticVariableNames = ['type','filter','exposure','temp','binning','night'];
 var syntheticVariableComments = ['Type of image (flat, bias, ...)',
    'Filter (clear, red, ...)',
    'Exposure in seconds',
    'Temperature in C',
    'Binning as 1x1, 2x2, ...',
-   'Object name',
    'night (experimental)'];
 
 
-#define USE_ALTERNATE_KW false
+// TODO Should not be a global
+// --- Table of FITS keyword mapping sets
+
+var kwMappingDefault = {
+      "SET-TEMP": "SET-TEMP",
+      "EXPOSURE": "EXPOSURE",
+      "IMAGETYP": "IMAGETYP",
+      "FILTER"  : "FILTER",
+      "XBINNING": "XBINNING",
+      "YBINNING": "YBINNING",
+      // Non standard
+      "LONG-OBS": "LONG-OBS",
+      // We should really use DATE-OBS and convert
+      "JD"       : "JD",
+};
+
+var kwMappingCaha = {"SET-TEMP":"CCDTEMP",
+      "EXPOSURE": "EXPTIME",
+      "IMAGETYP": "IMAGETYP",
+      "FILTER"  : "INSFLNAM",
+      "XBINNING": "CDELT1",
+      "YBINNING": "CDELT2",
+      // Non standard
+      "LONG-OBS": "CAHA TEL GEOLON",
+      // We should really used DATE-OBS (if available) and convert
+      "JD"      : "JUL-DATE",
+};
+
+// TODO - The mapping could manage other settings
+// The tables below must be coherent
+#define KW_MAPPING_DEFAULT_INDEX 0
+var kwMappingTables = {
+   "DEFAULT" : kwMappingDefault,
+   "CAHA"    : kwMappingCaha,
+};
+var kwMappingList = ["DEFAULT", "CAHA"];
+var kwMappingCommentsList = ["Common and Star Arizona mappings", "CAHA mapping"];
+
+
+// Use the default name (left one) of FITS keywords to show by default in the input file table
+var kwDefaultShownKeywords = [
+"IMAGETYP","FILTER","OBJECT"
+//"SET-TEMP","EXPOSURE","IMAGETYP","FILTER","XBINNING","YBINNING","OBJECT"
+];
 
 
 
@@ -173,44 +214,21 @@ function FFM_GUIParameters() {
 
       this.orderBy = "&rank;" // UNUSED
 
-      // Map to remap keywords used to create synthethic keywords to other values
-      var remappedFITSkeywords = new Object
-      // Original names
-      remappedFITSkeywords["SET-TEMP"] = "SET-TEMP";
-      remappedFITSkeywords["EXPOSURE"] = "EXPOSURE";
-      remappedFITSkeywords["IMAGETYP"] = "IMAGETYP";
-      remappedFITSkeywords["FILTER"]   = "FILTER";
-      remappedFITSkeywords["XBINNING"] = "XBINNING";
-      remappedFITSkeywords["YBINNING"] = "YBINNING";
-      remappedFITSkeywords["OBJECT"]   = "OBJECT";
-      // Non standard
-      remappedFITSkeywords["LONG-OBS"] = "LONG-OBS";
-      // We should really use DATE-OBS and convert
-      remappedFITSkeywords["JD"]       = "JD";
-      this.remappedFITSkeywords = remappedFITSkeywords;
 
-      if (USE_ALTERNATE_KW) {
-         remappedFITSkeywords["SET-TEMP"] = "CCDTEMP";
-         remappedFITSkeywords["EXPOSURE"] = "EXPTIME";
-         remappedFITSkeywords["IMAGETYP"] = "IMAGETYP";
-         remappedFITSkeywords["FILTER"]   = "INSFLNAM";
-         remappedFITSkeywords["XBINNING"] = "CDELT1";
-         remappedFITSkeywords["YBINNING"] = "CDELT2";
-         remappedFITSkeywords["OBJECT"]   = "OBJECT";
-         // Non standard
-         remappedFITSkeywords["LONG-OBS"] = "CAHA TEL GEOLON";
-         // We should really used DATE-OBS (if available) and convert
-         remappedFITSkeywords["JD"]       = "JUL-DATE";
-      }
+      // Map to remap keywords used to create synthethic keywords to other values
+      this.kwMappingCurrentIndex = KW_MAPPING_DEFAULT_INDEX;
+
+      this.remappedFITSkeywords = kwMappingTables[kwMappingList[kwMappingCurrentIndex]];
 
 
       // This is the list of keys shown by default (in addition to the synthethic keywords)
       // A possibly empty column is created for all these keywords, so that they are always present
       // in the same order and that the use can see that the column has no value.
       // By default only show the keywords that are significantly transformed by the conversion to synthethic keywords
-      this.defaultListOfShownFITSKeywords = [remappedFITSkeywords["IMAGETYP"],
-            remappedFITSkeywords["FILTER"],remappedFITSkeywords["OBJECT"]];
-      //this.defaultListOfShownFITSKeywords = ["SET-TEMP","EXPOSURE","IMAGETYP","FILTER","XBINNING","YBINNING","OBJECT"];
+      this.defaultListOfShownFITSKeywords = [];
+      for (var i=0; i<kwDefaultShownKeywords.length; i++) {
+         this.defaultListOfShownFITSKeywords[i] = this.remappedFITSkeywords[kwDefaultShownKeywords[i]];
+      }
 
 
 
@@ -224,8 +242,26 @@ function FFM_GUIParameters() {
       }
 
       // Prepare list of regexp, groupBy template and target file template for use by the user interface.
-      // The first element of the list is the last one selected, the others are predefiend elements
+      // The first element of the list is the last one selected by the user, the others are predefiend elements
       // (currently hardcoded here - could eventually be made editable)
+      // There are two parallel arrays, one for the values, and one for a comment displayed in the selection box
+      this.targetFileItemListText = [
+            this.targetFileNameCompiledTemplate.templateString, // Must be adapted after parameter loading
+            FFM_DEFAULT_TARGET_FILENAME_TEMPLATE,
+            "&type;/&1;_&binning;_&temp;C_&exposure;s_&filter;_&count;&extension;",
+            "&OBJECT;_&filter;_&count;&extension;",
+            "&1;_&type?light;_&filter?clear;_&count;&extension;",
+            ""
+      ];
+      this.targetFileItemListComment = [
+            "last",
+            "detailled, using part of file name",
+            "directory by type",
+            "Object and filter",
+            "type and filter with defaults",
+            "(clear)"
+      ];
+
       this.regexpItemListText = [
          regExpToString(this.sourceFileNameRegExp), // Must be adapted after parameter loading
          FFM_DEFAULT_SOURCE_FILENAME_REGEXP,
@@ -253,22 +289,6 @@ function FFM_GUIParameters() {
             "none (count globally)"
       ];
 
-      this.targetFileItemListText = [
-            this.targetFileNameCompiledTemplate.templateString, // Must be adapted after parameter loading
-            FFM_DEFAULT_TARGET_FILENAME_TEMPLATE,
-            "&type;/&1;_&binning;_&temp;C_&exposure;s_&filter;_&count;&extension;",
-            "&filter;_&count;&extension;",
-            "&1;_&type?light;_&filter?clear;_&count;&extension;",
-            ""
-      ];
-      this.targetFileItemListComment = [
-            "last",
-            "detailled",
-            "directory by type",
-            "just filter",
-            "type and filter with defaults",
-            "(clear)"
-      ];
 
 
    }
@@ -1005,6 +1025,10 @@ function MainDialog(engine, guiParameters) {
    // Conversion definition section
    //----------------------------------------------------------------------------------
 
+
+
+
+
    // Keywords to use
    var keywordNames_GroupBox = new GroupBox(this);
 
@@ -1012,14 +1036,20 @@ function MainDialog(engine, guiParameters) {
    keywordNames_GroupBox.sizer.margin = 6;
    keywordNames_GroupBox.sizer.spacing = 4;
    keywordNames_GroupBox.title = "Keyword remapping ";
+   keywordNames_GroupBox.toolTip = "The left side are the keywords used by default,\nThe right side are the keywords used in the current configuration. ";
 
-   var remappedFITSkeywordsNames = Object.keys(guiParameters.remappedFITSkeywords);
-   for (var ic=0; ic<remappedFITSkeywordsNames.length; ic++) {
-      label = new Label();
-      label.text		=  remappedFITSkeywordsNames[ic] + " -> " + guiParameters.remappedFITSkeywords[remappedFITSkeywordsNames[ic]];
-      //label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
-      keywordNames_GroupBox.sizer.add(label);
+   var refreshRemappedFITSkeywordsNames = function (keywordNames_GroupBox) {
+      var sizer =  keywordNames_GroupBox.sizer ;
+      var remappedFITSkeywordsNames = Object.keys(guiParameters.remappedFITSkeywords);
+      for (var ic=0; ic<remappedFITSkeywordsNames.length; ic++) {
+         var label = new Label();
+         label.text		=  remappedFITSkeywordsNames[ic] + " -> " + guiParameters.remappedFITSkeywords[remappedFITSkeywordsNames[ic]];
+         //label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
+         sizer.add(label);
+      }
    }
+
+   refreshRemappedFITSkeywordsNames(keywordNames_GroupBox);
    keywordNames_GroupBox.sizer.addStretch(100);
 
    // Conversion of type names
@@ -1029,6 +1059,8 @@ function MainDialog(engine, guiParameters) {
    typeConversion_GroupBox.sizer.margin = 6;
    typeConversion_GroupBox.sizer.spacing = 4;
    typeConversion_GroupBox.title = "Remapping of IMAGETYP ";
+   typeConversion_GroupBox.toolTip = "The value of the IMAGETYP keywords are tested with each regular expression in turn,\n" +
+           "the result is the first match or the original value if none matched.";
 
    for (var ic=0; ic<typeConversions.length; ic++) {
       label = new Label();
@@ -1044,6 +1076,8 @@ function MainDialog(engine, guiParameters) {
    filterConversion_GroupBox.sizer.margin = 6;
    filterConversion_GroupBox.sizer.spacing = 4;
    filterConversion_GroupBox.title = "Remapping of FILTER";
+   filterConversion_GroupBox.toolTip = "The value of the FILTER keywords are tested with each regular expression in turn,\n" +
+           "the result is the first match or the original value if none matched.";
    for (var ic=0; ic<filterConversions.length; ic++) {
       label = new Label();
       label.text		=  filterConversions[ic][0].toString() + " -> " + filterConversions[ic][1];
@@ -1052,23 +1086,55 @@ function MainDialog(engine, guiParameters) {
    }
    filterConversion_GroupBox.sizer.addStretch(100);
 
+   // Selection of mapping rules
+   var mappingRules_ComboBox = new ComboBox( this );
+   mappingRules_ComboBox.toolTip = "Select rules";
+   mappingRules_ComboBox.enabled = true;
+   for (var it = 0; it<kwMappingList.length; it++) {
+      mappingRules_ComboBox.addItem( kwMappingList[it] +  " - " + kwMappingCommentsList[it]);
+   }
 
+   mappingRules_ComboBox.onItemSelected = function() {
+#ifdef DEBUG
+      debug("mappingRules_ComboBox: onItemSelected " + this.currentItem );
+#endif
+       guiParameters.kwMappingCurrentIndex = this.currentItem;
+       guiParameters.remappedFITSkeywords =  kwMappingTables[kwMappingList[kwMappingCurrentIndex]];
+       //refreshRemappedFITSkeywordsNames(keywordNames_GroupBox);
+#ifdef DEBUG
+       debug("mappingRules_ComboBox: onItemSelected - kwMappingCurrentIndex: '" + guiParameters.kwMappingCurrentIndex + "', " + guiParameters.remappedFITSkeywords);
+#endif
+    }
+
+
+
+   // Group the list boxed of the current mapping and conversions
+   var currentState_GroupBox = new Control( this );
+
+   currentState_GroupBox.sizer = new HorizontalSizer;
+   currentState_GroupBox.sizer.margin = 6;
+   currentState_GroupBox.sizer.spacing = 4;
+
+   currentState_GroupBox.sizer.add( keywordNames_GroupBox);
+   currentState_GroupBox.sizer.add( typeConversion_GroupBox);
+   currentState_GroupBox.sizer.add( filterConversion_GroupBox);
+
+
+   // Group and create section bar
 
    this.conversion_GroupBox = new GroupBox( this );
 
-   this.conversion_GroupBox.sizer = new HorizontalSizer;
+   this.conversion_GroupBox.sizer = new VerticalSizer;
    this.conversion_GroupBox.sizer.margin = 6;
    this.conversion_GroupBox.sizer.spacing = 4;
 
-   this.conversion_GroupBox.sizer.add( keywordNames_GroupBox);
-   this.conversion_GroupBox.sizer.add( typeConversion_GroupBox);
-   this.conversion_GroupBox.sizer.add( filterConversion_GroupBox);
+   this.conversion_GroupBox.sizer.add( mappingRules_ComboBox);
+   this.conversion_GroupBox.sizer.add( currentState_GroupBox);
 
    this.barConversions = new SectionBar( this, true );
    this.barConversions.setTitle( "Remapping of keywords and values" );
    this.barConversions.setSection( this.conversion_GroupBox );
    //this.barConversions.toggleSection();
-
 
 
 
@@ -1839,7 +1905,8 @@ function FITSKeysDialog( parentDialog, engine) {
 
    // TreeBox to display list of FITS keywords
    this.keyword_TreeBox = new TreeBox( this );
-   this.keyword_TreeBox.toolTip = "Check mark to include the keyword value in the input file table\nNames in red indicate that the keyword is not in current file, but appears in some files.";
+   this.keyword_TreeBox.toolTip = "Synthetic and value keywords of the image selected in the drop box at top,\n" +
+      "Tick the check mark to include the keyword value in the input file table\nThe red color indicates that the keyword is not in selected image, but appears in some other loaded images.";
    this.keyword_TreeBox.rootDecoration = false;
    this.keyword_TreeBox.numberOfColumns = 3;
    this.keyword_TreeBox.setHeaderText(0, "name");

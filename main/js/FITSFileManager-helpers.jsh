@@ -432,12 +432,6 @@ function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords)
    var imageType = imageKeywords.getStrippedValue(remappedFITSkeywords['IMAGETYP']);
    variables['type'] = convertType(imageType);
 
-   // &object:  the object name, formatted for file name compatibility
-   var objectName = imageKeywords.getStrippedValue(remappedFITSkeywords['OBJECT']);
-   variables['object'] = filterFITSValue(objectName);
-#ifdef DEBUG
-   // debug("makeSynthethicVariables: object [" + objectName + "] as [" + variables['object'] + "]");
-#endif
 
    //  &night;     EXPERIMENTAL
    var longObs = imageKeywords.getValue(remappedFITSkeywords['LONG-OBS']); // East in degree
