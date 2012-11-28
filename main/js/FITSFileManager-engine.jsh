@@ -365,7 +365,6 @@ function FFM_Engine(guiParameters) {
          var inputFile = this.inputFiles[index];
          var targetFile = this.targetFiles[i];
          var errorList = this.errorPerFile[i];
-#ifdef USE_TREEBOX
          if (targetFile) {
             listOfTransforms.push("File ".concat(inputFile));
             listOfTransforms.push("  to .../".concat(targetFile));
@@ -373,13 +372,6 @@ function FFM_Engine(guiParameters) {
             listOfTransforms.push("File ".concat(inputFile));
             listOfTransforms.push("     Error ".concat(errorList));
          }
-#else
-         if (targetFile) {
-            listOfTransforms.push("File ".concat(inputFile, "\n  to .../",targetFile, "\n"));
-         } else {
-            listOfTransforms.push("File ".concat(inputFile, "\n     Error: ",errorList, "\n"));
-         }
-#endif
       }
       return listOfTransforms;
     }

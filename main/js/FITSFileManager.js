@@ -61,18 +61,16 @@
 // --- Debugging control ----------------
 // Set to false when doing hasardous developments...
 #define EXECUTE_COMMANDS true
+
 // Tracing - define DEBUG if you define any other DEBUG_xxx
-#define DEBUG
+//#define DEBUG
 //#define DEBUG_EVENTS
 //#define DEBUG_SHOW_FITS
 //#define DEBUG_FITS
 //#define DEBUG_VARS
 //#define DEBUG_COLUMNS
+// ------------------------------------
 
-// This uses the TREEBOX instead of the TEXT_BOX due to timing problem
-#define USE_TREEBOX
-//This log timing information related to TEXTBOX/TREEBOX
-//#define DEBUG_TIMING
 
 #ifdef DEBUG
 function debug(str) {
@@ -178,16 +176,10 @@ function debug(str) {
 
 
 
-// Select the first sequence without -_. or the whole name in &1; (second group is non capturing)
-#define FFM_DEFAULT_SOURCE_FILENAME_REGEXP /([^-_.]+)(?:[._-]|$)/
-#define FFM_DEFAULT_TARGET_FILENAME_TEMPLATE "&1;_&binning;_&temp;C_&type;_&exposure;s_&filter;_&count;&extension;"
-// #define FFM_DEFAULT_TARGET_FILENAME_TEMPLATE "&filename;_AS_&1;_bin_&binning;_filter_&filter;_temp_&temp;_type_&type;_exp_&exposure;s_count_&count;&extension;";
-#define FFM_DEFAULT_GROUP_TEMPLATE "&targetDir;"
-
-
 #include "FITSFileManager-fits.jsh"
 #include "FITSFileManager-helpers.jsh"
 #include "FITSFileManager-engine.jsh"
+#include "FITSFileManager-parameters.jsh"
 #include "FITSFileManager-gui.jsh"
 
 
