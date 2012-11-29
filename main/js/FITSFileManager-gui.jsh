@@ -570,6 +570,9 @@ function MainDialog(engine, guiParameters) {
 #ifdef DEBUG
       debug("targetFileTemplate_ComboBox: onItemSelected " + this.currentItem);
 #endif
+      if (this.currentItem >= guiParameters.targetFileItemListText.length) {
+         return;  // protect as when a 'CR' is typed in the field, currentItem may be outside of array
+      }
       var text =guiParameters.targetFileItemListText[this.currentItem];
       this.dialog.targetFileTemplate_ComboBox.editText = text;
       var templateErrors = [];
@@ -627,6 +630,9 @@ function MainDialog(engine, guiParameters) {
 #ifdef DEBUG
       debug("regexp_ComboBox: onItemSelected " + this.currentItem);
 #endif
+      if (this.currentItem >= guiParameters.regexpItemListText.length) {
+         return;  // protect as when a 'CR' is typed in the field, currentItem may be outside of array
+      }
       var text = regExpToString(guiParameters.regexpItemListText[this.currentItem]);
       this.dialog.regexp_ComboBox.editText = text;
       var re = text.trim();
@@ -687,6 +693,9 @@ function MainDialog(engine, guiParameters) {
 #ifdef DEBUG
       debug("groupTemplate_ComboBox: onItemSelected " + this.currentItem);
 #endif
+      if (this.currentItem >= guiParameters.groupItemListText.length) {
+         return;  // protect as when a 'CR' is typed in the field, currentItem may be outside of array
+      }
       var text = guiParameters.groupItemListText[this.currentItem];
       this.dialog.groupTemplate_ComboBox.editText = text;
       var templateErrors = [];
@@ -1824,7 +1833,7 @@ function FITSKeysDialog( parentDialog, engine) {
          var keyName = allFITSKeyNames[i];
          var keyValue = imageKeywords.getValueKeyword(keyName);
 #ifdef DEBUG_FITS
-         debug("FITSKeysDialog: file_ComboBox: onItemSelected - keyName=" + keyName + ",  keyValue=" + keyValue );
+         debug("FITSKeysDialog: populate(): FITS  keyName=" + keyName + ",  keyValue=" + keyValue );
 #endif
          if (keyValue !== null) {
             fitsVarRootNode.child(i).setTextColor(0,0x00000000);
