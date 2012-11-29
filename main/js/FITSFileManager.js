@@ -87,7 +87,6 @@ function debug(str) {
 // Padding format
 #define FFM_COUNT_PAD 4
 
-#define FFM_SETTINGS_KEY_BASE  "FITSFileManager/"
 
 
 
@@ -122,8 +121,9 @@ function debug(str) {
 //     Added alternate FITS keywords for creation of synthetic keywords
 //     Load HIERARCH FITS keywords
 // 2012-11-19 - 0.8 - Refactor, bug corrections
-//     Refactored FITS keyword loading (separate js file) and some processing
+//     Refactored FITS keyword loading (separate js file), parameters (separate file) and quite some code
 //     Correcting error of selection of file in FITSKeyword window
+//     Corrected error of list entry reported by Vicent
 //     Small presentation enhancements
 //     Document &kw:present?absent;
 //     Show alternate FITS keyword in 'Remapping' section
@@ -131,6 +131,7 @@ function debug(str) {
 //     Accept FITS keywords as variables, clean the value result
 //     Removed the &object; variable as this can now be done with &OBJECT;
 //     Added selection of mapping rules
+//
 
 
 

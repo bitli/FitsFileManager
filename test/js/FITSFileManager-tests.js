@@ -15,6 +15,7 @@
 
 #include "../../main/js/FITSFileManager-helpers.jsh"
 #include "../../main/js/FITSFileManager-engine.jsh"
+#include "../../main/js/FITSFileManager-parameters.jsh"
 #include "../../main/js/FITSFileManager-gui.jsh"
 
 
@@ -212,6 +213,23 @@ var ffM_allTests = {
       t.expandTemplate(errors,ffM_rv({v1:'v1val', v2:'NO', v5:'v5val'}));
       pT_assertEquals("No value for the variable 'required'", errors.join(""));
    },
+
+   // ---------------------------------------------------------------------------------------------------------
+   // Test of gui parameters and settings
+   // ---------------------------------------------------------------------------------------------------------
+   testSettings: function () {
+      var guiParameters = new FFM_GUIParameters();
+      // This ensures that there are default settings in first execution
+      guiParameters.loadSettings();
+      guiParameters.reset();
+      guiParameters.saveSettings();
+
+      guiParameters.loadSettings();
+      // TODO make some real tests
+     // pT_assertEquals("string",guiParameters.targetFileNameCompiledTemplate);
+   },
+
+
 
 
 }

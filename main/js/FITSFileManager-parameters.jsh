@@ -2,8 +2,21 @@
 
 // This file is part of FITSFileManager, see copyrigh in FITSFileManager.js
 
+// -----------------------------------------------------------------------------------------------
+// This script support the parameters loaded/saved by the PI 'Settings' mechanism
+// and the configuration information currently only modifiable by editing this file.
+// -----------------------------------------------------------------------------------------------
 
 
+
+// --- Configuration - Change the definitions as needed.
+//                     Some definitions need to be consistent with others or with the code,
+//                     but this should be fairly obvious.
+
+
+// TODO Should not be a global or define, but scoped variables
+
+// Default values of some parameters, used only on the first usage of the script (when the settings are not yet defined)
 
 // Select the first sequence without -_. or the whole name in &1; (second group is non capturing)
 #define FFM_DEFAULT_SOURCE_FILENAME_REGEXP /([^-_.]+)(?:[._-]|$)/
@@ -12,9 +25,8 @@
 #define FFM_DEFAULT_GROUP_TEMPLATE "&targetDir;"
 
 
-// TODO Should not be a global
 // --- List of all synthethic variables and their comments (2 parallel arrays)
-// They are currently always added to the TreeBox
+//     All synthethic variables are currently added to the columns of the file TreeBox
 var syntheticVariableNames = ['type','filter','exposure','temp','binning','night'];
 var syntheticVariableComments = ['Type of image (flat, bias, ...)',
    'Filter (clear, red, ...)',
@@ -24,8 +36,7 @@ var syntheticVariableComments = ['Type of image (flat, bias, ...)',
    'night (experimental)'];
 
 
-// TODO Should not be a global
-// --- Table of FITS keyword mapping sets
+// --- Mapping of 'logical' FITS keywords (referenced in the code) to actual FITS keywords
 
 var kwMappingDefault = {
       "SET-TEMP": "SET-TEMP",
@@ -53,8 +64,8 @@ var kwMappingCaha = {
       "JD"      : "JUL-DATE",
 };
 
-// TODO - The mapping could manage other settings
-// The tables below must be coherent
+// TODO - The mapping could manage other parameters
+// The tables below must be coherent with each other, more mapping can be added
 #define KW_MAPPING_DEFAULT_INDEX 0
 var kwMappingTables = {
    "DEFAULT" : kwMappingDefault,
@@ -64,12 +75,16 @@ var kwMappingList = ["DEFAULT", "CAHA"];
 var kwMappingCommentsList = ["Common and Star Arizona mappings", "CAHA mapping"];
 
 
-// Use the default name (left one) of FITS keywords to show by default in the input file table
+// Default list of FITS keywords to show as columns in the input file TreeBox
+// Can be updated by the user by the FITS table UI interface
 var kwDefaultShownKeywords = [
-"IMAGETYP","FILTER","OBJECT"
-//"SET-TEMP","EXPOSURE","IMAGETYP","FILTER","XBINNING","YBINNING","OBJECT"
+   "IMAGETYP","FILTER","OBJECT"
+   //"SET-TEMP","EXPOSURE","IMAGETYP","FILTER","XBINNING","YBINNING","OBJECT"
 ];
 
+
+// Name of key in settings
+#define FFM_SETTINGS_KEY_BASE  "FITSFileManager/"
 
 
 // ------------------------------------------------------------------------------------------------------------------------
@@ -77,12 +92,13 @@ var kwDefaultShownKeywords = [
 // ------------------------------------------------------------------------------------------------------------------------
 
 // The object FFM_GUIParameters keeps track of the parameters that are saved between executions
-// or that could (eventually) be saved.
+// (or that should be saved)
 function FFM_GUIParameters() {
 
+   // Initialize all parameters to default values
    this.reset = function () {
 
-      // SETTINGS: Saved latest correct GUI state
+      // Default temp
       this.targetFileNameTemplate = FFM_DEFAULT_TARGET_FILENAME_TEMPLATE;
 
       // Default regular expression to parse file name
