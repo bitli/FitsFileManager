@@ -197,7 +197,7 @@ var ffm_keywordsOfFile = (function() {
       },
       getValue: function getValue(name) {
          var kw = this.getValueKeyword(name);
-         if (kw == null) {
+         if (kw === null) {
             return null;
          } else {
             return kw.value;
@@ -205,7 +205,7 @@ var ffm_keywordsOfFile = (function() {
       },
       getStrippedValue: function getStrippedValue(name) {
          var kw = this.getValueKeyword(name);
-         if (kw == null) {
+         if (kw === null) {
             return null;
          } else {
             return kw.strippedValue;

@@ -459,6 +459,7 @@ function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords)
 // Remove special characters from FITS key values to avoid bizare or illegal file names
 // Leading and trailing invalid characters are removed
 // Embedded invalid characters are collapsed to one underline.
+// An 'space' value will return null, considering the keyword as 'missing' when used in templates.
 function filterFITSValue(value) {
    if (value === null) {
       return null;
@@ -482,9 +483,8 @@ function filterFITSValue(value) {
         mustAddUnderline = true;
      }
      i++;
-
    }
-   return result;
+   return (result.length>0) ? result : null;
 }
 
 

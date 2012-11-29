@@ -1633,7 +1633,9 @@ function FITSKeysDialog( parentDialog, engine) {
    // TreeBox to display list of FITS keywords
    this.keyword_TreeBox = new TreeBox( this );
    this.keyword_TreeBox.toolTip = "Synthetic and value keywords of the image selected in the drop box at top,\n" +
-      "Tick the check mark to include the keyword value in the input file table\nThe red color indicates that the keyword is not in selected image, but appears in some other loaded images.";
+      "Tick the check mark to include the keyword value in the input file table\n"+
+      "The red color indicates that the keyword is not in the selected image, but appears in some other loaded images,\n"+
+      "or that its value is space (it will be considered missing).";
    this.keyword_TreeBox.rootDecoration = false;
    this.keyword_TreeBox.numberOfColumns = 3;
    this.keyword_TreeBox.setHeaderText(0, "name");
@@ -1835,16 +1837,27 @@ function FITSKeysDialog( parentDialog, engine) {
 #ifdef DEBUG_FITS
          debug("FITSKeysDialog: populate(): FITS  keyName=" + keyName + ",  keyValue=" + keyValue );
 #endif
-         if (keyValue !== null) {
-            fitsVarRootNode.child(i).setTextColor(0,0x00000000);
-            fitsVarRootNode.child(i).setText(1,keyValue.value);
-            fitsVarRootNode.child(i).setText(2,this.getTypeString(keyValue));
-            fitsVarRootNode.child(i).setText(3,keyValue.comment);
-         } else {
+         if (keyValue === null) {
+            // No value at all
             fitsVarRootNode.child(i).setTextColor(0,0x00FF0000);
             fitsVarRootNode.child(i).setText(1,'');
             fitsVarRootNode.child(i).setText(2,'');
             fitsVarRootNode.child(i).setText(3,'');
+         } else {
+            var nullOrValue = filterFITSValue(keyValue.value);
+            if (nullOrValue === null) {
+               // All spaces value
+               fitsVarRootNode.child(i).setTextColor(0,0x00FF0000);
+               fitsVarRootNode.child(i).setText(1,keyValue.value);
+               fitsVarRootNode.child(i).setText(2,this.getTypeString(keyValue));
+               fitsVarRootNode.child(i).setText(3,keyValue.comment);
+            } else {
+               // Non empty string, number or boolean
+               fitsVarRootNode.child(i).setTextColor(0,0x00000000);
+               fitsVarRootNode.child(i).setText(1,keyValue.value);
+               fitsVarRootNode.child(i).setText(2,this.getTypeString(keyValue));
+               fitsVarRootNode.child(i).setText(3,keyValue.comment);
+            }
          }
       }
 
