@@ -109,7 +109,6 @@ function FFM_GUIParameters() {
 
       // Map to remap keywords used to create synthethic keywords to other values
       this.kwMappingCurrentIndex = KW_MAPPING_DEFAULT_INDEX;
-
       this.remappedFITSkeywords = kwMappingTables[kwMappingList[this.kwMappingCurrentIndex]];
 
 
@@ -214,10 +213,11 @@ FFM_GUIParameters.prototype.loadSettings = function()
       return load( key + '_' + index.toString(), type );
    }
 
-   var o, t, templateErrors;
-   if ( (o = load( "version",    DataType_Double )) !== null ) {
-      if (o > VERSION) {
-         Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' have version ", o, " later than script version ", VERSION, ", settings ignored");
+   var o, t, parameterVersion, templateErrors, ki;
+   if ( (parameterVersion = load( "version",    DataType_Double )) !== null ) {
+      if (parameterVersion > VERSION) {
+         Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' have version ", parameterVersion, " later than script version ", VERSION, ", settings ignored");
+         Console.flush();
       } else {
          if ( (o = load( "targetFileNameTemplate",    DataType_String )) !== null ) {
            templateErrors = [];
@@ -253,6 +253,19 @@ FFM_GUIParameters.prototype.loadSettings = function()
          this.regexpItemListText[0] = regExpToString(this.sourceFileNameRegExp);
          this.groupItemListText[0] = this.groupByCompiledTemplate.templateString;
          this.targetFileItemListText[0] = this.targetFileNameCompiledTemplate.templateString;
+
+         // After 0.7
+         if (parameterVersion>0.7) {
+            if ( (o = load( "mappingName",          DataType_String )) !== null ) {
+               ki = kwMappingList.indexOf(o);
+               if(ki>=0) {
+                  this.kwMappingCurrentIndex = ki;
+                  this.remappedFITSkeywords = kwMappingTables[o];
+               } else {
+                  Console.writeln("Mapping rules '" + o + "' unknown, using '" + kwMappingList[this.kwMappingCurrentIndex ] + "'");
+               }
+            }
+         }
       }
    } else {
       Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' do not have a 'version' key, settings ignored");
@@ -282,6 +295,7 @@ FFM_GUIParameters.prototype.saveSettings = function()
    save( "sourceFileNameRegExp",       DataType_String, regExpToString(this.sourceFileNameRegExp) );
    save( "orderBy",                    DataType_String, this.orderBy );
    save( "groupByTemplate",            DataType_String, this.groupByCompiledTemplate.templateString );
+   save( "mappingName",                DataType_String, kwMappingList[this.kwMappingCurrentIndex ]);
 
 }
 

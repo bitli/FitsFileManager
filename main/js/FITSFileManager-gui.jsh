@@ -837,11 +837,15 @@ function MainDialog(engine, guiParameters) {
    for (var it = 0; it<kwMappingList.length; it++) {
       mappingRules_ComboBox.addItem( kwMappingList[it] +  " - " + kwMappingCommentsList[it]);
    }
+   mappingRules_ComboBox.currentItem = guiParameters.kwMappingCurrentIndex;
 
    mappingRules_ComboBox.onItemSelected = function() {
 #ifdef DEBUG
       debug("mappingRules_ComboBox: onItemSelected " + this.currentItem );
 #endif
+       if (this.currentItem >= kwMappingList.length) {
+          return; // Protect against CR in input field
+       }
        guiParameters.kwMappingCurrentIndex = this.currentItem;
        guiParameters.remappedFITSkeywords =  kwMappingTables[kwMappingList[guiParameters.kwMappingCurrentIndex]];
        refreshRemappedFITSkeywordsNames(keywordNames_TreeBox);
@@ -849,10 +853,20 @@ function MainDialog(engine, guiParameters) {
       // If the rules are changed, all variables must be recalculated
       // TODO RECALCULATE VARIABLES
       // TODO We can probably clear in one go
-      for ( var i = this.dialog.filesTreeBox.numberOfChildren; --i >= 0; ) {
-            this.dialog.filesTreeBox.remove( i );
+//      for ( var i = this.dialog.filesTreeBox.numberOfChildren; --i >= 0; ) {
+//            this.dialog.filesTreeBox.remove( i );
+//      }
+//      this.dialog.engine.reset();
+
+      // rebuild all
+      for (var i=0; i<this.dialog.engine.inputFiles.length; i++) {
+         var fileName = this.dialog.engine.inputFiles[i];
+         var imageKeywords  = ffm_keywordsOfFile.makeImageKeywordsfromFile(fileName);
+         this.dialog.engine.inputFITSKeywords[i] = imageKeywords;
+         // Create the synthethic variables using the desired rules
+         var variables = makeSynthethicVariables(fileName, imageKeywords, guiParameters.remappedFITSkeywords);
+         this.dialog.engine.inputVariables[i] = variables;
       }
-      this.dialog.engine.reset();
 
       // TODO - Merge with action on add files
       //this.dialog.rebuildFilesTreeBox();
