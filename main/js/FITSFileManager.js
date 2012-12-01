@@ -162,6 +162,7 @@ function debug(str) {
 // Check details of FITSKeywords, especialy type and null, processing of quoted characters and leading spaces.
 // Display and management of alternate keywords for synthethic keywords
 // Allow selection of synthethic keywords in table, enhance table view
+// Make COUNT_PAD a parameter or use a configurable default format
 
 // Format indicators
 // %<stuff>

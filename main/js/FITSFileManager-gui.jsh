@@ -155,7 +155,7 @@ function SectionBar( parent, initialyCollapsed ) {
       this.__base__();
 
    this.section = null;
-   this.collapedTitle = "";
+   this.collapsedTitle = "";
    this.expandedTitle = "";
 
 #ifgteq __PI_BUILD__ 854
@@ -346,6 +346,13 @@ function MainDialog(engine, guiParameters) {
    this.filesTreeBox.setHeaderText(0, "Filename");
    this.filesTreeBox.sort(0,true);
    this.filesTreeBox.setMinSize( 700, 200 );
+   this.filesTreeBox.toolTip = "List of input files - you can add and remove files with the buttons below.\n" +
+                               "Select the one you want to operate on with the check box,\n"+
+                               "The columns include synthethic and loaded FITS keywords,\n" +
+                               "select the columns with the 'text' icon button\n"+
+                               "You can sort the files by clicking on a column header. Then click the 'refresh' button.\n"+
+                               "Beware - sort is in alphabetical order even for numbers";
+
 
    // Assume that 'check' is the only operation that update the nodes,
    // this may not be true...
@@ -365,7 +372,7 @@ function MainDialog(engine, guiParameters) {
    // -- Open FITS keyword dialog
    this.keyButton = new ToolButton( this );
    this.keyButton.icon = new Bitmap( ":/images/icons/text.png" );
-   this.keyButton.toolTip = "Variables and FITS Keywords management";
+   this.keyButton.toolTip = "Show all keywords and variables of selected file,\nselec the columns of the Input File List";
    this.keyButton.onClick = function() {
    if (this.dialog.engine.keywordsSet.size()) {
          this.dialog.fitsKeysDialog.execute();
@@ -849,6 +856,7 @@ function MainDialog(engine, guiParameters) {
        guiParameters.kwMappingCurrentIndex = this.currentItem;
        guiParameters.remappedFITSkeywords =  kwMappingTables[kwMappingList[guiParameters.kwMappingCurrentIndex]];
        refreshRemappedFITSkeywordsNames(keywordNames_TreeBox);
+       this.dialog.barConversions.setCollapsedTitle("Remapping of keywords and values - " + kwMappingList[guiParameters.kwMappingCurrentIndex] );
 
       // If the rules are changed, all variables must be recalculated
       // TODO RECALCULATE VARIABLES
@@ -904,7 +912,9 @@ function MainDialog(engine, guiParameters) {
 
    this.barConversions = new SectionBar( this, true );
    this.barConversions.setTitle( "Remapping of keywords and values" );
+   this.barConversions.setCollapsedTitle("Remapping of keywords and values - " + kwMappingList[guiParameters.kwMappingCurrentIndex] );
    this.barConversions.setSection( this.conversion_GroupBox );
+
    //this.barConversions.toggleSection();
 
 
@@ -917,11 +927,11 @@ function MainDialog(engine, guiParameters) {
    this.outputDir_Edit = new Edit( this );
    this.outputDir_Edit.readOnly = true;
    this.outputDir_Edit.text = this.engine.outputDirectory;
-   this.outputDir_Edit.toolTip ="select output directory.";
+   this.outputDir_Edit.toolTip ="Select the base output directory.\nAny directory created by your template will be below this directory.";
 
    this.outputDirSelect_Button = new ToolButton( this );
    this.outputDirSelect_Button.icon = new Bitmap( ":/images/icons/select.png" );
-   this.outputDirSelect_Button.toolTip = "Select output directory";
+   this.outputDirSelect_Button.toolTip ="Select the base output directory.";
    this.outputDirSelect_Button.onClick = function() {
       var gdd = new GetDirectoryDialog;
       gdd.initialPath = engine.outputDirectory;
@@ -963,6 +973,11 @@ function MainDialog(engine, guiParameters) {
    this.transform_TreeBox.setHeaderText(0, "Filename");
    //this.transform_TreeBox.sort(0,false);
    this.transform_TreeBox.setMinSize( 700, 200 );
+   this.transform_TreeBox.toolTip = "List of selected files and how they will be converted.\n" +
+                               "If there is any error, the corresponding file will be in red.\n"+
+                               "You can correct the error or uncheck the corresponding input file\n"+
+                               "The files are in the order of the input (do a Refresh if you sorted the input),\n"+
+                               "This matters for the &count; and &rank; keywords.";
 
    this.outputSummaryLabel = new Label( this );
    this.outputSummaryLabel.textAlignment = TextAlign_Left|TextAlign_VertCenter;
