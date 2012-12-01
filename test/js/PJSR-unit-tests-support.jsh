@@ -13,7 +13,11 @@
 // Test results (a property for each test named as the test function and with the result as a String, PT_TEST_OK if OK
 var pT_testResults={};
 
+var pT_replaceAmpsRegExp = new RegExp('&', 'g');
 
+function pT_replaceAmps (txt) {
+  return txt.replace(FFM_replaceAmpsRegExp,'&amp;');
+}
 
 // List all test results
 function pT_showTestResults() {
@@ -26,10 +30,10 @@ function pT_showTestResults() {
       if (pT_testResults.hasOwnProperty(t)) {
          var result = pT_testResults[t];
          if (result === PT_TEST_OK) {
-            Console.writeln("    ", t, ": ", result);
+            Console.writeln("    ", t, ": ", pT_replaceAmps(result));
             successes += 1;
          } else {
-            Console.writeln(" ** ", t, ": ", result);
+            Console.writeln(" ** ", t, ": ", pT_replaceAmps(result));
             failures += 1;
          }
       }
@@ -55,7 +59,7 @@ function pT_executeTests(tests) {
          } catch (e) {
             elapsedTime = Date.now().valueOf() - startTime;
             pT_testFailed(f,"Exception: " + e);
-            Console.writeln("** Test failed: " + f + " after " + elapsedTime + " ms because: ", e);
+            Console.writeln("** Test failed: " + f + " after " + elapsedTime + " ms because: ", pT_replaceAmps(e.toString()));
          }
       }
    };

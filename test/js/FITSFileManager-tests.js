@@ -49,40 +49,148 @@ var ffM_allTests = {
 
    // ---------------------------------------------------------------------------------------------------------
    // Test of converter
+   // Note that converter first test of the MATCH (anyhwere) of the regexp,
+   // then replace by the conversion result, doing pattern replacement ON THE CONVERSION RESULT
+   // not on the string received
    // ---------------------------------------------------------------------------------------------------------
    testConverter_empty: function () {
       var c = ffM_LookupConverter.makeLookupConverter([]);
-      pT_assertEquals("anything",c.convert("anything"));
+      pT_assertNull(c.convert("thereIsNoConversionDefined"));
    },
-   testConverter_one: function () {
-      var c = ffM_LookupConverter.makeLookupConverter(
-         [[/abc/, "toto"]]);
-      pT_assertEquals("anything",c.convert("anything"));
-      pT_assertEquals("toto",c.convert("abc"));
+   testConverter_single_conversion: function () {
+      var c = ffM_LookupConverter.makeLookupConverter([
+            [ /abc/, "matched"]
+         ]);
+      pT_assertNull(c.convert("nomatch"));
+      pT_assertEquals("matched",c.convert("abc"));
    },
-   testConverter_second: function () {
-      var c = ffM_LookupConverter.makeLookupConverter(
-            [[/abc/,  "toto"],
-            [ /def/, "titi" ]]);
-      pT_assertEquals("anything",c.convert("anything"));
-      pT_assertEquals("titi",c.convert("def"));
+   testConverter_valid_second_conversion: function () {
+      var c = ffM_LookupConverter.makeLookupConverter([
+            [ /first/, "match1"],
+            [ /second/, "match2" ],
+         ]);
+      pT_assertNull(c.convert("nomatch"));
+      pT_assertEquals("match2",c.convert("second"));
+      pT_assertEquals("match1",c.convert("first"));
    },
-   testConverter_backreference: function () {
-      var c = ffM_LookupConverter.makeLookupConverter(
-            [[ /abc/, "toto"],
-            [/(def)/,  "ti$1ti"]]);
-      pT_assertEquals("anything",c.convert("anything"));
-      pT_assertEquals("tidefti",c.convert("def"));
+   testConverter_valid_last_conversion: function () {
+      var c = ffM_LookupConverter.makeLookupConverter([
+            [ /first/,  "match1"],
+            [ /second/, "match2" ],
+            [ /third/,  "match3" ]
+         ]);
+      pT_assertNull(c.convert("nomatch"));
+      pT_assertEquals("match3",c.convert("third"));
+      pT_assertEquals("match2",c.convert("second"));
+      pT_assertEquals("match1",c.convert("first"));
    },
-   testConverter_towOfThem: function () {
-      var c1 = ffM_LookupConverter.makeLookupConverter(
-            [[ /abc/,  "toto"],
-            [ /(def)/,  "ti$1ti"]]);
-      var c2 = ffM_LookupConverter.makeLookupConverter([[ /123/, "NMB"]]);
-      pT_assertEquals("123",c1.convert("123"));
+   testConverter_detect_partial: function () {
+      var c = ffM_LookupConverter.makeLookupConverter([
+            [ /TEXT/, "matched"]
+         ]);
+      pT_assertNull(c.convert("nomatch"));
+      pT_assertEquals("matched",c.convert("aTEXTinside"));
+   },
+   testConverter_obey_anchored: function () {
+      var c = ffM_LookupConverter.makeLookupConverter([
+            [ /^TEXT/, "matched"]
+         ]);
+      pT_assertNull(c.convert("aTEXTinside"));
+   },
+   testConverter_obey_ignore_case: function () {
+      var c = ffM_LookupConverter.makeLookupConverter([
+            [ /TEXT/i, "Matched"]
+         ]);
+         pT_assertEquals("Matched",c.convert("isText"));
+         pT_assertEquals("Matched",c.convert("isTEXT"));
+         pT_assertEquals("Matched",c.convert("is-text"));
+   },
+
+   // Last chance handler
+   testConverter_sourceGroupReference_match_any_char: function () {
+      // This case &0; is optimized
+      var c = ffM_LookupConverter.makeLookupConverter([
+            [ /TEXT/, "specificMatch"],
+            [ /./, "&0;"] // Match any character
+         ]);
+      pT_assertEquals("allchars",c.convert("allchars"));
+      pT_assertEquals("specificMatch",c.convert("aTEXT"));
+   },
+   testConverter_sourceGroupReference_match_any: function () {
+      // This case &0; is optimized
+      var c = ffM_LookupConverter.makeLookupConverter([
+            [ /TEXT/, "specificMatch"],
+            [ /.*/, "&0;" ]
+         ]);
+      pT_assertEquals("allchars",c.convert("allchars"));
+      pT_assertEquals("specificMatch",c.convert("aTEXT"));
+   },
+
+   testConverter_sourceGroupReference_whole_inside: function () {
+      var c = ffM_LookupConverter.makeLookupConverter([
+            [ /.*/, "_&0;/"]
+         ]);
+      pT_assertEquals("_red/",c.convert("red"));
+   },
+   // Not clear if it should do it
+   testConverter_sourceGroupReference_convert_lower_case: function () {
+      var c = ffM_LookupConverter.makeLookupConverter([
+            [ /.*/, "&0;"]
+         ]);
+      pT_assertEquals("lowerupper",c.convert("lowerUPPER"));
+   },
+
+   testConverter_sourceGroupReference_subgroup: function () {
+      var c = ffM_LookupConverter.makeLookupConverter([
+            [ /TEXT/, "specificMatch"],
+            [ /filter-(.*)/, "_&1;/"]
+         ]);
+      pT_assertEquals("specificMatch",c.convert("TEXT"));
+      pT_assertEquals("_red/",c.convert("filter-red"));
+   },
+   testConverter_multiple_back_references: function () {
+      var c = ffM_LookupConverter.makeLookupConverter([
+            [ /FIRST/, "&0;"],
+            [ /SECOND/i, "&0;"],
+            [ /THIRD/i, "&0;"],
+         ]);
+      pT_assertNull(c.convert("nomatch"));
+      // Currently back refernce as convert to lower case
+      pT_assertEquals("afirst",c.convert("aFIRST"));
+      pT_assertEquals("thesecond",c.convert("THEsecond"));
+      pT_assertEquals("isthird",c.convert("isThird"));
+      pT_assertNull(c.convert("nomatchagain"));
+   },
+   testConverter_sourceGroupReference_multiple_ref: function () {
+      var c = ffM_LookupConverter.makeLookupConverter([
+            [ /([0-9]+)-filter-([a-z]+)/, "&2;_&1;/"],
+         ]);
+      pT_assertEquals("green_450/",c.convert("450-filter-green"));
+   },
+   testConverter_sourceGroupReference_multiple_ref_and_tests: function () {
+      var c = ffM_LookupConverter.makeLookupConverter([
+            [ /BEFORE/, "specificMatchBefore"],
+            [ /([0-9]+)-filter-([a-z]+)/, "&2;_&1;/"],
+            [ /AFTER/, "specificMatchAfter"],
+            [ /UNUSED/, "unused"],
+         ]);
+      pT_assertEquals("specificMatchBefore",c.convert("BEFORE"));
+      pT_assertEquals("specificMatchAfter",c.convert("AFTER"));
+      pT_assertEquals("red_123/",c.convert("123-filter-red"));
+   },
+   // This may help discover subtle bugs with improepr lexical scoping
+   testConverter_twoOfThem: function () {
+      var c1 = ffM_LookupConverter.makeLookupConverter([
+            [ /abc/,   "toto"],
+            [ /def/,   "ti&0;ti"]
+         ]);
+      var c2 = ffM_LookupConverter.makeLookupConverter([
+            [ /123/, "NUMBER"]
+         ]);
+      pT_assertNull(c1.convert("123"));
       pT_assertEquals("tidefti",c1.convert("def"));
-      pT_assertEquals("abc",c2.convert("abc"));
-      pT_assertEquals("aNMBz",c2.convert("a123z"));
+      pT_assertNull(c2.convert("abc"));
+      pT_assertEquals("NUMBER",c2.convert("hereAnumber:123"));
    },
 
    // ---------------------------------------------------------------------------------------------------------

@@ -120,18 +120,21 @@ function loadSaveFile( sourceFilePath, targetFilePath ) {
 // ------------------------------------------------------------------------------------------------------------------------
 var ffM_LookupConverter = function() {
 
+   var backReferenceRegExp = /&[0-9]+;/;
+   var allBackReferenceNumberRegExp = /&([0-9])+;/g;
+
    var converterPrototype = {
       convert: function convert(unquotedName) {
          if (unquotedName === null) { return null }
-         for (var i=0; i<this.conversionTable.length; i++) {
-            var conversionEntry = this.conversionTable[i];
-            var convertedName = unquotedName.replace(conversionEntry[0],conversionEntry[1]);
-            if (convertedName !== unquotedName) {
-               return convertedName;
+         for (var i=0; i<this.compiledConversionTable.length; i++) {
+            var compiledConversionEntry = this.compiledConversionTable[i];
+            Console.writeln(replaceAmps("TTTTTT " + compiledConversionEntry[0].toString()));
+            if (compiledConversionEntry[0].test(unquotedName)) {
+               return compiledConversionEntry[1](compiledConversionEntry,unquotedName);
             }
          }
-         // TODO Either cleanup or reject name if not accepted especially in list
-         return unquotedName.toLowerCase();
+         // If not recognized, reject (use a . regexp to recognize anything)
+         return null;
      }
    };
 
@@ -142,7 +145,60 @@ var ffM_LookupConverter = function() {
    return {
       makeLookupConverter: function makeLookupConverter (conversionTable) {
          var c = Object.create(converterPrototype);
-         c.conversionTable = conversionTable;
+         // The conversion table is 'compiled' in a form where the first element is
+         // the regular expression (as received) and the second is the method that
+         // does the replacement. Unless a template variable is used in the replacement
+         // variable, the function just copy the string. More complex replacement
+         // can be done, using the source value and matched parts, and possibly formatting
+         // as to lower case.
+         var compiledConversionTable = [];
+         for (var i=0; i<conversionTable.length; i++) {
+            Console.writeln("CCI " + i);
+            var conversionEntry = conversionTable[i];
+            var conversionRegExp = conversionEntry[0];
+            var conversionResultTemplate = conversionEntry[1];
+            var conversionResultFunction;
+            if (conversionResultTemplate==="&0;") {
+               // Assumed frequent case of copying input
+               conversionResultFunction = function(compiledEntry, unquotedName) {
+                  return unquotedName.toLowerCase();
+               }
+            } else if (backReferenceRegExp.test(conversionResultTemplate)) {
+               // There are back refernce, using a replacing function
+               conversionResultFunction = (function(conversionResultTemplate){
+                  return function(compiledEntry, unquotedName) {
+                     // Get the values of the subexpression (before we just tested the presence)
+                     var matchedGroups = compiledEntry[0].exec(unquotedName);
+                     Console.writeln(replaceAmps("*** matchedGroups "+ matchedGroups.length + ": " + matchedGroups.join(",")));
+                     var replaceHandler = (function(match) {
+                        return function(fullString, p1, offset, string) {
+                           Console.writeln (replaceAmps("*** replaceHandler template: " + conversionResultTemplate +", p1 " + p1 + ", offset " + offset + ", '" + string + "'"));
+                           var matchIndex = + p1; // Convert to index
+                           if (matchIndex>= match.length) {
+                              Console.writeln(replaceAmps("* matchIndex LARGE "+ match.length + ", " + matchIndex));
+                              return fullString; // Cannot replace, index too large
+                           } else {
+                              Console.writeln(replaceAmps("* matchIndex "+ match.length + ", " + matchIndex + ": '" + match[matchIndex] + "'"));
+                              return match[matchIndex];
+                           }
+                        }
+                     })(matchedGroups);
+
+                    return conversionResultTemplate.replace(allBackReferenceNumberRegExp,replaceHandler);
+                  }
+               })(conversionResultTemplate);
+
+            } else {
+               // Literal copy of template (no back reference), make sure we reference the value!
+               conversionResultFunction = (function(conversionResultString) {
+                  return function(ignored1, ignored2) {
+                     return conversionResultString;
+                  }
+               })(conversionResultTemplate);
+            }
+            compiledConversionTable.push([conversionRegExp, conversionResultFunction]);
+         }
+         c.compiledConversionTable = compiledConversionTable;
          return c;
       }
    }
@@ -198,7 +254,7 @@ function regExpToString(re) {
    if (re === null) {
       return "";
    } else {
-   // Remove leading and trailing slahes as weel as flag
+   // Remove leading and trailing slahes and trailing flag
       var reString = re.toString();
       //var secondSeparator = reString.lastIndexOf(reString[0]);
       //return  reString.substring(1, secondSeparator);
@@ -219,7 +275,7 @@ var ffM_template = (function() {
   // Extract parts of &var:truepart?falsepart;
   var variableRegExp = /^([^:?]+)(?::([^:?]*))?(?:\?([^:?]*))?/
 
-  // Create a rule that return to parameter literal
+  // Create a rule that return the parameter literal verbatim
   var makeLiteralRule = function(templateErrors,literal){
     // TODO Check that literal does not contains & ( ) ; < > = ! ( ) and % unless formatting is implemented)
     if (/[&\(\);<>=!%*]/.test(literal)) {
@@ -248,37 +304,43 @@ var ffM_template = (function() {
 
 
     // Create the handler for the case ':present'
-    // execResult[3] is the :part
+    // execResult[2] is the text after the colon and before the end or question mark
     if (execResult[2]==='') {
+      // Nothing, we copy the null string, so this is a noop
       onFoundAction = function(expandErrors, variableName, value){
         return ''
       }
       onFoundAction.toString = function(){return "copyLiteral('')"};
     } else if (execResult[2]) {
+      // Something, the 'present' text is copied verbatim
       onFoundAction = function(expandErrors, variableName, value){
-        return execResult[2]; // TODO SHOULD FORMAT  value
+        return execResult[2];
       }
       onFoundAction.toString = function(){return "formatValueAs('"+execResult[2]+"')"};
     } else {
+      // No ':present' part, we copy the source value
       onFoundAction = function(expandErrors, variableName, value){
-        return value;
+        return value; // TODO SHOULD SUPPORT FORMATTING THE value
       }
       onFoundAction.toString = function(){return "copyValue()"};
     }
 
     // Create the handler for the case '?missing'
-    // execResult[3] is the ?part
+    // execResult[3] is the text after the question mark
     if (execResult[3]==='') {
+      // Nothing, an optional value, we copy the null string
       onMissingAction = function(expandErrors){
-        return '';   // Optional value, return emtpy string if missing
+        return '';
       }
       onMissingAction.toString = function(){return "copyLiteral('')"};
     } else if (execResult[3]) {
+      // The 'missing' text is copied verbatim
       onMissingAction = function(expandErrors){
         return execResult[3]; // There should be no format
       }
       onMissingAction.toString = function(){return "copyLiteral('"+execResult[2]+"')"};
     } else {
+      // No ?missing' part, we cannot generate the template in case of missing value
       onMissingAction = function(expandErrors, variableName){
          expandErrors.push("No value for the variable '" + variableName + "'");
          return '';
