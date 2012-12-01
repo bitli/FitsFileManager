@@ -128,7 +128,6 @@ var ffM_LookupConverter = function() {
          if (unquotedName === null) { return null }
          for (var i=0; i<this.compiledConversionTable.length; i++) {
             var compiledConversionEntry = this.compiledConversionTable[i];
-            Console.writeln(replaceAmps("TTTTTT " + compiledConversionEntry[0].toString()));
             if (compiledConversionEntry[0].test(unquotedName)) {
                return compiledConversionEntry[1](compiledConversionEntry,unquotedName);
             }
@@ -153,7 +152,6 @@ var ffM_LookupConverter = function() {
          // as to lower case.
          var compiledConversionTable = [];
          for (var i=0; i<conversionTable.length; i++) {
-            Console.writeln("CCI " + i);
             var conversionEntry = conversionTable[i];
             var conversionRegExp = conversionEntry[0];
             var conversionResultTemplate = conversionEntry[1];
@@ -169,20 +167,14 @@ var ffM_LookupConverter = function() {
                   return function(compiledEntry, unquotedName) {
                      // Get the values of the subexpression (before we just tested the presence)
                      var matchedGroups = compiledEntry[0].exec(unquotedName);
-                     Console.writeln(replaceAmps("*** matchedGroups "+ matchedGroups.length + ": " + matchedGroups.join(",")));
-                     var replaceHandler = (function(match) {
-                        return function(fullString, p1, offset, string) {
-                           Console.writeln (replaceAmps("*** replaceHandler template: " + conversionResultTemplate +", p1 " + p1 + ", offset " + offset + ", '" + string + "'"));
-                           var matchIndex = + p1; // Convert to index
-                           if (matchIndex>= match.length) {
-                              Console.writeln(replaceAmps("* matchIndex LARGE "+ match.length + ", " + matchIndex));
-                              return fullString; // Cannot replace, index too large
-                           } else {
-                              Console.writeln(replaceAmps("* matchIndex "+ match.length + ", " + matchIndex + ": '" + match[matchIndex] + "'"));
-                              return match[matchIndex];
-                           }
+                     var replaceHandler = function(fullString, p1, offset, string) {
+                        var matchIndex = + p1; // Convert to index
+                        if (matchIndex>= matchedGroups.length) {
+                           return fullString; // Cannot replace, index too large
+                        } else {
+                           return matchedGroups[matchIndex];
                         }
-                     })(matchedGroups);
+                     };
 
                     return conversionResultTemplate.replace(allBackReferenceNumberRegExp,replaceHandler);
                   }
@@ -207,43 +199,31 @@ var ffM_LookupConverter = function() {
 
 
 var filterConversions = [
-      [/.*green.*/i, 'green'],
-      [/.*red.*/i, 'red'],
-      [/.*blue.*/i, 'blue'],
-      [/.*clear.*/i, 'clear'],
-      [/.*luminance.*/i, 'luminance'],
+      [/green/i, 'green'],
+      [/red/i, 'red'],
+      [/blue/i, 'blue'],
+      [/clear/i, 'clear'],
+      [/luminance/i, 'luminance'],
+      [/.*/i, '&0;'],
 ];
+var filterConverter = ffM_LookupConverter.makeLookupConverter(filterConversions);
 
 function convertFilter(unquotedName) {
-   if (unquotedName === null) { return null}
-   for (var i=0; i<filterConversions.length; i++) {
-      var filterName = unquotedName.replace(filterConversions[i][0],filterConversions[i][1]);
-      if (filterName !== unquotedName) {
-         return filterName;
-      }
-   }
-   // TODO Either cleanup or reject name if not accepted especially in list
-   return unquotedName.toLowerCase();
+   return filterConverter.convert(unquotedName);
 }
 
 var typeConversions = [
-      [/.*flat.*/i, 'flat'],
-      [/.*bias.*/i, 'bias'],
-      [/.*offset.*/i, 'bias'],
-      [/.*dark.*/i, 'dark'],
-      [/.*light.*/i, 'light'],
-      [/.*science.*/i, 'light'],
+      [/flat/i, 'flat'],
+      [/bias/i, 'bias'],
+      [/offset/i, 'bias'],
+      [/dark/i, 'dark'],
+      [/light/i, 'light'],
+      [/science/i, 'light'],
+      [/.*/i, '&0;'],
 ];
+var typeConverter = ffM_LookupConverter.makeLookupConverter(typeConversions);
 function convertType(unquotedName) {
-   if (unquotedName === null) { return null}
-   for (var i=0; i<typeConversions.length; i++) {
-      var typeName = unquotedName.replace(typeConversions[i][0],typeConversions[i][1]);
-      if (typeName !== unquotedName) {
-         return typeName;
-      }
-   }
-   // TODO Either cleanup or reject name if not accepted especially in list
-   return unquotedName.toLowerCase();
+   return typeConverter.convert(unquotedName);
 }
 
 // ------------------------------------------------------------------------------------------------------------------------

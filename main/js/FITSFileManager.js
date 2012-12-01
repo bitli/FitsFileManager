@@ -131,6 +131,7 @@ function debug(str) {
 //     Accept FITS keywords as variables, clean the value result
 //     Removed the &object; variable as this can now be done with &OBJECT;
 //     Added selection of mapping rules
+//     Reworked conversion rules for filters and types
 //     Enhance unquoting of string (respect FITS standard)
 //     Additional tests
 

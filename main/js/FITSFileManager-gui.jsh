@@ -805,8 +805,9 @@ function MainDialog(engine, guiParameters) {
    var typeConversion_GroupBox = new GroupBox(this);
 
    typeConversion_GroupBox.title = "Remapping of IMAGETYP ";
-   typeConversion_GroupBox.toolTip = "The value of the IMAGETYP keywords are tested with each regular expression in turn,\n" +
-           "the result is the first match or the original value if none matched.";
+   typeConversion_GroupBox.toolTip = "The value of the IMAGETYP keywords are tested with each regular expression in turn (left column),\n" +
+           "at the first match, the corresponding value (right column) is returned as the synthetic variable &type;.\n" +
+           "The variables &0;, &1; ... may be used to insert the matching groups of the regular expression.";
 
    var typeConversion_TreeBox = new TreeBox(typeConversion_GroupBox);
    typeConversion_TreeBox.rootDecoration = false;
@@ -823,8 +824,9 @@ function MainDialog(engine, guiParameters) {
    // Conversion of filter names
    var filterConversion_GroupBox = new GroupBox(this);
    filterConversion_GroupBox.title = "Remapping of FILTER";
-   filterConversion_GroupBox.toolTip = "The value of the FILTER keywords are tested with each regular expression in turn,\n" +
-           "the result is the first match or the original value if none matched.";
+   filterConversion_GroupBox.toolTip = "The value of the FILTER keywords are tested with each regular expression in turn (left column),\n" +
+           "at the first match, the corresponding value (right column) is returned as the synthetic variable &filter;.\n" +
+           "The variables &0;, &1; ... may be used to insert the matching groups of the regular expression.";
 
    var filterConversion_TreeBox = new TreeBox(filterConversion_GroupBox);
    filterConversion_TreeBox.rootDecoration = false;
@@ -1359,7 +1361,13 @@ function MainDialog(engine, guiParameters) {
                } else {
                   formattedValue = ffM_unquote(key.value);
                }
+               try {
                node.setText(colOffset + indexOfKey, formattedValue);
+               } catch(error) {
+                  Console.writeln("**** E: " + error + " - " + colOffset + "," + indexOfKey + ", '" + replaceAmps(formattedValue) +"'");
+                  Console.writeln("**** " + typeof  colOffset + "," + typeof indexOfKey );
+                  Console.flush();
+               }
             }
          }
       }
