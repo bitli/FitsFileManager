@@ -2,22 +2,25 @@
 
 // FITSFileManager-fits-tests
 
-
 // This file is part of FITSFileManager, see copyrigh in FITSFileManager.js
+
+
+// Test the FITS related functionality of FITSFileManager,
+// Can be run as a script in the development environment of FITSFileManager.
+
 
 
 #include "PJSR-unit-tests-support.jsh"
 
 // Tracing - define DEBUG if you define any other DEBUG_xxx
 #define DEBUG
-//#define DEBUG_EVENTS
 //#define DEBUG_SHOW_FITS
 //#define DEBUG_FITS
-//#define DEBUG_VARS
 
 
-#define VERSION "0.5-tests"
+#define VERSION "0.8-tests"
 
+// Unit testing, refrain to include other files
 #include "../../main/js/FITSFileManager-fits.jsh"
 
 
@@ -29,33 +32,66 @@
 
 var ffM_allTests = {
 
-   // --- Validate some assumption on how FITSKeyword works
+   // --- Validate some assumption on how PJSR FITSKeyword works,
+   //     as some code may depend on it.
 
-   // Creation from the values, format, no trim() by default
-   test_ffM_fkt_1: function() {
+   // Creation from the parameters, the 'value' and toString are litteral images of the input strings,
+   // even for String that looks like number
+   test_ffM_fkt_create_2_params: function() {
       pT_assertEquals("{name,value,comment}", new FITSKeyword("name","value","comment").toString());
    },
-   test_ffM_fkt_2: function() {
+   test_ffM_fkt_create_3_params: function() {
       pT_assertEquals("{name,value,}", new FITSKeyword("name","value").toString());
    },
-   test_ffM_fkt_must_be_string: function() {
+   test_ffM_fkt_create_string_value_not_trimmed: function() {
       pT_assertEquals("{name, 123 ,}", new FITSKeyword("name"," 123 ").toString());
    },
-   test_ffM_fkt_does_not_trim: function() {
+   test_ffM_fkt_create_string_value_not_unquoted: function() {
+      pT_assertEquals("{name,'quoted',}", new FITSKeyword("name","'quoted'").toString());
+   },
+   test_ffM_fkt_create_no_value_trimmed: function() {
       pT_assertEquals("{  name  ,  value  ,  comment  }", new FITSKeyword("  name  ", "  value  ","  comment  ").toString());
    },
 
-   // Trim
-   test_ffM_fkt_trim: function() {
+   // Check behavior of trim() - does no unquote, trim both leading and trailing
+   test_ffM_fkt_trim_unquoted: function() {
       var kw = new FITSKeyword("  name  ", "  value  ","  comment  ");
       kw.trim(); // Not a function
       pT_assertEquals("{name,value,comment}", kw.toString());
    },
-   test_ffM_fkt_stripped: function() {
+   test_ffM_fkt_trim_quoted: function() {
+      var kw = new FITSKeyword("  name  ", "'  quoted  '","  comment  ");
+      kw.trim(); // Not a functio
+      pT_assertEquals("{name,'  quoted  ',comment}", kw.toString());
+   },
+
+   // Check behavior of strip - removes quotes BUT ALSO trim leading space and does not handle internal quotes
+   // (both is a problem, if the files are read like this)
+   test_ffM_fkt_stripped_unquoted: function() {
       // Trim the value
       pT_assertEquals("aha", new FITSKeyword("name", " aha ").strippedValue);
    },
-   // Test types
+   test_ffM_fkt_stripped_quoted: function() {
+      // Trim the value
+      pT_assertEquals("quoted", new FITSKeyword("name", "'  quoted  '").strippedValue);
+   },
+   test_ffM_fkt_stripped_quoted_inside: function() {
+      // Trim the value
+      pT_assertEquals("quot''ed", new FITSKeyword("name", "'  quot''ed  '").strippedValue);
+   },
+   test_ffM_fkt_stripped_numeric: function() {
+      // Trim the value
+      pT_assertEquals("123", new FITSKeyword("name", "123").strippedValue);
+      pT_assertEquals("string", typeof (new FITSKeyword("name", "123").strippedValue));
+   },
+   test_ffM_fkt_stripped_boolean: function() {
+      // Trim the value
+      pT_assertEquals("T", new FITSKeyword("name", "T").strippedValue);
+   },
+
+
+
+   // Test type recognition
    test_ffM_fkt_is_not_numeric: function() {
       pT_assertTrue(new FITSKeyword("name", " 12.5").isNumeric);
    },
@@ -74,12 +110,12 @@ var ffM_allTests = {
       pT_assertFalse(new FITSKeyword("name"," ").isNull);
    },
    test_ffM_fkt_is_blank_trimmed: function() {
-      // trimmed space is null
+      // trimmed space is null - this is a problem
       var kw = new FITSKeyword("name"," ");
       kw.trim();
       pT_assertTrue(kw.isNull);
    },
-   // Boolean is FITS T,F (trimmed) not true/false or empty !
+   // Boolean is FITS T,F (trimmed) not the Javascript true/false values or empty !
    test_ffM_fkt_is_boolean_T: function() {
       pT_assertTrue(new FITSKeyword("name","T").isBoolean);
    },
@@ -104,29 +140,11 @@ var ffM_allTests = {
    test_ffM_fkt_numeric: function() {
       pT_assertEquals(12.5, new FITSKeyword("name", " 12.5").numericValue);
    },
-   // Non numeric value show as 0, but do not have the isNumeric
+   // Non numeric value show as 0, but do have isNumeric false
    test_ffM_fkt_boolean: function() {
-      pT_assertEquals(0, new FITSKeyword("name", " T ").numericValue);
+      pT_assertEquals(0, new FITSKeyword("name", "T").numericValue);
    },
 
-   // Quotes in strings, strippedValue also remove quotes
-   test_ffM_fkt_quotes: function() {
-      pT_assertEquals("' quoted '", new FITSKeyword("name'", "' quoted '").value);
-   },
-   test_ffM_fkt_quotes2: function() {
-      // Strip external quotes and trim
-      pT_assertEquals("quoted", new FITSKeyword("name", "' quoted '").strippedValue);
-   },
-   test_ffM_fkt_quotes3: function() {
-      // Does not strip internal quotes
-      pT_assertEquals("quote''d", new FITSKeyword("name", "' quote''d '").strippedValue);
-   },
-   test_ffM_fkt_quotes4: function() {
-      // trim does not strip
-      var kw = new FITSKeyword("name", "' quoted '");
-      kw.trim();
-      pT_assertEquals("' quoted '", kw.value);
-   },
 
    // Test loading keywords from file by PI
    test_ffM_compare_files_simple: function() {
@@ -140,10 +158,55 @@ var ffM_allTests = {
    },
 
 
-   // Test the ffm_keywordsOfFile.fitsKeywords
+   // Test of ffM_unquote
+   test_ffM_unquote_null : function() {
+      pT_assertNull(ffM_unquote(null));
+   },
+   test_ffM_unquote_number : function() {
+      pT_assertEquals("1234",ffM_unquote("1234"));
+   },
+   test_ffM_unquote_true : function() {
+      pT_assertEquals("T",ffM_unquote("T"));
+   },
+   test_ffM_unquote_non_fits_string : function() {
+      // This should not occurs
+      pT_assertEquals(" abc ",ffM_unquote(" abc "));
+   },
+   test_ffM_unquote_non_trimmed_string : function() {
+      // This should not occurs
+      pT_assertEquals(" ' abc ' ",ffM_unquote(" ' abc ' "));
+   },
+   // Various case of unuqoting
+   test_ffM_unquoted_string_simple : function() {
+      pT_assertEquals("abc",ffM_unquote("'abc'"));
+   },
+   test_ffM_unquoted_string_trim_tail : function() {
+      pT_assertEquals("  abc",ffM_unquote("'  abc   '"));
+   },
+   test_ffM_unquoted_string_quote_1 : function() {
+      pT_assertEquals("ab'c",ffM_unquote("'ab''c'"));
+   },
+   test_ffM_unquoted_string_quote_2 : function() {
+      pT_assertEquals("ab''c",ffM_unquote("'ab''''c'"));
+   },
+   test_ffM_unquoted_string_quote_start_end : function() {
+      pT_assertEquals("'abc'",ffM_unquote("'''abc''"));
+   },
+   test_ffM_unquoted_string_space_only : function() {
+      pT_assertEquals("' '",ffM_unquote("'    '"));
+   },
+   test_ffM_unquoted_string_one_space : function() {
+      pT_assertEquals("' '",ffM_unquote("' '"));
+   },
+   test_ffM_unquoted_string_empty_string : function() {
+      pT_assertEquals("''",ffM_unquote("''"));
+   },
+
+
+   // Test the ffM_keywordsOfFile.fitsKeywords
 
    test_ffM_load_fits: function() {
-      var attrs = ffm_keywordsOfFile.makeImageKeywordsfromFile("C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/m31_Green_0028.fit");
+      var attrs = ffM_keywordsOfFile.makeImageKeywordsfromFile("C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/m31_Green_0028.fit");
       pT_assertEquals(26, attrs.fitsKeywordsList.length);
       // Only some are keywords with value
       pT_assertEquals(14, Object.getOwnPropertyNames(attrs.fitsKeywordsMap).length);
@@ -156,7 +219,7 @@ var ffM_allTests = {
 
    test_ffM_load_bad_fits: function() {
       try {
-         ffm_keywordsOfFile.makeImageKeywordsfromFile("C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/badfitsmissingend.fit");
+         ffM_keywordsOfFile.makeImageKeywordsfromFile("C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/badfitsmissingend.fit");
       } catch (error) {
          pT_assertEquals(0,error.toString().indexOf("Error: Unexpected end of file reading FITS keywords"));
          return;
@@ -164,10 +227,10 @@ var ffM_allTests = {
       throw "Bad fits not detected";
    },
 
-   // Test the ffm_keywordsOfFile.keywordSet
+   // Test the ffM_keywordsOfFile.keywordSet
    test_ffM_keywordsSet: function() {
-      var kwof = ffm_keywordsOfFile.makeImageKeywordsfromFile("C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/m31_Green_0028.fit");
-      var kws = ffm_keywordsOfFile.makeKeywordsSet();
+      var kwof = ffM_keywordsOfFile.makeImageKeywordsfromFile("C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/m31_Green_0028.fit");
+      var kws = ffM_keywordsOfFile.makeKeywordsSet();
       kws.putAllImageKeywords(kwof);
       pT_assertEquals(14, Object.keys(kws.allValueKeywordNames).length);
       pT_assertEquals(14, kws.allValueKeywordNameList.length);

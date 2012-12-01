@@ -27,14 +27,6 @@ function replaceAmps (txt) {
 
 
 
-// Remove quotes and trim
-function unQuote (s) {
-   var t = s.trim();
-   if (t.length>0 && t[0]==="'" && t[t.length-1]==="'") {
-      return t.substring(1,t.length-1).trim();
-   }
-   return t;
-}
 
 
 // ------------------------------------------------------------------------------------------------------------------------
@@ -154,17 +146,15 @@ var filterConversions = [
       [/.*luminance.*/i, 'luminance'],
 ];
 
-function convertFilter(rawFilterName) {
-   if (rawFilterName === null) { return null}
-   var unquotedName = unQuote(rawFilterName);
+function convertFilter(unquotedName) {
+   if (unquotedName === null) { return null}
    for (var i=0; i<filterConversions.length; i++) {
       var filterName = unquotedName.replace(filterConversions[i][0],filterConversions[i][1]);
       if (filterName !== unquotedName) {
          return filterName;
       }
    }
-   // TODO Remove internal spaces etc...
-   // Maybe use batch preprocssing: filter.replace( /[^a-zA-Z0-9\+\-_]/g, '_' ).replace( /_+/g, '_' );
+   // TODO Either cleanup or reject name if not accepted especially in list
    return unquotedName.toLowerCase();
 }
 
@@ -176,17 +166,15 @@ var typeConversions = [
       [/.*light.*/i, 'light'],
       [/.*science.*/i, 'light'],
 ];
-function convertType(rawTypeName) {
-   if (rawTypeName === null) { return null}
-   var unquotedName = unQuote(rawTypeName);
+function convertType(unquotedName) {
+   if (unquotedName === null) { return null}
    for (var i=0; i<typeConversions.length; i++) {
       var typeName = unquotedName.replace(typeConversions[i][0],typeConversions[i][1]);
       if (typeName !== unquotedName) {
          return typeName;
       }
    }
-   // TODO Remove internal spaces etc...
-   // Maybe use batch preprocssing: filter.replace( /[^a-zA-Z0-9\+\-_]/g, '_' ).replace( /_+/g, '_' );
+   // TODO Either cleanup or reject name if not accepted especially in list
    return unquotedName.toLowerCase();
 }
 
@@ -416,7 +404,7 @@ function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords)
    variables['filename'] = inputFileName;
 
    //   &filter:     The filter name from FILTER as lower case trimmed normalized name.
-   var filter = imageKeywords.getStrippedValue(remappedFITSkeywords['FILTER']);
+   var filter = imageKeywords.getUnquotedValue(remappedFITSkeywords['FILTER']);
    variables['filter'] = convertFilter(filter);
 
    //   &temp;       The SET-TEMP temperature in C as an integer
@@ -429,7 +417,7 @@ function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords)
    }
 
    //   &type:       The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'
-   var imageType = imageKeywords.getStrippedValue(remappedFITSkeywords['IMAGETYP']);
+   var imageType = imageKeywords.getUnquotedValue(remappedFITSkeywords['IMAGETYP']);
    variables['type'] = convertType(imageType);
 
 
@@ -457,22 +445,28 @@ function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords)
 
 
 // Remove special characters from FITS key values to avoid bizare or illegal file names
-// Leading and trailing invalid characters are removed
+// Leading and trailing blank and invalid characters are removed
 // Embedded invalid characters are collapsed to one underline.
-// An 'space' value will return null, considering the keyword as 'missing' when used in templates.
+// An all blank value will return null, considering the keyword as 'missing' when used in templates,
+// this helps supporting files created with a program like SIPS that write keywords as OBJECT even
+// when it is all blank.
+// Parameter
+//    value: an unquoted string (without the FITS quotes, embedded quote will be handled as special characters)
+// Return:
+//    null if it is an all space value, the cleaned up string
 function filterFITSValue(value) {
    if (value === null) {
       return null;
    }
-   var name = unQuote(value);
+   var name = value.trim();
    var result = '';
    var i = 0;
    var hadValidChar = false;
    var mustAddUnderline = false;
-   while (i<name.length) {
+   while (i<value.length) {
      var c = name.charAt(i);
-     // TODO Adapt the list of characters as needed (for example add space, dash, ...)
-     if ( ("0" <= c && c <= "9") || ("a" <= c && c <= "z") || ("A" <= c && c <= "Z") || (c === '-') || (c === '.') ) {
+     // TODO Make the list of special characters configurable
+     if ( ("0" <= c && c <= "9") || ("a" <= c && c <= "z") || ("A" <= c && c <= "Z") || (c === '-') || (c === '.') || (c === '_') ) {
         if (mustAddUnderline) {
            result = result + '_';
            mustAddUnderline = false;

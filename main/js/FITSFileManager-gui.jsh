@@ -869,7 +869,7 @@ function MainDialog(engine, guiParameters) {
       // rebuild all
       for (var i=0; i<this.dialog.engine.inputFiles.length; i++) {
          var fileName = this.dialog.engine.inputFiles[i];
-         var imageKeywords  = ffm_keywordsOfFile.makeImageKeywordsfromFile(fileName);
+         var imageKeywords  = ffM_keywordsOfFile.makeImageKeywordsfromFile(fileName);
          this.dialog.engine.inputFITSKeywords[i] = imageKeywords;
          // Create the synthethic variables using the desired rules
          var variables = makeSynthethicVariables(fileName, imageKeywords, guiParameters.remappedFITSkeywords);
@@ -1262,7 +1262,7 @@ function MainDialog(engine, guiParameters) {
       this.filesTreeBox.clear();
       this.filesTreeBox.numberOfColumns = 1; // Filename
 
-      this.engine.keywordsSet = ffm_keywordsOfFile.makeKeywordsSet(); // clear
+      this.engine.keywordsSet = ffM_keywordsOfFile.makeKeywordsSet(); // clear
 
       // Add the synthetic keys columns
       for (var iSynthKey = 0; iSynthKey<syntheticVariableNames.length; iSynthKey++) {
@@ -1354,7 +1354,10 @@ function MainDialog(engine, guiParameters) {
                      formattedValue = n.toString();
                   } else {
                      // TODO Supress possible leading zero of floating (leave 1 before decimal point)
+                     formattedValue = key.strippedValue;
                   }
+               } else {
+                  formattedValue = ffM_unquote(key.value);
                }
                node.setText(colOffset + indexOfKey, formattedValue);
             }

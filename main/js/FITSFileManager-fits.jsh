@@ -144,13 +144,31 @@ var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
 };
 
 
+function ffM_unquote(s) {
+   if (s===null) { return null;} // Could this happen ?
+   if (s.length > 0 && s.charCodeAt(0) === 39 && s.charCodeAt(s.length-1) === 39) {
+      // Unquoted string
+      s = s.substring(1,s.length-1);
+      // Replace double quotes inside by single quotes
+      s = s.replace("''","'","g");
+      // Trim trailing spaces only, but keep at least one space
+      var lastSpaceIndex = s.length-1;
+      while (lastSpaceIndex > 0 && s.charCodeAt(lastSpaceIndex)===32) { // Space
+         lastSpaceIndex--;
+      }
+      if (lastSpaceIndex !== s.length-1) {
+         s = s.substring(0,lastSpaceIndex+1);
+      }
+   }
+    return s;
+}
 
 
 // TODO Use var hasOwnProperty = Object.prototype.hasOwnProperty
 
 // ------------------------------------------------------------------------------------------------------------------------
 // Global object to contains the FITS utility methods
-var ffm_keywordsOfFile = (function() {
+var ffM_keywordsOfFile = (function() {
 
 
    // ------------------------------------------------------------------------------------------------------------------------
@@ -186,7 +204,7 @@ var ffm_keywordsOfFile = (function() {
          }
       },
 
-      // -- return the FITS keyword by name (if keyword has a value), return null otherwise
+      // -- return the FITSKeyword by name (if keyword has a value), return null otherwise
       getValueKeyword: function getValueKeyword(name) {
          var imageKeywords = this;
          if (imageKeywords.fitsKeywordsMap.hasOwnProperty(name)) {
@@ -195,6 +213,7 @@ var ffm_keywordsOfFile = (function() {
             return null;
          }
       },
+      // Reurn the value (that is the raw String, as read) of a FITSKeyword
       getValue: function getValue(name) {
          var kw = this.getValueKeyword(name);
          if (kw === null) {
@@ -203,6 +222,7 @@ var ffm_keywordsOfFile = (function() {
             return kw.value;
          }
       },
+      // Return the value as a stripped from outside quotes and trimmed (the PI way)
       getStrippedValue: function getStrippedValue(name) {
          var kw = this.getValueKeyword(name);
          if (kw === null) {
@@ -211,6 +231,21 @@ var ffm_keywordsOfFile = (function() {
             return kw.strippedValue;
          }
       },
+      // Return the string as a string, unuoted if it was a string, following the FITS rules
+      // (remove outside quote and inside double quote, trim trailing spaces but not leading spaces)
+      // Note that it is not possible to distinguish a string value from a boolean or numeric value with
+      // the same representation (both '123' and 123 will result in the same string)
+      // The unquoted value is suitable for display
+      // This assume that the value was trimmed (the first character must be the quote for a string value)
+      getUnquotedValue: function getUnquotedValue(name) {
+         var kw = this.getValueKeyword(name);
+         if (kw === null) {
+            return null;
+         } else {
+            return ffM_unquote(kw.value);
+         }
+      },
+
 
       // -- return the name of all value key words
       getNamesOfValueKeywords: function getNamesOfValueKeywords() {
