@@ -37,9 +37,6 @@ var ffM_rv = function(obj) {
    });
 }
 
-// TODO Init templateErrors at each call using it to make them independent,
-// Check it after the tests
-var templateErrors = [];
 
 var ffM_allTests = {
    // Test our mock variable resolver
@@ -54,38 +51,37 @@ var ffM_allTests = {
    // Test of converter
    // ---------------------------------------------------------------------------------------------------------
    testConverter_empty: function () {
-      var c = new FFM_Converter();
-      pT_assertNull(c.convert("anything"));
+      var c = ffM_LookupConverter.makeLookupConverter([]);
+      pT_assertEquals("anything",c.convert("anything"));
    },
    testConverter_one: function () {
-      var c = new FFM_Converter();
-      c.conversions = [{regexp: /abc/, replacement: "toto"}];
-      pT_assertNull(c.convert("anything"));
+      var c = ffM_LookupConverter.makeLookupConverter(
+         [[/abc/, "toto"]]);
+      pT_assertEquals("anything",c.convert("anything"));
       pT_assertEquals("toto",c.convert("abc"));
    },
    testConverter_second: function () {
-      var c = new FFM_Converter();
-      c.conversions = [{regexp: /abc/, replacement: "toto"},
-                       {regexp: /def/, replacement: "titi"}];
-      pT_assertNull(c.convert("anything"));
+      var c = ffM_LookupConverter.makeLookupConverter(
+            [[/abc/,  "toto"],
+            [ /def/, "titi" ]]);
+      pT_assertEquals("anything",c.convert("anything"));
       pT_assertEquals("titi",c.convert("def"));
    },
    testConverter_backreference: function () {
-      var c = new FFM_Converter();
-      c.conversions = [{regexp: /abc/, replacement: "toto"},
-                       {regexp: /(def)/, replacement: "ti$1ti"}];
-      pT_assertNull(c.convert("anything"));
+      var c = ffM_LookupConverter.makeLookupConverter(
+            [[ /abc/, "toto"],
+            [/(def)/,  "ti$1ti"]]);
+      pT_assertEquals("anything",c.convert("anything"));
       pT_assertEquals("tidefti",c.convert("def"));
    },
    testConverter_towOfThem: function () {
-      var c1 = new FFM_Converter();
-      c1.conversions = [{regexp: /abc/, replacement: "toto"},
-                       {regexp: /(def)/, replacement: "ti$1ti"}];
-      var c2 = new FFM_Converter();
-      c2.conversions = [{regexp: /123/, replacement: "NMB"}];
-      pT_assertNull(c1.convert("123"));
+      var c1 = ffM_LookupConverter.makeLookupConverter(
+            [[ /abc/,  "toto"],
+            [ /(def)/,  "ti$1ti"]]);
+      var c2 = ffM_LookupConverter.makeLookupConverter([[ /123/, "NMB"]]);
+      pT_assertEquals("123",c1.convert("123"));
       pT_assertEquals("tidefti",c1.convert("def"));
-      pT_assertNull(c2.convert("abc"));
+      pT_assertEquals("abc",c2.convert("abc"));
       pT_assertEquals("aNMBz",c2.convert("a123z"));
    },
 

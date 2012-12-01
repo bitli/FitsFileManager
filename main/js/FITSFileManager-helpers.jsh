@@ -116,26 +116,38 @@ function loadSaveFile( sourceFilePath, targetFilePath ) {
 
 
 // ------------------------------------------------------------------------------------------------------------------------
-// Conversion support functions
+// Conversion support
 // ------------------------------------------------------------------------------------------------------------------------
-// TODO Avoid global, move conversion rules to gui parameters
+var ffM_LookupConverter = function() {
 
-function FFM_Converter() {
-   // array of {regexp, replacement}
-   this.conversions = [];
-}
-
-FFM_Converter.prototype = {
-   convert: function(sourceString) {
-      for (var i=0; i<this.conversions.length; i++) {
-         if ( this.conversions[i].regexp.test(sourceString)) {
-            return sourceString.replace( this.conversions[i].regexp,  this.conversions[i].replacement);
+   var converterPrototype = {
+      convert: function convert(unquotedName) {
+         if (unquotedName === null) { return null }
+         for (var i=0; i<this.conversionTable.length; i++) {
+            var conversionEntry = this.conversionTable[i];
+            var convertedName = unquotedName.replace(conversionEntry[0],conversionEntry[1]);
+            if (convertedName !== unquotedName) {
+               return convertedName;
+            }
          }
-      }
-      return null;
-    }
+         // TODO Either cleanup or reject name if not accepted especially in list
+         return unquotedName.toLowerCase();
+     }
+   };
 
-}
+   // Create a lookup converter
+   // Parameters:
+   //      conversionTable: Array  of 2 elements array: patter, replacement
+   // Return: A converter object that convert a string according to the rules.
+   return {
+      makeLookupConverter: function makeLookupConverter (conversionTable) {
+         var c = Object.create(converterPrototype);
+         c.conversionTable = conversionTable;
+         return c;
+      }
+   }
+}();
+
 
 
 var filterConversions = [
