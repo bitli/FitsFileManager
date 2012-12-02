@@ -60,6 +60,20 @@ function FFM_Engine(guiParameters) {
       this.filterConverter = ffM_LookupConverter.makeLookupConverter(configuration.filterConversions);
       this.typeConverter = ffM_LookupConverter.makeLookupConverter(configuration.typeConversions);
       this.remappedFITSkeywords = configuration.kwMappingTable;
+
+      // We add default keywords, we do not remove old ones
+      // Set 'is visible' for the list of default keywords
+      var defaultShownKeywords = configuration.defaultShownKeywords;
+      for (var i = 0; i < configuration.defaultShownKeywords.length; ++i) {
+         var name = configuration.defaultShownKeywords[i];
+         this.shownFITSKeyNames[name] = true;
+      }
+      // Currently all synthetic variables are visible by default
+      for (var i = 0; i<syntheticVariableNames.length;i++) {
+         var name = syntheticVariableNames[i];
+         this.shownSyntheticKeyNames[name] = true;
+      }
+
     }
 
 

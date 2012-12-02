@@ -323,15 +323,6 @@ function MainDialog(engine, guiParameters) {
    // -- CompletionDialog Dialog (opened as a child on request, when the requested file operation is completed)
    this.completionDialog = new CompletionDialog( this, engine );
 
-      // Set 'is visible' for the list of default keywords
-      for (var i = 0; i < this.guiParameters.defaultListOfShownFITSKeywords.length; ++i) {
-          var name = this.guiParameters.defaultListOfShownFITSKeywords[i];
-          this.engine.shownFITSKeyNames[name] = true;
-      }
-      for (var i = 0; i<syntheticVariableNames.length;i++) {
-         var name = syntheticVariableNames[i];
-         this.engine.shownSyntheticKeyNames[name] = true;
-      }
 
 
    //----------------------------------------------------------------------------------
@@ -873,7 +864,7 @@ function MainDialog(engine, guiParameters) {
    for (var it = 0; it<mappingList.length; it++) {
       mappingRules_ComboBox.addItem( mappingList[it] +  " - " + ffM_Configuration.getConfigurationByName(mappingList[it]).description);
    }
-   mappingRules_ComboBox.currentItem = guiParameters.kwMappingCurrentIndex;
+   mappingRules_ComboBox.currentItem = guiParameters.currentConfigurationIndex;
 
    mappingRules_ComboBox.onItemSelected = function() {
 #ifdef DEBUG
@@ -882,13 +873,13 @@ function MainDialog(engine, guiParameters) {
        if (this.currentItem >= mappingList.length) {
           return; // Protect against CR in input field
        }
-       guiParameters.kwMappingCurrentIndex = this.currentItem;
+       guiParameters.currentConfigurationIndex = this.currentItem;
        engine.setConfiguration(guiParameters.getCurrentConfiguration());
 
        refreshRemappedFITSkeywordsNames(keywordNames_TreeBox);
        refreshTypeConversions(typeConversion_TreeBox);
        refreshFilterConversions(filterConversion_TreeBox);
-       this.dialog.barConversions.setCollapsedTitle("Remapping of keywords and values - " + ffM_Configuration.configurationList[guiParameters.kwMappingCurrentIndex]);
+       this.dialog.barConversions.setCollapsedTitle("Remapping of keywords and values - " + ffM_Configuration.configurationList[guiParameters.currentConfigurationIndex]);
 
       // If the rules are changed, all variables must be recalculated
       // TODO RECALCULATE VARIABLES
@@ -945,7 +936,7 @@ function MainDialog(engine, guiParameters) {
 
    this.barConversions = new SectionBar( this, true );
    this.barConversions.setTitle( "Remapping of keywords and values" );
-   this.barConversions.setCollapsedTitle("Remapping of keywords and values - " + ffM_Configuration.configurationList[guiParameters.kwMappingCurrentIndex] );
+   this.barConversions.setCollapsedTitle("Remapping of keywords and values - " + ffM_Configuration.configurationList[guiParameters.currentConfigurationIndex] );
    this.barConversions.setSection( this.conversion_GroupBox );
 
    //this.barConversions.toggleSection();

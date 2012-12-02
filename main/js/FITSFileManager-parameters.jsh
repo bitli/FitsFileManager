@@ -28,6 +28,7 @@
 
 // --- List of all synthethic variables and their comments (2 parallel arrays)
 //     All synthethic variables are currently added to the columns of the file TreeBox
+// TODO Should be in the module where they are created
 var syntheticVariableNames = ['type','filter','exposure','temp','binning','night'];
 var syntheticVariableComments = ['Type of image (flat, bias, ...)',
    'Filter (clear, red, ...)',
@@ -35,20 +36,6 @@ var syntheticVariableComments = ['Type of image (flat, bias, ...)',
    'Temperature in C',
    'Binning as 1x1, 2x2, ...',
    'night (experimental)'];
-
-
-
-// TODO - The mapping could manage other parameters
-// The tables below must be coherent with each other, more mapping can be added
-#define KW_MAPPING_DEFAULT_INDEX 0
-
-
-// Default list of FITS keywords to show as columns in the input file TreeBox
-// Can be updated by the user by the FITS table UI interface
-var kwDefaultShownKeywords = [
-   "IMAGETYP","FILTER","OBJECT"
-   //"SET-TEMP","EXPOSURE","IMAGETYP","FILTER","XBINNING","YBINNING","OBJECT"
-];
 
 
 
@@ -127,7 +114,7 @@ var ffM_Configuration = (function() {
    ];
 
 
-   var typeConversions = [
+   var typeConversions_DEFAULT = [
       [/flat/i,     'flat'],
       [/bias/i,     'bias'],
       [/offset/i,   'bias'],
@@ -137,21 +124,46 @@ var ffM_Configuration = (function() {
       [/.*/i,       '&0;'],
    ];
 
+   var typeConversions_CAHA = [
+      [/flat/i,     'flat'],
+      [/bias/i,     'bias'],
+      [/offset/i,   'bias'],
+      [/dark/i,     'dark'],
+      [/light/i,    'light'],
+      [/science/i,  'light'],
+      [/.*/i,       '&0;'],
+   ];
+
+   // List of FITS keywords shown by default (even if not present in any image) in the input files TreeBox
+   var defaultShownKeywords_DEFAULT = [
+      "IMAGETYP","FILTER","OBJECT"
+      //"SET-TEMP","EXPOSURE","IMAGETYP","FILTER","XBINNING","YBINNING","OBJECT"
+   ];
+   var defaultShownKeywords_CAHA = [
+      "IMAGETYP","INSFLNAM","OBJECT"
+      //"SET-TEMP","EXPOSURE","IMAGETYP","FILTER","XBINNING","YBINNING","OBJECT"
+   ];
+
+   // -- Define the named configuration content
    var configuration_DEFAULT = {
      name: "DEFAULT",
      description: "Common and Star Arizona mappings",
      kwMappingTable: kwMappingDefault,
      filterConversions: filterConversions_DEFAULT,
-     typeConversions: typeConversions,
+     typeConversions: typeConversions_DEFAULT,
+     defaultShownKeywords: defaultShownKeywords_DEFAULT,
    };
    var configuration_CAHA = {
      name: "CAHA",
      description: "CAHA mapping",
      kwMappingTable: kwMappingCaha,
      filterConversions: filterConversions_CAHA,
-     typeConversions: typeConversions,
+     typeConversions: typeConversions_CAHA,
+     defaultShownKeywords: defaultShownKeywords_CAHA,
    };
 
+
+   // Private tables (in principles)
    var configurationTable = {};
    var configurationList = [];
 
@@ -203,16 +215,9 @@ function FFM_GUIParameters() {
       this.orderBy = "&rank;" // UNUSED
 
 
-      // Map to remap keywords used to create synthethic keywords to other values
-      this.kwMappingCurrentIndex = KW_MAPPING_DEFAULT_INDEX;
+      // Initialiy the first configuration is the defaukt
+      this.currentConfigurationIndex = 0;
 
-
-      // This is the list of keys shown by default (in addition to the synthethic keywords)
-      // A possibly empty column is created for all these keywords, so that they are always present
-      // in the same order and that the user can immediately see missing or unexpected values.
-      // Keyword inserted when the configuration rules are changed
-      // TODO Should depend on the configuration (for example using remapping)
-      this.defaultListOfShownFITSKeywords = kwDefaultShownKeywords;
 
 
       // Create templates (use defaults if not yet specified), precompile them
@@ -285,7 +290,7 @@ function FFM_GUIParameters() {
       s += "  sourceFileNameRegExp:           " + replaceAmps(regExpToString(this.sourceFileNameRegExp)) + "\n";
       s += "  orderBy:                        " + replaceAmps(this.orderBy) + "\n";
       s += "  groupByTemplate:                " + replaceAmps(this.groupByCompiledTemplate.templateString) + "\n";
-      s += "  kwMappingCurrentIndex:          " + this.kwMappingCurrentIndex + "\n";
+      s += "  currentConfigurationIndex:          " + this.currentConfigurationIndex + "\n";
       return s;
    }
 }
@@ -353,9 +358,9 @@ FFM_GUIParameters.prototype.loadSettings = function() {
             if ( (o = load( "mappingName",          DataType_String )) !== null ) {
                ki = ffM_Configuration.configurationList.indexOf(o);
                if(ki>=0) {
-                  this.kwMappingCurrentIndex = ki;
+                  this.currentConfigurationIndex = ki;
                } else {
-                  Console.writeln("Mapping rules '" + o + "' unknown, using '" + ffM_Configuration.configurationList[this.kwMappingCurrentIndex ] + "'");
+                  Console.writeln("Mapping rules '" + o + "' unknown, using '" + ffM_Configuration.configurationList[this.currentConfigurationIndex ] + "'");
                }
             }
          }
@@ -388,13 +393,13 @@ FFM_GUIParameters.prototype.saveSettings = function()
    save( "sourceFileNameRegExp",       DataType_String, regExpToString(this.sourceFileNameRegExp) );
    save( "orderBy",                    DataType_String, this.orderBy );
    save( "groupByTemplate",            DataType_String, this.groupByCompiledTemplate.templateString );
-   save( "mappingName",                DataType_String, ffM_Configuration.configurationList[this.kwMappingCurrentIndex ]);
+   save( "mappingName",                DataType_String, ffM_Configuration.configurationList[this.currentConfigurationIndex ]);
 
 }
 
 FFM_GUIParameters.prototype.getCurrentConfiguration =
    function getCurrentConfiguration() {
-      return ffM_Configuration.getConfigurationByIndex(this.kwMappingCurrentIndex);
+      return ffM_Configuration.getConfigurationByIndex(this.currentConfigurationIndex);
    };
 
 
