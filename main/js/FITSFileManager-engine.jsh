@@ -29,9 +29,10 @@ function FFM_Engine(guiParameters) {
       this.shownFITSKeyNames = {}; // A FITSKeyWord is shown in the source file table if its name is a key of this object
       this.shownSyntheticKeyNames = {}; // A synthethic variable is shown in the source file table if its name is a key of this object
 
-      // TODO Should use values from parameters instead of globals
-      this.filterConverter = ffM_LookupConverter.makeLookupConverter(filterConversions);
-      this.typeConverter = ffM_LookupConverter.makeLookupConverter(typeConversions);
+      // Will be initialiezd by setConfiguration
+      this.filterConverter = function() {throw "configuration not set - filterConverter"};
+      this.typeConverter =  function() {throw "configuration not set - typeConverter"};
+      this.remappedFITSkeywords = null;
 
       this.resetTarget();
     };
@@ -51,6 +52,15 @@ function FFM_Engine(guiParameters) {
       this.nmbFilesInError = 0;
       this.nmbFilesSkipped = 0;
     };
+
+    this.setConfiguration = function(configuration) {
+#ifdef DEBUG
+      debug("FFM_Engine.setConfiguration - " + configuration.name);
+#endif
+      this.filterConverter = ffM_LookupConverter.makeLookupConverter(configuration.filterConversions);
+      this.typeConverter = ffM_LookupConverter.makeLookupConverter(configuration.typeConversions);
+      this.remappedFITSkeywords = configuration.kwMappingTable;
+    }
 
 
    // -- Add a list of files
@@ -72,9 +82,8 @@ function FFM_Engine(guiParameters) {
             this.inputFiles.push(fileNames[i]);
             this.inputFITSKeywords.push(imageKeywords);
             // Create the synthethic variables using the desired rules
-            Console.writeln("********** " + typeof this.filterConverter);
             var variables = makeSynthethicVariables(fileNames[i], imageKeywords,
-                guiParameters.remappedFITSkeywords,
+                this.remappedFITSkeywords,
                 this.filterConverter, this.typeConverter);
 
             this.inputVariables.push(variables);

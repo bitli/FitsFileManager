@@ -151,7 +151,7 @@ var CompletionDialog_doneLeave= 3;
 
 
 // ------------------------------------------------------------------------------------------------------------------------
-// SectionBar Control from Juan: http://pixinsight.com/forum/index.php?topic=4610.msg32012#msg32012
+// SectionBar Control adapted from Juan: http://pixinsight.com/forum/index.php?topic=4610.msg32012#msg32012
 // This does not work well on Mac, unfortunately
 // ------------------------------------------------------------------------------------------------------------------------
 
@@ -212,6 +212,7 @@ function SectionBar( parent, initialyCollapsed ) {
    this.adjustToContents();
    this.setFixedHeight();
 
+   // -- Private implementation
 
    this.onMousePress = function( x, y, button, buttonState, modifiers )
    {
@@ -266,7 +267,7 @@ function SectionBar( parent, initialyCollapsed ) {
 
 
 
-   // Public interface
+   //---  Public interface
 
    this.setTitle = function( title )
    {
@@ -302,9 +303,9 @@ SectionBar.prototype = new Control;
 
 
 
-// ------------------------------------------------------------------------------------------------------------------------
+// ========================================================================================================================
 // GUI Main Dialog
-// ------------------------------------------------------------------------------------------------------------------------
+// ========================================================================================================================
 
 function MainDialog(engine, guiParameters) {
    this.__base__ = Dialog;
@@ -319,7 +320,7 @@ function MainDialog(engine, guiParameters) {
    this.fitsKeysDialog = new FITSKeysDialog( this, engine );
 
 
-   // -- CompletionDialog Dialog (opened as a child on request)
+   // -- CompletionDialog Dialog (opened as a child on request, when the requested file operation is completed)
    this.completionDialog = new CompletionDialog( this, engine );
 
       // Set 'is visible' for the list of default keywords
@@ -333,7 +334,9 @@ function MainDialog(engine, guiParameters) {
       }
 
 
+   //----------------------------------------------------------------------------------
    // -- HelpLabel
+   //----------------------------------------------------------------------------------
    var helpLabel = new Label( this );
    helpLabel.frameStyle = FrameStyle_Box;
    helpLabel.margin = 4;
@@ -345,7 +348,7 @@ function MainDialog(engine, guiParameters) {
 
 
    //----------------------------------------------------------------------------------
-   // Input file list section
+   //--  Input file list section
    //----------------------------------------------------------------------------------
    this.filesTreeBox = new TreeBox( this );
 
@@ -550,7 +553,7 @@ function MainDialog(engine, guiParameters) {
 
 
    //----------------------------------------------------------------------------------
-   // Rules section
+   // -- Rules section
    //----------------------------------------------------------------------------------
 
    // Target template --------------------------------------------------------------------------------------
@@ -783,10 +786,8 @@ function MainDialog(engine, guiParameters) {
 
 
    //----------------------------------------------------------------------------------
-   // Conversion definition section
+   // -- Conversion definition and mapping rules section
    //----------------------------------------------------------------------------------
-
-
 
    // Keywords to use
    var keywordNames_GroupBox = new GroupBox(this);
@@ -802,16 +803,17 @@ function MainDialog(engine, guiParameters) {
 
    var refreshRemappedFITSkeywordsNames = function (keywordNames_TreeBox) {
       keywordNames_TreeBox.clear();
-      var remappedFITSkeywordsNames = Object.keys(guiParameters.remappedFITSkeywords);
+      var remappedFITSkeywordsNames = Object.keys(engine.remappedFITSkeywords);
       for (var ic=0; ic<remappedFITSkeywordsNames.length; ic++) {
          var node = new TreeBoxNode(keywordNames_TreeBox);
          node.setText( 0, remappedFITSkeywordsNames[ic] );
-         node.setText( 1, guiParameters.remappedFITSkeywords[remappedFITSkeywordsNames[ic]] );
+         node.setText( 1, engine.remappedFITSkeywords[remappedFITSkeywordsNames[ic]] );
          node.checkable = false;
       }
    }
 
    refreshRemappedFITSkeywordsNames(keywordNames_TreeBox);
+
    // Conversion of type names
    var typeConversion_GroupBox = new GroupBox(this);
 
@@ -826,12 +828,17 @@ function MainDialog(engine, guiParameters) {
    typeConversion_TreeBox.numberOfColumns = 2;
    typeConversion_TreeBox.headerVisible = false;
 
-   for (var ic=0; ic<typeConversions.length; ic++) {
-      var node = new TreeBoxNode(typeConversion_TreeBox);
-      node.setText( 0, typeConversions[ic][0].toString() );
-      node.setText( 1, typeConversions[ic][1] );
-      node.checkable = false;
+   var refreshTypeConversions = function (typeConversion_TreeBox) {
+      typeConversion_TreeBox.clear();
+      var typeConversions = guiParameters.getCurrentConfiguration().typeConversions;
+      for (var ic=0; ic<typeConversions.length; ic++) {
+         var node = new TreeBoxNode(typeConversion_TreeBox);
+         node.setText( 0, typeConversions[ic][0].toString() );
+         node.setText( 1, typeConversions[ic][1] );
+         node.checkable = false;
+      }
    }
+   refreshTypeConversions(typeConversion_TreeBox);
 
    // Conversion of filter names
    var filterConversion_GroupBox = new GroupBox(this);
@@ -846,19 +853,25 @@ function MainDialog(engine, guiParameters) {
    filterConversion_TreeBox.rootDecoration = false;
    filterConversion_TreeBox.numberOfColumns = 2;
    filterConversion_TreeBox.headerVisible = false;
-   for (var ic=0; ic<filterConversions.length; ic++) {
-      var node = new TreeBoxNode(filterConversion_TreeBox);
-      node.setText( 0, filterConversions[ic][0].toString() );
-      node.setText( 1, filterConversions[ic][1] );
-      node.checkable = false;
+   var refreshFilterConversions = function (filterConversion_TreeBox) {
+      filterConversion_TreeBox.clear();
+      var filterConversions = guiParameters.getCurrentConfiguration().filterConversions;
+      for (var ic=0; ic<filterConversions.length; ic++) {
+         var node = new TreeBoxNode(filterConversion_TreeBox);
+         node.setText( 0, filterConversions[ic][0].toString() );
+         node.setText( 1, filterConversions[ic][1] );
+         node.checkable = false;
+      }
    }
+   refreshFilterConversions(filterConversion_TreeBox);
 
    // Selection of mapping rules
    var mappingRules_ComboBox = new ComboBox( this );
    mappingRules_ComboBox.toolTip = "Select rules";
    mappingRules_ComboBox.enabled = true;
-   for (var it = 0; it<kwMappingList.length; it++) {
-      mappingRules_ComboBox.addItem( kwMappingList[it] +  " - " + kwMappingCommentsList[it]);
+   var mappingList = ffM_Configuration.configurationList;
+   for (var it = 0; it<mappingList.length; it++) {
+      mappingRules_ComboBox.addItem( mappingList[it] +  " - " + ffM_Configuration.getConfigurationByName(mappingList[it]).description);
    }
    mappingRules_ComboBox.currentItem = guiParameters.kwMappingCurrentIndex;
 
@@ -866,13 +879,16 @@ function MainDialog(engine, guiParameters) {
 #ifdef DEBUG
       debug("mappingRules_ComboBox: onItemSelected " + this.currentItem );
 #endif
-       if (this.currentItem >= kwMappingList.length) {
+       if (this.currentItem >= mappingList.length) {
           return; // Protect against CR in input field
        }
        guiParameters.kwMappingCurrentIndex = this.currentItem;
-       guiParameters.remappedFITSkeywords =  kwMappingTables[kwMappingList[guiParameters.kwMappingCurrentIndex]];
+       engine.setConfiguration(guiParameters.getCurrentConfiguration());
+
        refreshRemappedFITSkeywordsNames(keywordNames_TreeBox);
-       this.dialog.barConversions.setCollapsedTitle("Remapping of keywords and values - " + kwMappingList[guiParameters.kwMappingCurrentIndex] );
+       refreshTypeConversions(typeConversion_TreeBox);
+       refreshFilterConversions(filterConversion_TreeBox);
+       this.dialog.barConversions.setCollapsedTitle("Remapping of keywords and values - " + ffM_Configuration.configurationList[guiParameters.kwMappingCurrentIndex]);
 
       // If the rules are changed, all variables must be recalculated
       // TODO RECALCULATE VARIABLES
@@ -888,7 +904,7 @@ function MainDialog(engine, guiParameters) {
          var imageKeywords  = ffM_keywordsOfFile.makeImageKeywordsfromFile(fileName);
          this.dialog.engine.inputFITSKeywords[i] = imageKeywords;
          // Create the synthethic variables using the desired rules
-         var variables = makeSynthethicVariables(fileName, imageKeywords, guiParameters.remappedFITSkeywords,
+         var variables = makeSynthethicVariables(fileName, imageKeywords, this.dialog.engine.remappedFITSkeywords,
               this.dialog.engine.filterConverter, this.dialog.engine.typeConverter);
          this.dialog.engine.inputVariables[i] = variables;
       }
@@ -929,7 +945,7 @@ function MainDialog(engine, guiParameters) {
 
    this.barConversions = new SectionBar( this, true );
    this.barConversions.setTitle( "Remapping of keywords and values" );
-   this.barConversions.setCollapsedTitle("Remapping of keywords and values - " + kwMappingList[guiParameters.kwMappingCurrentIndex] );
+   this.barConversions.setCollapsedTitle("Remapping of keywords and values - " + ffM_Configuration.configurationList[guiParameters.kwMappingCurrentIndex] );
    this.barConversions.setSection( this.conversion_GroupBox );
 
    //this.barConversions.toggleSection();
@@ -937,7 +953,7 @@ function MainDialog(engine, guiParameters) {
 
 
    //----------------------------------------------------------------------------------
-   // Output directory section
+   // -- Output directory section
    //----------------------------------------------------------------------------------
 
    //Output Dir --------------------------------------------------------------------------------------
@@ -975,7 +991,7 @@ function MainDialog(engine, guiParameters) {
 
 
    //----------------------------------------------------------------------------------
-   // Operation list and action section
+   // -- Operation list and action section
    //----------------------------------------------------------------------------------
 
 
@@ -1249,7 +1265,7 @@ function MainDialog(engine, guiParameters) {
 
 
    //----------------------------------------------------------------------------------
-   // Support methods
+   // -- Support methods
    //----------------------------------------------------------------------------------
 
 
@@ -1543,10 +1559,11 @@ function MainDialog(engine, guiParameters) {
 MainDialog.prototype = new Dialog;
 
 
-// ------------------------------------------------------------------------------------------------------------------------
-// Documentation dialog
-// ------------------------------------------------------------------------------------------------------------------------
 
+
+// ========================================================================================================================
+// Documentation dialog
+// ========================================================================================================================
 
 // See http://pixinsight.com/developer/pcl/doc/20120901/html/classpcl_1_1Console.html
 // for formatting instructions
@@ -1573,9 +1590,9 @@ function HelpDialog( parentDialog, engine ) {
 HelpDialog.prototype = new Dialog;
 
 
-// ------------------------------------------------------------------------------------------------------------------------
+// ========================================================================================================================
 // Completion dialog
-// ------------------------------------------------------------------------------------------------------------------------
+// ========================================================================================================================
 
 
 function CompletionDialog( parentDialog, engine ) {
@@ -1659,9 +1676,9 @@ CompletionDialog.prototype = new Dialog;
 
 
 
-// ------------------------------------------------------------------------------------------------------------------------
+// ========================================================================================================================
 // FITS and synthetic keys dialog
-// ------------------------------------------------------------------------------------------------------------------------
+// ========================================================================================================================
 // Present a dialog with:
 //   A selection of the files (drop down)
 //   A list of  FITS keywords (selection box, keyword, value)  of the selected file, as a TreeBox
@@ -1817,7 +1834,7 @@ function FITSKeysDialog( parentDialog, engine) {
       // Create list of FITS keywords used as variables as a second subtree
       var fitsVarRootNode = new TreeBoxNode(this.keyword_TreeBox);
       fitsVarRootNode.expanded = true;
-      fitsVarRootNode.setText(0,"FITS keywords used as variable");
+      fitsVarRootNode.setText(0,"Valued FITS keywords");
 
 
       // Fill the name columns from the from allFITSKeyNames (accumulated names of all keywords)

@@ -393,7 +393,7 @@ var variableRegExp = /&[^&]+;/g;
 // Parameters:
 //    inputFile: Full path of input file (to extract file anme etc...)
 //    imageKeywords: A FitsFileManager imageKeyword object (all FITS keywords of the image)
-//    remappedFITSKeywords: re naming map to adapt keywords
+//    remappedFITSKeywords: Map from logical to real keywords
 //    filterConverter: The method to convert filter values
 //    typeConverter: The method to convert type values
 function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords, filterConverter, typeConverter) {
@@ -403,8 +403,8 @@ function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords,
    var variables = [];
 
    //   &binning     Binning from XBINNING and YBINNING formated as a pair of integers, like 2x2.
-   var xBinning = parseInt(imageKeywords.getValue(remappedFITSkeywords['XBINNING']));
-   var yBinning = parseInt(imageKeywords.getValue(remappedFITSkeywords['YBINNING']));
+   var xBinning = parseInt(imageKeywords.getValue(remappedFITSkeywords['BinningX']));
+   var yBinning = parseInt(imageKeywords.getValue(remappedFITSkeywords['BinningY']));
    if (isNaN(xBinning) || isNaN(yBinning)) {
       variables['binning'] = null;
    } else {
@@ -413,7 +413,7 @@ function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords,
 
 
    //   &exposure;   The exposure from EXPOSURE, formatted as an integer (assume seconds)
-   var exposure = imageKeywords.getValue(remappedFITSkeywords['EXPOSURE']);
+   var exposure = imageKeywords.getValue(remappedFITSkeywords['Exposure']);
    var exposureF =  parseFloat(exposure);
    if (isNaN(exposureF)) {
       variables['exposure'] = null;
@@ -428,11 +428,11 @@ function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords,
    variables['filename'] = inputFileName;
 
    //   &filter:     The filter name from FILTER as lower case trimmed normalized name.
-   var filter = imageKeywords.getUnquotedValue(remappedFITSkeywords['FILTER']);
+   var filter = imageKeywords.getUnquotedValue(remappedFITSkeywords['Filter']);
    variables['filter'] = filterConverter.convert(filter);
 
    //   &temp;       The SET-TEMP temperature in C as an integer
-   var temp = imageKeywords.getValue(remappedFITSkeywords['SET-TEMP']);
+   var temp = imageKeywords.getValue(remappedFITSkeywords['Temp']);
    var tempF = parseFloat(temp);
    if (isNaN(tempF)) {
       variables['temp'] = null;
@@ -441,15 +441,15 @@ function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords,
    }
 
    //   &type:       The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'
-   var imageType = imageKeywords.getUnquotedValue(remappedFITSkeywords['IMAGETYP']);
+   var imageType = imageKeywords.getUnquotedValue(remappedFITSkeywords['Type']);
    variables['type'] = typeConverter.convert(imageType);
 
 
    //  &night;     EXPERIMENTAL
-   var longObs = imageKeywords.getValue(remappedFITSkeywords['LONG-OBS']); // East in degree
+   var longObs = imageKeywords.getValue(remappedFITSkeywords['NightLongObs']); // East in degree
    // longObs = -110;
    // TODO Support default longObs
-   var jd = imageKeywords.getValue(remappedFITSkeywords['JD']);
+   var jd = imageKeywords.getValue(remappedFITSkeywords['NightJD']);
    if (longObs && jd) {
       var jdLocal = Number(jd) + (Number(longObs) / 360.0) ;
       var nightText = (Math.floor(jdLocal) % 1000).toString();

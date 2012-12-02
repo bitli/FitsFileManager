@@ -37,43 +37,10 @@ var syntheticVariableComments = ['Type of image (flat, bias, ...)',
    'night (experimental)'];
 
 
-// --- Mapping of 'logical' FITS keywords (referenced in the code) to actual FITS keywords
-
-var kwMappingDefault = {
-      "SET-TEMP": "SET-TEMP",
-      "EXPOSURE": "EXPOSURE",
-      "IMAGETYP": "IMAGETYP",
-      "FILTER"  : "FILTER",
-      "XBINNING": "XBINNING",
-      "YBINNING": "YBINNING",
-      // Non standard
-      "LONG-OBS": "LONG-OBS",
-      // We should really use DATE-OBS and convert
-      "JD"       : "JD",
-};
-
-var kwMappingCaha = {
-      "SET-TEMP": "CCDTEMP",
-      "EXPOSURE": "EXPTIME",
-      "IMAGETYP": "IMAGETYP",
-      "FILTER"  : "INSFLNAM",
-      "XBINNING": "CDELT1",
-      "YBINNING": "CDELT2",
-      // Non standard
-      "LONG-OBS": "CAHA TEL GEOLON",
-      // We should really used DATE-OBS (if available) and convert
-      "JD"      : "JUL-DATE",
-};
 
 // TODO - The mapping could manage other parameters
 // The tables below must be coherent with each other, more mapping can be added
 #define KW_MAPPING_DEFAULT_INDEX 0
-var kwMappingTables = {
-   "DEFAULT" : kwMappingDefault,
-   "CAHA"    : kwMappingCaha,
-};
-var kwMappingList = ["DEFAULT", "CAHA"];
-var kwMappingCommentsList = ["Common and Star Arizona mappings", "CAHA mapping"];
 
 
 // Default list of FITS keywords to show as columns in the input file TreeBox
@@ -84,30 +51,6 @@ var kwDefaultShownKeywords = [
 ];
 
 
-// Array of 2 element arrays,
-// regexp to match source value, followed by replacement string
-// Back reference using the &<number>; syntac is allowed
-// CURRENTLY USED ONLY AT INITIALIZATION TIME OF ENGINE
-var filterConversions = [
-      [/green/i, 'green'],
-      [/red/i, 'red'],
-      [/blue/i, 'blue'],
-      [/clear/i, 'clear'],
-      [/luminance/i, 'luminance'],
-      [/.*/i, '&0;'],
-];
-
-
-var typeConversions = [
-      [/flat/i, 'flat'],
-      [/bias/i, 'bias'],
-      [/offset/i, 'bias'],
-      [/dark/i, 'dark'],
-      [/light/i, 'light'],
-      [/science/i, 'light'],
-      [/.*/i, '&0;'],
-];
-
 
 
 
@@ -115,9 +58,134 @@ var typeConversions = [
 #define FFM_SETTINGS_KEY_BASE  "FITSFileManager/"
 
 
-// ------------------------------------------------------------------------------------------------------------------------
+// ========================================================================================================================
+// Named configuration
+// ========================================================================================================================
+var ffM_Configuration = (function() {
+
+   // A named configuration is a named set of parameters that can be selected as a whole,
+   // typically the configuration suitable for an observatory, an instrument and a user.
+   // NOT ALL ELEMENTS OF A CONFIGURATION CAN YET BE EDITED INTERACTIVELY.
+   // The configuration is a map with the following entries:
+   // name - its name (used to save in settings)
+   // description - A one line description for the user
+   // kwMappingTable - The map of logical name to FITS key names
+   // filterConversion - The list of filter conversion operations
+   // typeConversion - The list of filter conversion operations
+
+   // Preconfigured configuration properties
+
+   // --- Mapping of 'logical' FITS keywords (referenced in the code) to actual FITS keywords
+   //     The logical keyword is by convention a 'PascalCased' name of the variable using
+   //     the keyword and some differentiating suffix if multiple keywords are required.
+   //     This does not really matter, just more mnemotecnic than random text
+   // TODO Support optional and multiple keywords (as EXPOSURE and EXPTIME) and default value
+   var kwMappingDefault = {
+       // Commonly used
+      "BinningX": "XBINNING",
+      "BinningY": "YBINNING",
+      "Exposure": "EXPOSURE", // Could also be EXPTIME
+      "Filter"  : "FILTER",
+      "Temp"    : "SET-TEMP", // Also CCDTEMP and CCD-TEMP
+      "Type"    : "IMAGETYP",
+      // For experimental keyword
+      "NightLongObs" : "LONG-OBS",
+      // We should really use DATE-OBS and convert
+      "NightJD"      : "JD",
+   };
+
+   var kwMappingCaha = {
+      // Commonly used
+      "BinningX": "CDELT1",
+      "BinningY": "CDELT2",
+      "Exposure": "EXPTIME",
+      "Filter"  : "INSFLNAM",
+      "Temp"    : "CCDTEMP",
+      "Type"    : "IMAGETYP",
+      // For experimental keyword
+      "NightLongObs": "CAHA TEL GEOLON",
+      // We should really used DATE-OBS (if available) and convert
+      "NightJD"     : "JUL-DATE",
+   };
+
+   // -- Rules of conversion
+   // Array of 2 element arrays,
+   // regexp to match source value, followed by replacement string
+   // Back reference using the &<number>; syntac is allowed
+   // CURRENTLY USED ONLY AT INITIALIZATION TIME OF ENGINE
+
+   var filterConversions_DEFAULT = [
+      [/green/i,     'green'],
+      [/red/i,       'red'],
+      [/blue/i,      'blue'],
+      [/clear/i,     'clear'],
+      [/luminance/i, 'luminance'],
+      [/.*/i,        '&0;'],
+   ];
+   var filterConversions_CAHA = [
+      [/.*/i,        '&0;'],
+   ];
+
+
+   var typeConversions = [
+      [/flat/i,     'flat'],
+      [/bias/i,     'bias'],
+      [/offset/i,   'bias'],
+      [/dark/i,     'dark'],
+      [/light/i,    'light'],
+      [/science/i,  'light'],
+      [/.*/i,       '&0;'],
+   ];
+
+   var configuration_DEFAULT = {
+     name: "DEFAULT",
+     description: "Common and Star Arizona mappings",
+     kwMappingTable: kwMappingDefault,
+     filterConversions: filterConversions_DEFAULT,
+     typeConversions: typeConversions,
+   };
+   var configuration_CAHA = {
+     name: "CAHA",
+     description: "CAHA mapping",
+     kwMappingTable: kwMappingCaha,
+     filterConversions: filterConversions_CAHA,
+     typeConversions: typeConversions,
+   };
+
+   var configurationTable = {};
+   var configurationList = [];
+
+   function addConfiguration(configuration) {
+      configurationTable[configuration.name] = configuration;
+      configurationList.push(configuration.name);
+   }
+
+   function getConfigurationByName(name) {
+      return configurationTable[name];
+   }
+   function getConfigurationByIndex(index) {
+      var name = configurationList[index];
+      return configurationTable[name];
+   }
+
+   // Add in the order they should be in the select list
+   addConfiguration(configuration_DEFAULT);
+   addConfiguration(configuration_CAHA);
+
+   // Return a 'module' with public properties and methods
+   return {
+       //configurationTable: configurationTable,  // Consider readonly
+       configurationList: configurationList, // Consider readonly
+       getConfigurationByName: getConfigurationByName,
+       getConfigurationByIndex: getConfigurationByIndex,
+   };
+}) ();
+
+
+
+// ========================================================================================================================
 // User Interface Parameters
-// ------------------------------------------------------------------------------------------------------------------------
+// ========================================================================================================================
 
 // The object FFM_GUIParameters keeps track of the parameters that are saved between executions
 // (or that should be saved)
@@ -137,18 +205,14 @@ function FFM_GUIParameters() {
 
       // Map to remap keywords used to create synthethic keywords to other values
       this.kwMappingCurrentIndex = KW_MAPPING_DEFAULT_INDEX;
-      this.remappedFITSkeywords = kwMappingTables[kwMappingList[this.kwMappingCurrentIndex]];
 
 
       // This is the list of keys shown by default (in addition to the synthethic keywords)
       // A possibly empty column is created for all these keywords, so that they are always present
-      // in the same order and that the use can see that the column has no value.
-      // By default only show the keywords that are significantly transformed by the conversion to synthethic keywords
-      this.defaultListOfShownFITSKeywords = [];
-      for (var i=0; i<kwDefaultShownKeywords.length; i++) {
-         this.defaultListOfShownFITSKeywords[i] = this.remappedFITSkeywords[kwDefaultShownKeywords[i]];
-      }
-
+      // in the same order and that the user can immediately see missing or unexpected values.
+      // Keyword inserted when the configuration rules are changed
+      // TODO Should depend on the configuration (for example using remapping)
+      this.defaultListOfShownFITSKeywords = kwDefaultShownKeywords;
 
 
       // Create templates (use defaults if not yet specified), precompile them
@@ -221,12 +285,14 @@ function FFM_GUIParameters() {
       s += "  sourceFileNameRegExp:           " + replaceAmps(regExpToString(this.sourceFileNameRegExp)) + "\n";
       s += "  orderBy:                        " + replaceAmps(this.orderBy) + "\n";
       s += "  groupByTemplate:                " + replaceAmps(this.groupByCompiledTemplate.templateString) + "\n";
+      s += "  kwMappingCurrentIndex:          " + this.kwMappingCurrentIndex + "\n";
       return s;
    }
 }
 
-FFM_GUIParameters.prototype.loadSettings = function()
-{
+FFM_GUIParameters.prototype.loadSettings = function() {
+
+
    function load( key, type )
    {
       var setting = Settings.read( FFM_SETTINGS_KEY_BASE + key, type );
@@ -285,12 +351,11 @@ FFM_GUIParameters.prototype.loadSettings = function()
          // After 0.7
          if (parameterVersion>0.7) {
             if ( (o = load( "mappingName",          DataType_String )) !== null ) {
-               ki = kwMappingList.indexOf(o);
+               ki = ffM_Configuration.configurationList.indexOf(o);
                if(ki>=0) {
                   this.kwMappingCurrentIndex = ki;
-                  this.remappedFITSkeywords = kwMappingTables[o];
                } else {
-                  Console.writeln("Mapping rules '" + o + "' unknown, using '" + kwMappingList[this.kwMappingCurrentIndex ] + "'");
+                  Console.writeln("Mapping rules '" + o + "' unknown, using '" + ffM_Configuration.configurationList[this.kwMappingCurrentIndex ] + "'");
                }
             }
          }
@@ -323,9 +388,15 @@ FFM_GUIParameters.prototype.saveSettings = function()
    save( "sourceFileNameRegExp",       DataType_String, regExpToString(this.sourceFileNameRegExp) );
    save( "orderBy",                    DataType_String, this.orderBy );
    save( "groupByTemplate",            DataType_String, this.groupByCompiledTemplate.templateString );
-   save( "mappingName",                DataType_String, kwMappingList[this.kwMappingCurrentIndex ]);
+   save( "mappingName",                DataType_String, ffM_Configuration.configurationList[this.kwMappingCurrentIndex ]);
 
 }
+
+FFM_GUIParameters.prototype.getCurrentConfiguration =
+   function getCurrentConfiguration() {
+      return ffM_Configuration.getConfigurationByIndex(this.kwMappingCurrentIndex);
+   };
+
 
 FFM_GUIParameters.prototype.targetTemplateSelection =  [
    FFM_DEFAULT_TARGET_FILENAME_TEMPLATE
