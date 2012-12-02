@@ -7,6 +7,7 @@
 // and the configuration information currently only modifiable by editing this file.
 // -----------------------------------------------------------------------------------------------
 
+#include <pjsr/DataType.jsh>
 
 
 // --- Configuration - Change the definitions as needed.
@@ -81,6 +82,33 @@ var kwDefaultShownKeywords = [
    "IMAGETYP","FILTER","OBJECT"
    //"SET-TEMP","EXPOSURE","IMAGETYP","FILTER","XBINNING","YBINNING","OBJECT"
 ];
+
+
+// Array of 2 element arrays,
+// regexp to match source value, followed by replacement string
+// Back reference using the &<number>; syntac is allowed
+// CURRENTLY USED ONLY AT INITIALIZATION TIME OF ENGINE
+var filterConversions = [
+      [/green/i, 'green'],
+      [/red/i, 'red'],
+      [/blue/i, 'blue'],
+      [/clear/i, 'clear'],
+      [/luminance/i, 'luminance'],
+      [/.*/i, '&0;'],
+];
+
+
+var typeConversions = [
+      [/flat/i, 'flat'],
+      [/bias/i, 'bias'],
+      [/offset/i, 'bias'],
+      [/dark/i, 'dark'],
+      [/light/i, 'light'],
+      [/science/i, 'light'],
+      [/.*/i, '&0;'],
+];
+
+
 
 
 // Name of key in settings

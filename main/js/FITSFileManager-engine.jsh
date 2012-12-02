@@ -29,6 +29,10 @@ function FFM_Engine(guiParameters) {
       this.shownFITSKeyNames = {}; // A FITSKeyWord is shown in the source file table if its name is a key of this object
       this.shownSyntheticKeyNames = {}; // A synthethic variable is shown in the source file table if its name is a key of this object
 
+      // TODO Should use values from parameters instead of globals
+      this.filterConverter = ffM_LookupConverter.makeLookupConverter(filterConversions);
+      this.typeConverter = ffM_LookupConverter.makeLookupConverter(typeConversions);
+
       this.resetTarget();
     };
 
@@ -68,7 +72,10 @@ function FFM_Engine(guiParameters) {
             this.inputFiles.push(fileNames[i]);
             this.inputFITSKeywords.push(imageKeywords);
             // Create the synthethic variables using the desired rules
-            var variables = makeSynthethicVariables(fileNames[i], imageKeywords, guiParameters.remappedFITSkeywords);
+            Console.writeln("********** " + typeof this.filterConverter);
+            var variables = makeSynthethicVariables(fileNames[i], imageKeywords,
+                guiParameters.remappedFITSkeywords,
+                this.filterConverter, this.typeConverter);
 
             this.inputVariables.push(variables);
             nmbFilesAdded++;
@@ -522,7 +529,7 @@ function FFM_Engine(guiParameters) {
    }
 
 
-
    this.reset();
+
 }
 

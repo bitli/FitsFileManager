@@ -142,7 +142,6 @@ function debug(str) {
 // Option for handling of minus and other special characters to form a file name being valid PI ids
 // Add mark of sequence of text to ignore if missing variable value (in parentheses for example)
 // Generate an 'orderBy' column
-// Recalculate all variables when rules changed
 // Hide common header part of source folders to make file name more visible
 // Add a way to use directory of source file as variable  &filedir, &filedirparent for template matching and group names
 // Support date formatting, number formatting
@@ -154,16 +153,13 @@ function debug(str) {
 // Rules set: Keep list of recent templates used (currently one 1 kept)
 //            Configurable list of transformation, especially for filters (ha, ..)
 // Normalize directory (remove .., redundant /)
-// Check that move is on one drive
+// Check that move is on same drive
 // Check # of images in file (when using load image), or use direct writes to update fits headers
-// add .* as last action for conversion
 // Change cursor to mark busy during move/copy
-// Use - standard as collapsed title of conversions
 // Document and add default for long-obs and night
-// Check details of FITSKeywords, especialy type and null, processing of quoted characters and leading spaces.
-// Display and management of alternate keywords for synthethic keywords
-// Allow selection of synthethic keywords in table, enhance table view
+// Management of alternate keywords for synthethic keywords
 // Make COUNT_PAD a parameter or use a configurable default format
+// Make creation of HISTORY keyword optional
 
 // Format indicators
 // %<stuff>
@@ -179,10 +175,10 @@ function debug(str) {
 
 
 
+#include "FITSFileManager-parameters.jsh"
 #include "FITSFileManager-fits.jsh"
 #include "FITSFileManager-helpers.jsh"
 #include "FITSFileManager-engine.jsh"
-#include "FITSFileManager-parameters.jsh"
 #include "FITSFileManager-gui.jsh"
 
 

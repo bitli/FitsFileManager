@@ -3,7 +3,6 @@
 // This file is part of FITSFileManager, see copyrigh in FITSFileManager.js
 
 
-#include <pjsr/DataType.jsh>
 #include <pjsr/Sizer.jsh>
 //#include <pjsr/FrameStyle.jsh>
 #include <pjsr/TextAlign.jsh>
@@ -874,7 +873,8 @@ function MainDialog(engine, guiParameters) {
          var imageKeywords  = ffM_keywordsOfFile.makeImageKeywordsfromFile(fileName);
          this.dialog.engine.inputFITSKeywords[i] = imageKeywords;
          // Create the synthethic variables using the desired rules
-         var variables = makeSynthethicVariables(fileName, imageKeywords, guiParameters.remappedFITSkeywords);
+         var variables = makeSynthethicVariables(fileName, imageKeywords, guiParameters.remappedFITSkeywords,
+              this.dialog.engine.filterConverter, this.dialog.engine.typeConverter);
          this.dialog.engine.inputVariables[i] = variables;
       }
 
@@ -1364,8 +1364,9 @@ function MainDialog(engine, guiParameters) {
                try {
                node.setText(colOffset + indexOfKey, formattedValue);
                } catch(error) {
-                  Console.writeln("**** E: " + error + " - " + colOffset + "," + indexOfKey + ", '" + replaceAmps(formattedValue) +"'");
-                  Console.writeln("**** " + typeof  colOffset + "," + typeof indexOfKey );
+                  Console.writeln("**** DEBUG - FITSFileManager-gui ERROR: " + error + " - " + colOffset + "," + indexOfKey + ", '" + replaceAmps(formattedValue) +"'");
+                  Console.writeln("****        types " + typeof  colOffset + "," + typeof indexOfKey + " " + typeof formattedValue);
+                  Console.writeln("****        iKeyOfFile " + iKeyOfFile + " " +key.isNumeric +", key " + key.toString() + " file " + i + ": " +  this.engine.inputFiles[i]);
                   Console.flush();
                }
             }

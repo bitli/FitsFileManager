@@ -193,14 +193,18 @@ var ffM_allTests = {
       pT_assertEquals("'abc'",ffM_unquote("'''abc''"));
    },
    test_ffM_unquoted_string_space_only : function() {
-      pT_assertEquals("' '",ffM_unquote("'    '"));
+      pT_assertEquals(" ",ffM_unquote("'    '"));
    },
    test_ffM_unquoted_string_one_space : function() {
-      pT_assertEquals("' '",ffM_unquote("' '"));
+      pT_assertEquals(" ",ffM_unquote("' '"));
    },
    test_ffM_unquoted_string_empty_string : function() {
-      pT_assertEquals("''",ffM_unquote("''"));
+      pT_assertEquals("",ffM_unquote("''"));
    },
+   test_ffM_unquoted_many_spaces : function() {
+      pT_assertEquals(" ",ffM_unquote("'        '"));
+   },
+
 
 
    // Test the ffM_keywordsOfFile.fitsKeywords

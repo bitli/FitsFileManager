@@ -1,4 +1,4 @@
-// FITSFileManager-help.js
+// FITSFileManager-helper.js
 
 // This file is part of FITSFileManager, see copyrigh in FITSFileManager.js
 
@@ -7,13 +7,13 @@
 
 
 
+//=========================================================================================================================
+// String and formatting utility functions
 // ------------------------------------------------------------------------------------------------------------------------
-// String utility functions
-// ------------------------------------------------------------------------------------------------------------------------
 
 
 
-// ------- string functions
+// --- String functions
 
 function replaceAll (txt, replace, with_this) {
   return txt.replace(new RegExp(replace, 'g'),with_this);
@@ -26,22 +26,30 @@ function replaceAmps (txt) {
 }
 
 
-
-
-
-// ------------------------------------------------------------------------------------------------------------------------
-// Formatting utility functions
-// ------------------------------------------------------------------------------------------------------------------------
-
-// Pad a mumber with leading 0
+// --- Pad a mumber with leading 0
 Number.prototype.pad = function(size){
       var s = String(this);
       while (s.length < size) s = "0" + s;
       return s;
 }
 
+// --- RegExp utility functions
 
-// ------------------------------------------------------------------------------------------------------------------------
+function regExpToString(re) {
+   if (re === null) {
+      return "";
+   } else {
+   // Remove leading and trailing slahes and trailing flag
+      var reString = re.toString();
+      //var secondSeparator = reString.lastIndexOf(reString[0]);
+      //return  reString.substring(1, secondSeparator);
+      return  reString.substring(1, reString.length-1);
+   }
+}
+
+
+
+//=========================================================================================================================
 // File utility functions
 // ------------------------------------------------------------------------------------------------------------------------
 
@@ -96,7 +104,7 @@ function loadSaveFile( sourceFilePath, targetFilePath ) {
       var kw = new FITSKeyword( "ORIGFILE",
                File.extractName(sourceFilePath) + File.extractExtension(sourceFilePath),
                "Original name (FITSFileManager)");
-      Console.writeln("Adding ORIGFILE: '" + kw.value + "'");
+      Console.writeln("Adding " + kw.name + ": '" + kw.value + "'");
       keywords.push( kw );
    }
    var kw = new FITSKeyword( "HISTORY", "", "PI FitsFileManager renamed as " + File.extractName(targetFilePath) + File.extractExtension(targetFilePath));
@@ -113,9 +121,7 @@ function loadSaveFile( sourceFilePath, targetFilePath ) {
 
 
 
-
-
-// ------------------------------------------------------------------------------------------------------------------------
+//=========================================================================================================================
 // Conversion support
 // ------------------------------------------------------------------------------------------------------------------------
 var ffM_LookupConverter = function() {
@@ -198,52 +204,11 @@ var ffM_LookupConverter = function() {
 
 
 
-var filterConversions = [
-      [/green/i, 'green'],
-      [/red/i, 'red'],
-      [/blue/i, 'blue'],
-      [/clear/i, 'clear'],
-      [/luminance/i, 'luminance'],
-      [/.*/i, '&0;'],
-];
-var filterConverter = ffM_LookupConverter.makeLookupConverter(filterConversions);
-
-function convertFilter(unquotedName) {
-   return filterConverter.convert(unquotedName);
-}
-
-var typeConversions = [
-      [/flat/i, 'flat'],
-      [/bias/i, 'bias'],
-      [/offset/i, 'bias'],
-      [/dark/i, 'dark'],
-      [/light/i, 'light'],
-      [/science/i, 'light'],
-      [/.*/i, '&0;'],
-];
-var typeConverter = ffM_LookupConverter.makeLookupConverter(typeConversions);
-function convertType(unquotedName) {
-   return typeConverter.convert(unquotedName);
-}
-
-// ------------------------------------------------------------------------------------------------------------------------
-// RegExp utility functions
-// ------------------------------------------------------------------------------------------------------------------------
-
-function regExpToString(re) {
-   if (re === null) {
-      return "";
-   } else {
-   // Remove leading and trailing slahes and trailing flag
-      var reString = re.toString();
-      //var secondSeparator = reString.lastIndexOf(reString[0]);
-      //return  reString.substring(1, secondSeparator);
-      return  reString.substring(1, reString.length-1);
-   }
-}
 
 
-// ------------------------------------------------------------------------------------------------------------------------
+
+
+//=========================================================================================================================
 // Template parsing and execution
 // ------------------------------------------------------------------------------------------------------------------------
 
@@ -426,7 +391,9 @@ var variableRegExp = /&[^&]+;/g;
 //    inputFile: Full path of input file (to extract file anme etc...)
 //    imageKeywords: A FitsFileManager imageKeyword object (all FITS keywords of the image)
 //    remappedFITSKeywords: re naming map to adapt keywords
-function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords) {
+//    filterConverter: The method to convert filter values
+//    typeConverter: The method to convert type values
+function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords, filterConverter, typeConverter) {
 
    var inputFileName =  File.extractName(inputFile);
 
@@ -459,7 +426,7 @@ function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords)
 
    //   &filter:     The filter name from FILTER as lower case trimmed normalized name.
    var filter = imageKeywords.getUnquotedValue(remappedFITSkeywords['FILTER']);
-   variables['filter'] = convertFilter(filter);
+   variables['filter'] = filterConverter.convert(filter);
 
    //   &temp;       The SET-TEMP temperature in C as an integer
    var temp = imageKeywords.getValue(remappedFITSkeywords['SET-TEMP']);
@@ -472,7 +439,7 @@ function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords)
 
    //   &type:       The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'
    var imageType = imageKeywords.getUnquotedValue(remappedFITSkeywords['IMAGETYP']);
-   variables['type'] = convertType(imageType);
+   variables['type'] = typeConverter.convert(imageType);
 
 
    //  &night;     EXPERIMENTAL
