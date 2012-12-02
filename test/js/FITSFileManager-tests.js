@@ -132,12 +132,25 @@ var ffM_allTests = {
          ]);
       pT_assertEquals("_red/",c.convert("red"));
    },
-   // Not clear if it should do it
-   testConverter_sourceGroupReference_convert_lower_case: function () {
+   testConverter_sourceGroupReference_keep_case: function () {
       var c = ffM_LookupConverter.makeLookupConverter([
             [ /.*/, "&0;"]
          ]);
-      pT_assertEquals("lowerupper",c.convert("lowerUPPER"));
+      pT_assertEquals("lowerUPPER",c.convert("lowerUPPER"));
+   },
+
+   testConverter_sourceGroupReference_remove_special_chars: function () {
+      var c = ffM_LookupConverter.makeLookupConverter([
+            [ /.*/, "&0;"]
+         ]);
+      pT_assertEquals("a_bunch_of_stuff",c.convert("^a bunch%of$stuff"));
+   },
+
+   testConverter_sourceGroupReference_remove_special_chars_in_groups: function () {
+      var c = ffM_LookupConverter.makeLookupConverter([
+            [ /(.*)-(.*)/, "_&1;*&2;/"]
+         ]);
+      pT_assertEquals("_a_lot_of*this_stuff/",c.convert("^a lot%of-this$stuff"));
    },
 
    testConverter_sourceGroupReference_subgroup: function () {
@@ -156,9 +169,9 @@ var ffM_allTests = {
          ]);
       pT_assertNull(c.convert("nomatch"));
       // Currently back refernce as convert to lower case
-      pT_assertEquals("afirst",c.convert("aFIRST"));
-      pT_assertEquals("thesecond",c.convert("THEsecond"));
-      pT_assertEquals("isthird",c.convert("isThird"));
+      pT_assertEquals("aFIRST",c.convert("aFIRST"));
+      pT_assertEquals("THEsecond",c.convert("THEsecond"));
+      pT_assertEquals("isThird",c.convert("isThird"));
       pT_assertNull(c.convert("nomatchagain"));
    },
    testConverter_sourceGroupReference_multiple_ref: function () {
@@ -167,6 +180,7 @@ var ffM_allTests = {
          ]);
       pT_assertEquals("green_450/",c.convert("450-filter-green"));
    },
+   // This may help discover subtle bugs with improper lexical scoping
    testConverter_sourceGroupReference_multiple_ref_and_tests: function () {
       var c = ffM_LookupConverter.makeLookupConverter([
             [ /BEFORE/, "specificMatchBefore"],
@@ -178,7 +192,7 @@ var ffM_allTests = {
       pT_assertEquals("specificMatchAfter",c.convert("AFTER"));
       pT_assertEquals("red_123/",c.convert("123-filter-red"));
    },
-   // This may help discover subtle bugs with improepr lexical scoping
+   // This may help discover subtle bugs with improper lexical scoping
    testConverter_twoOfThem: function () {
       var c1 = ffM_LookupConverter.makeLookupConverter([
             [ /abc/,   "toto"],
@@ -193,21 +207,6 @@ var ffM_allTests = {
       pT_assertEquals("NUMBER",c2.convert("hereAnumber:123"));
    },
 
-   // ---------------------------------------------------------------------------------------------------------
-   // Test of filter conversion
-   // ---------------------------------------------------------------------------------------------------------
-   testConvertFilter_base: function () {
-      var f = convertFilter("some blue");
-      pT_assertEquals("blue",f);
-   },
-
-   // ---------------------------------------------------------------------------------------------------------
-   // Test of type conversion
-   // ---------------------------------------------------------------------------------------------------------
-   testConvertType_base: function () {
-      var t = convertType("FLAT");
-      pT_assertEquals("flat",t);
-   },
 
    // ---------------------------------------------------------------------------------------------------------
    // Test of template mechanism

@@ -108,6 +108,17 @@ Example: '&targetDir;' counts images in each target directory. \
 You can enter the template or select one of the predefined one and optionaly modify it.\
 "
 
+#define HELP_CONFIGURATION "\
+The configuration of mapping rules allows you to select one of the preconfigured set of rules. \
+Currently the loadable set of rules only includes the mapping of FITS keywords use to generate the synthetic keywords. \
+The mapping section also show the rules used to map the values of the IMAGETYP and FILTER keywords to their \
+corresponding synthetic variables &amp;type; and &amp;filter;.<br/>\
+The values of the keyword are tested with each regular expression (left column) in turn, \
+at the first match, the corresponding value (right column) is returned as the value of the corresponding \
+synthetic variable. The variables &amp;0;, &amp;1; ... may be used to insert the matching groups of the regular expression, \
+after cleaning of special characters.<br/>\
+Currently the list of mapping can only be modified in the initialization code.\
+"
 
 #define HELP_OPERATIONS "<p>The operations Copy/Move copy or move the files directly, without \
 adding any FITS keywords.  The operation Load/SaveAs loads each image temporarily in the workspace \
@@ -126,6 +137,7 @@ output directory is not specified).</p>\
 "Example of regular expression:<br/><tt>&nbsp;&nbsp;&nbsp;([^-_.]+)(?:[._-]|$)</tt><p>" + \
 "<h3><font color=\"#06F\">Group template</font></h3>" +  GROUP_TEMPLATE_TOOLTIP + \
 "Example of group definition:<br/><tt>&nbsp;&nbsp;&nbsp;&amp;targetdir;</tt><p> " + \
+"<h3><font color=\"#06F\">Configuration of mappings</font></h3>" +  HELP_CONFIGURATION + \
 "<h3><font color=\"#06F\">Operations</font></h3>" + HELP_OPERATIONS + \
 "</html>")
 
@@ -806,7 +818,8 @@ function MainDialog(engine, guiParameters) {
    typeConversion_GroupBox.title = "Remapping of IMAGETYP ";
    typeConversion_GroupBox.toolTip = "The value of the IMAGETYP keywords are tested with each regular expression in turn (left column),\n" +
            "at the first match, the corresponding value (right column) is returned as the synthetic variable &type;.\n" +
-           "The variables &0;, &1; ... may be used to insert the matching groups of the regular expression.";
+           "The variables &0;, &1; ... may be used to insert the matching groups of the regular expression.\n"+
+           "The replaced values are 'cleaned' of special characters.";
 
    var typeConversion_TreeBox = new TreeBox(typeConversion_GroupBox);
    typeConversion_TreeBox.rootDecoration = false;
@@ -825,7 +838,9 @@ function MainDialog(engine, guiParameters) {
    filterConversion_GroupBox.title = "Remapping of FILTER";
    filterConversion_GroupBox.toolTip = "The value of the FILTER keywords are tested with each regular expression in turn (left column),\n" +
            "at the first match, the corresponding value (right column) is returned as the synthetic variable &filter;.\n" +
-           "The variables &0;, &1; ... may be used to insert the matching groups of the regular expression.";
+           "The variables &0;, &1; ... may be used to insert the matching groups of the regular expression.\n"+
+           "The replaced values are 'cleaned' of special characters.";
+
 
    var filterConversion_TreeBox = new TreeBox(filterConversion_GroupBox);
    filterConversion_TreeBox.rootDecoration = false;

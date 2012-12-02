@@ -165,7 +165,8 @@ var ffM_LookupConverter = function() {
             if (conversionResultTemplate==="&0;") {
                // Assumed frequent case of copying input
                conversionResultFunction = function(compiledEntry, unquotedName) {
-                  return unquotedName.toLowerCase();
+                  // Cleanup from special characters
+                  return filterFITSValue(unquotedName);
                }
             } else if (backReferenceRegExp.test(conversionResultTemplate)) {
                // There are back refernce, using a replacing function
@@ -176,9 +177,11 @@ var ffM_LookupConverter = function() {
                      var replaceHandler = function(fullString, p1, offset, string) {
                         var matchIndex = + p1; // Convert to index
                         if (matchIndex>= matchedGroups.length) {
-                           return fullString; // Cannot replace, index too large
+                           // TODO Generate error in a more firendly way
+                           return "BACKREFERENCETOOLARGE"; // Cannot replace, index too large
                         } else {
-                           return matchedGroups[matchIndex];
+                           // Cleanup the returned value to avoid special characters
+                           return filterFITSValue(matchedGroups[matchIndex]);
                         }
                      };
 
