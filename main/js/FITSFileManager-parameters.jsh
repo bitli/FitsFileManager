@@ -317,6 +317,7 @@ FFM_GUIParameters.prototype.loadSettings = function() {
    var o, t, parameterVersion, templateErrors, ki;
    if ( (parameterVersion = load( "version",    DataType_Double )) !== null ) {
       if (parameterVersion > VERSION) {
+         Console.show();
          Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' have version ", parameterVersion, " later than script version ", VERSION, ", settings ignored");
          Console.flush();
       } else {
@@ -362,7 +363,9 @@ FFM_GUIParameters.prototype.loadSettings = function() {
                if(ki>=0) {
                   this.currentConfigurationIndex = ki;
                } else {
+                  Console.show();
                   Console.writeln("Mapping rules '" + o + "' unknown, using '" + ffM_Configuration.configurationList[this.currentConfigurationIndex ] + "'");
+                  Console.flush();
                }
             }
          }

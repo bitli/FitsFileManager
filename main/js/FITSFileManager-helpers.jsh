@@ -84,23 +84,16 @@ function loadSaveFile( sourceFilePath, targetFilePath ) {
    }
    var image = images[0];
    var keywords = image.keywords;
-//   var firstFITSFileManagerHistory = false;
    var firstORIGFILE = false;
    for (var i=0; i<keywords.length; i++) {
-//      if (keywords[i].name === "HISTORY" && keywords[i].comment  && keywords[i].comment.indexOf(FFM_FITS_HISTORY_LEADER)==0) {
-//         firstFITSFileManagerHistory = keywords[i].comment;
-//         break;
       if (keywords[i].name === "ORIGFILE" && keywords[i].value) {
          firstORIGFILE = keywords[i].value;
          break;
       }
    }
-//   if (firstFITSFileManagerHistory) {
-//      Console.writeln("Keep keyword: " + firstFITSFileManagerHistory);
    if (firstORIGFILE) {
       Console.writeln("Kept ORIGFILE as: " + firstORIGFILE);
    } else {
-//      var kw = new FITSKeyword( "HISTORY", "", FFM_FITS_HISTORY_LEADER + " " + File.extractName(sourceFilePath) + File.extractExtension(sourceFilePath));
       var kw = new FITSKeyword( "ORIGFILE",
                File.extractName(sourceFilePath) + File.extractExtension(sourceFilePath),
                "Original name (FITSFileManager)");

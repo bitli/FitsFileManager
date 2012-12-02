@@ -7,6 +7,7 @@
 //#include <pjsr/FrameStyle.jsh>
 #include <pjsr/TextAlign.jsh>
 #include <pjsr/StdIcon.jsh>
+#include <pjsr/StdCursor.jsh>
 #include <pjsr/StdButton.jsh>
 #include <pjsr/FrameStyle.jsh>
 #include <pjsr/Color.jsh>
@@ -1084,10 +1085,16 @@ function MainDialog(engine, guiParameters) {
          msg.execute();
          return;
       }
-      var resultText = this.parent.engine.executeFileOperations(0);
-      this.parent.removeDeletedFiles();
-      this.parent.refreshTargetFiles();
-
+      try {
+         console.show();
+         this.dialog.cursor = new Cursor( StdCursor_Hourglass );
+         var resultText = this.parent.engine.executeFileOperations(0);
+         this.parent.removeDeletedFiles();
+         this.parent.refreshTargetFiles();
+      } finally {
+         this.dialog.cursor = new Cursor( StdCursor_Arrow );
+         console.hide();
+      }
       this.dialog.completionDialog.setResultText(resultText + "\nMoved files were removed from the input list");
       this.dialog.completionDialog.setResultModeMove();
       var completionCode =  this.dialog.completionDialog.execute();
@@ -1117,7 +1124,14 @@ function MainDialog(engine, guiParameters) {
             msg.execute();
             return;
       }
-      var resultText =  this.parent.engine.executeFileOperations(1);
+      try {
+         console.show();
+         this.dialog.cursor = new Cursor( StdCursor_Hourglass );
+         var resultText =  this.parent.engine.executeFileOperations(1);
+      } finally {
+         this.dialog.cursor = new Cursor( StdCursor_Arrow );
+         console.hide();
+      }
 
       this.dialog.completionDialog.setResultText(resultText + "\nCopied files are still checked in the input list");
       this.dialog.completionDialog.setResultModeCopy();
@@ -1163,7 +1177,14 @@ function MainDialog(engine, guiParameters) {
             msg.execute();
             return;
       }
-      var resultText = this.parent.engine.executeFileOperations(2);
+      try {
+         console.show();
+         this.dialog.cursor = new Cursor( StdCursor_Hourglass );
+         var resultText = this.parent.engine.executeFileOperations(2);
+      } finally {
+         this.dialog.cursor = new Cursor( StdCursor_Arrow );
+         console.hide();
+      }
 
       this.dialog.completionDialog.setResultText(resultText+ "\nLoad/saved files are still checked in the input list");
       this.dialog.completionDialog.setResultModeCopy();
