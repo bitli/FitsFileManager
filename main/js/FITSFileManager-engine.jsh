@@ -16,6 +16,11 @@ function FFM_Engine(guiParameters) {
    this.outputDirectory = "C:/temp";
 #endif
 
+   // Will be initialiezd by setConfiguration but must not be cleared by a reset() (unless it is immediately reconfigured)
+   this.filterConverter = function() {throw "configuration not set - filterConverter"};
+   this.typeConverter =  function() {throw "configuration not set - typeConverter"};
+   this.remappedFITSkeywords = null;
+
 
    // Variables that can be reset (when doing clear all)
    this.reset = function() {
@@ -29,12 +34,7 @@ function FFM_Engine(guiParameters) {
       this.shownFITSKeyNames = {}; // A FITSKeyWord is shown in the source file table if its name is a key of this object
       this.shownSyntheticKeyNames = {}; // A synthethic variable is shown in the source file table if its name is a key of this object
 
-      // Will be initialiezd by setConfiguration
-      this.filterConverter = function() {throw "configuration not set - filterConverter"};
-      this.typeConverter =  function() {throw "configuration not set - typeConverter"};
-      this.remappedFITSkeywords = null;
-
-      this.resetTarget();
+       this.resetTarget();
     };
 
     this.resetTarget = function () {
@@ -551,8 +551,9 @@ function FFM_Engine(guiParameters) {
          return !((!this.inputFiles.length) || (!this.outputDirectory));
    }
 
-
+   // ----------------------------------------------------------------------------------------------------
    this.reset();
+   // ----------------------------------------------------------------------------------------------------
 
 }
 

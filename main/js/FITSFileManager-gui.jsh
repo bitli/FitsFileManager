@@ -391,8 +391,7 @@ function MainDialog(engine, guiParameters) {
    this.filesAdd_Button = new ToolButton( this );
    this.filesAdd_Button.icon = new Bitmap( ":/images/image_container/add_files.png" );
    this.filesAdd_Button.toolTip = "Add files";
-   this.filesAdd_Button.onClick = function()
-      {
+   this.filesAdd_Button.onClick = function() {
          var ofd = new OpenFileDialog;
          ofd.multipleSelections = true;
          ofd.caption = "Select FITS Files";
@@ -895,7 +894,8 @@ function MainDialog(engine, guiParameters) {
          var imageKeywords  = ffM_keywordsOfFile.makeImageKeywordsfromFile(fileName);
          this.dialog.engine.inputFITSKeywords[i] = imageKeywords;
          // Create the synthethic variables using the desired rules
-         var variables = makeSynthethicVariables(fileName, imageKeywords, this.dialog.engine.remappedFITSkeywords,
+         var variables = makeSynthethicVariables(fileName, imageKeywords,
+              this.dialog.engine.remappedFITSkeywords,
               this.dialog.engine.filterConverter, this.dialog.engine.typeConverter);
          this.dialog.engine.inputVariables[i] = variables;
       }
@@ -1073,7 +1073,7 @@ function MainDialog(engine, guiParameters) {
 
    this.move_Button = new PushButton( this );
    this.move_Button.text = "Move files";
-   this.move_Button.toolTip = "Move the checked files to the output directory.\nNo HISTORY keyword added";
+   this.move_Button.toolTip = "Move the checked files to the output directory.\nNo HISTORY or ORIGFILE keyword added";
    this.move_Button.enabled = false;
    this.move_Button.onClick = function() {
       var listOfFiles = this.parent.makeListOfCheckedFiles();
@@ -1106,7 +1106,7 @@ function MainDialog(engine, guiParameters) {
 
    this.copy_Button = new PushButton( this );
    this.copy_Button.text = "Copy files";
-   this.copy_Button.toolTip = "Copy the checked files in the output directory.\nNo HISTORY keyword added";
+   this.copy_Button.toolTip = "Copy the checked files in the output directory.\nNo HISTORY or ORIGFILE keyword added";
    this.copy_Button.enabled = false;
    this.copy_Button.onClick = function() {
       var listOfFiles = this.parent.makeListOfCheckedFiles();
@@ -1149,7 +1149,10 @@ function MainDialog(engine, guiParameters) {
 
    this.loadSave_Button = new PushButton( this );
    this.loadSave_Button.text = "Load / SaveAs files";
-   this.loadSave_Button.toolTip = "Load the checked files and save them in the output directory.\nAdd ORIGFILE keyword with original file name if not already present.\n(Does not work for files with multiple images)\n";
+   this.loadSave_Button.toolTip = "Load the checked files and save them in the output directory.\n" +
+         "BEWARE: Not supported for files containing multiple HDU (multiple images).\n"+
+         "Add ORIGFILE keyword with original file name if not already present.\n" +
+         "Add HISTORY keyword with new file name.\n";
    this.loadSave_Button.enabled = false;
    this.loadSave_Button.onClick = function() {
       var listOfFiles = this.parent.makeListOfCheckedFiles();
@@ -1370,7 +1373,8 @@ function MainDialog(engine, guiParameters) {
                debug("rebuildFilesTreeBox: Set column, colOffset " + colOffset + ", index "  + indexOfKey + ", value " + keys[iKeyOfFile].value);
 #endif
                var formattedValue = key.strippedValue;
-               if (key.isNumeric) {
+
+              if (key.isNumeric) {
                   // Remove leading 0 and trailing 0 of decimal values to use less space
                   var n = key.numericValue;
                   if (n % 1 === 0) {
@@ -1383,14 +1387,7 @@ function MainDialog(engine, guiParameters) {
                } else {
                   formattedValue = ffM_unquote(key.value);
                }
-               try {
                node.setText(colOffset + indexOfKey, formattedValue);
-               } catch(error) {
-                  Console.writeln("**** DEBUG - FITSFileManager-gui ERROR: " + error + " - " + colOffset + "," + indexOfKey + ", '" + replaceAmps(formattedValue) +"'");
-                  Console.writeln("****        types " + typeof  colOffset + "," + typeof indexOfKey + " " + typeof formattedValue);
-                  Console.writeln("****        iKeyOfFile " + iKeyOfFile + " " +key.isNumeric +", key " + key.toString() + " file " + i + ": " +  this.engine.inputFiles[i]);
-                  Console.flush();
-               }
             }
          }
       }
@@ -1424,6 +1421,9 @@ function MainDialog(engine, guiParameters) {
    // -- Add a list of files to the TreeBox, refresh the TreeBox
    this.addFilesAction = function (fileNames)
    {
+#ifdef DEBUG
+      debug("addFilesAction - adding " + fileNames.length + " files");
+#endif
       this.engine.addFiles(fileNames);
 
       this.rebuildFilesTreeBox();
@@ -1433,7 +1433,9 @@ function MainDialog(engine, guiParameters) {
       this.dialog.updateTotal();
 
       this.refreshTargetFiles();
-      //this.showOrHideFITSkey(); // *** TEST
+#ifdef DEBUG
+      debug("addFilesAction - added " + fileNames.length + " files");
+#endif
    }
 
 
@@ -1903,7 +1905,7 @@ function FITSKeysDialog( parentDialog, engine) {
 #endif
          if (keyValue === null) {
             // No value at all
-            fitsVarRootNode.child(i).setTextColor(0,0x00FF0000);
+            fitsVarRootNode.child(i).setTextColor(0,0x00FF0000); // Red
             fitsVarRootNode.child(i).setText(1,'');
             fitsVarRootNode.child(i).setText(2,'');
             fitsVarRootNode.child(i).setText(3,'');
@@ -1911,7 +1913,7 @@ function FITSKeysDialog( parentDialog, engine) {
             var nullOrValue = filterFITSValue(keyValue.value);
             if (nullOrValue === null) {
                // All spaces value
-               fitsVarRootNode.child(i).setTextColor(0,0x00FF0000);
+               fitsVarRootNode.child(i).setTextColor(0,0x00FF0000);  // Red
                fitsVarRootNode.child(i).setText(1,keyValue.value);
                fitsVarRootNode.child(i).setText(2,this.getTypeString(keyValue));
                fitsVarRootNode.child(i).setText(3,keyValue.comment);

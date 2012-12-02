@@ -198,7 +198,8 @@ var ffM_allTests = {
    test_ffM_unquoted_string_one_space : function() {
       pT_assertEquals(" ",ffM_unquote("' '"));
    },
-   test_ffM_unquoted_string_empty_string : function() {
+   // This should not be converted to the 'space' string
+   test_ffM_unquoted_strng_empty_string : function() {
       pT_assertEquals("",ffM_unquote("''"));
    },
    test_ffM_unquoted_many_spaces : function() {

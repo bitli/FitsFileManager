@@ -202,9 +202,8 @@ var ffM_Configuration = (function() {
 // The object FFM_GUIParameters keeps track of the parameters that are saved between executions
 // (or that should be saved)
 function FFM_GUIParameters() {
-
-   // Initialize all parameters to default values
-   this.reset = function () {
+   // Called at end of constructor
+   this.initializeParametersToDefaults = function () {
 
       // Default temp
       this.targetFileNameTemplate = FFM_DEFAULT_TARGET_FILENAME_TEMPLATE;
@@ -280,7 +279,6 @@ function FFM_GUIParameters() {
 
 
    }
-   this.reset();
 
 
    // For debugging and logging
@@ -293,6 +291,10 @@ function FFM_GUIParameters() {
       s += "  currentConfigurationIndex:          " + this.currentConfigurationIndex + "\n";
       return s;
    }
+
+   this.initializeParametersToDefaults();
+
+
 }
 
 FFM_GUIParameters.prototype.loadSettings = function() {

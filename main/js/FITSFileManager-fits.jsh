@@ -151,16 +151,16 @@ function ffM_unquote(s) {
       s = s.substring(1,s.length-1);
       // Replace double quotes inside by single quotes
       s = s.replace("''","'","g");
-      // Trim trailing spaces only, but keep at least one space
-      var lastSpaceIndex = s.length-1;
-      while (lastSpaceIndex > 0 && s.charCodeAt(lastSpaceIndex)===32) { // Space
-         lastSpaceIndex--;
-      }
-      if (lastSpaceIndex !== s.length-1) {
-         s = s.substring(0,lastSpaceIndex+1);
+      if (s.length>0) {
+         // Not the empty string,
+         // trim trailing spaces only, but keep the first character if it is a space
+         s = s.trimRight();
+         if (s.length===0) {
+            s = ' ';
+         }
       }
    }
-    return s;
+   return s;
 }
 
 
@@ -178,7 +178,7 @@ var ffM_keywordsOfFile = (function() {
    // Common method for imageKeywords
    var imageKeywordsPrototype = {
 
-      reset: function reset() {
+      resetImageKeywords: function reset() {
          var imageKeywords = this;
          // This two attributes may be accessed by the callers, but this is not recommended
          imageKeywords.fitsKeywordsMap = {};
@@ -188,7 +188,7 @@ var ffM_keywordsOfFile = (function() {
       // -- Clear and load the FITS keywords from the file, adding them to the value map too
       loadFitsKeywords:  function loadFitsKeywords(filePath) {
          var imageKeywords = this;
-         this.reset();
+         this.resetImageKeywords();
          var name, fitsKeyFromList, i;
          imageKeywords.fitsKeywordsList = ffM_loadFITSKeywordsList(filePath);
          // Make a map of all fits keywords with a value (this remove the comment keywords)

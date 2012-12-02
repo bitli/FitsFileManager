@@ -374,7 +374,7 @@ var ffM_allTests = {
       var guiParameters = new FFM_GUIParameters();
       // This ensures that there are default settings in first execution
       guiParameters.loadSettings();
-      guiParameters.reset();
+      guiParameters.initializeParametersToDefaults();
       guiParameters.saveSettings();
 
       guiParameters.loadSettings();
