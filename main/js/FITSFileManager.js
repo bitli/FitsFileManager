@@ -124,43 +124,46 @@ function debug(str) {
 //     Refactored FITS keyword loading (separate js file), parameters (separate file) and quite some code
 //     Correcting error of selection of file in FITSKeyword window
 //     Corrected error of list entry reported by Vicent
-//     Small presentation enhancements
 //     Document &kw:present?absent;
 //     Show alternate FITS keyword in 'Remapping' section
 //     Allow selection of visibility of synthetic variable in inputFile table
-//     Accept FITS keywords as variables, clean the value result
+//     Accept FITS keywords as variables, clean FITS kewyword value to make clean file names
 //     Removed the &object; variable as this can now be done with &OBJECT;
-//     Added selection of mapping rules
-//     Reworked conversion rules for filters and types
+//     Added predefiend named configuration to select kewyword mappign and conversions,
+//     two configurations predefined (DEFAULT and CAHA)
+//     Reworked conversion rules for filters and types, support back references in right hand side.
 //     Enhance unquoting of string (respect FITS standard)
+//     Handle cursor and console during file move/copy operations
 //     Additional tests
+//     Various presentation enhancements
 
 
 
 
 // TODO
-// Option for handling of minus and other special characters to form a file name being valid PI ids
+// Make cleaning of FITS keyword values used in file name configurable
+// Support optional reformatting of file name as valid PI identifier
 // Add mark of sequence of text to ignore if missing variable value (in parentheses for example)
-// Generate an 'orderBy' column
-// Hide common header part of source folders to make file name more visible
+// Enhance control of ordering (support for ordering of non string values if possible)
+// Hide common header part of source folders in file name in tree view to make file name more visible
 // Add a way to use directory of source file as variable  &filedir, &filedirparent for template matching and group names
-// Support date formatting, number formatting
-// Create a log file to record the source files
+// Create a log file to record the operations
+// Support export of FITS keywords as CSV or tab delimite
 // Request confirmation for move (or move and copy)
 // Possibility to add FITS keywords to copied files (to replace erroneous values or add missing ones)
-// Add bar for action on fits header: add, add if missing, add or replace, replace if present, remove, remove all
-// Allow to open selected files (not required, part of new file manager)
-// Rules set: Keep list of recent templates used (currently one 1 kept)
-//            Configurable list of transformation, especially for filters (ha, ..)
+// Possibility to check FITS header for suspect values and consistency (for example with size)
+// May be allow to preview or open a selected file
+// Possibly alternate configuration depending on IMAGETYP
+// Batch mode (non GUI)
 // Normalize directory (remove .., redundant /)
-// Check that move is on same drive
 // Check # of images in file (when using load image), or use direct writes to update fits headers
-// Change cursor to mark busy during move/copy
-// Document and add default for long-obs and night
-// Management of alternate keywords for synthethic keywords
+// Enhance 'night' with accepting other dates and possibly midnight offset
+// Management of alternate source keywords for synthethic keywords, possibly default values in keyword mapping
 // Make COUNT_PAD a parameter or use a configurable default format
-// Make creation of HISTORY keyword optional
+// Make creation of HISTORY/ORIGFILE keyword optional, make name of ORIGFILE key configurable
+// Support date formatting, number formatting (padding)
 
+// Some ideas for formatting:
 // Format indicators
 // %<stuff>
 // %s (for maximum size, fixed sizre with padding)

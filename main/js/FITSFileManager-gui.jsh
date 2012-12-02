@@ -1093,7 +1093,7 @@ function MainDialog(engine, guiParameters) {
          this.parent.refreshTargetFiles();
       } finally {
          this.dialog.cursor = new Cursor( StdCursor_Arrow );
-         console.hide();
+         //console.hide();
       }
       this.dialog.completionDialog.setResultText(resultText + "\nMoved files were removed from the input list");
       this.dialog.completionDialog.setResultModeMove();
@@ -1130,7 +1130,7 @@ function MainDialog(engine, guiParameters) {
          var resultText =  this.parent.engine.executeFileOperations(1);
       } finally {
          this.dialog.cursor = new Cursor( StdCursor_Arrow );
-         console.hide();
+         //console.hide();
       }
 
       this.dialog.completionDialog.setResultText(resultText + "\nCopied files are still checked in the input list");
@@ -1183,7 +1183,7 @@ function MainDialog(engine, guiParameters) {
          var resultText = this.parent.engine.executeFileOperations(2);
       } finally {
          this.dialog.cursor = new Cursor( StdCursor_Arrow );
-         console.hide();
+         //console.hide();
       }
 
       this.dialog.completionDialog.setResultText(resultText+ "\nLoad/saved files are still checked in the input list");

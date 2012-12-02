@@ -371,7 +371,9 @@ FFM_GUIParameters.prototype.loadSettings = function() {
          }
       }
    } else {
+      Console.show();
       Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' do not have a 'version' key, settings ignored");
+      Console.flush();
    }
 
 };
