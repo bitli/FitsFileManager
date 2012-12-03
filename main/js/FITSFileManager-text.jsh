@@ -159,9 +159,102 @@ H: {
    GROUP_TEMPLATE_TOOLTIP :
       GROUP_TEMPLATE_TOOLTIP,
 
+   HELP_LABEL: ("<b>" + TITLE + " v" + VERSION + "</b> &mdash; Copy or move FITS image " +
+           "files using values derived from FITS keywords and from original file name, using a template " +
+           "to create the target directory/file name. See the help for more details."),
+
+   // Tools tips CAN be html
+
+   FILES_TREEBOX_TOOLTIP: ( "List of input files - you can add and remove files with the buttons below.\n" +
+                               "Select the one you want to operate on with the check box,\n"+
+                               "The columns include synthethic and loaded FITS keywords,\n" +
+                               "select the columns with the 'text' icon button\n"+
+                               "You can sort the files by clicking on a column header. Then click the 'refresh' button.\n"+
+                               "Beware - sort is in alphabetical order even for numbers"),
+
+   KEY_BUTTON_TOOLTIP: "Show all keywords and variables of selected file,\nselec the columns of the Input File List",
+
+   DIRADD_BUTTON_TOOLTIP: "Add folder including subfolders",
+
+   CHECK_SELECTED_BUTTON_TOOLTIP: "Check selected images",
+
+   CHECK_UNSELECTED_BUTTON_TOOLTIP: "Uncheck selected images",
+
+   REMOVE_FILES_BUTTON_TOOLTIP:  "Remove selected images from the list",
+
+   REMOVE_ALL_FILES_BUTTON_TOOLTIP: "Remove all images from the list",
+
+
+
+   KEYWORDNAMES_GROUPBOX_TOOLTIP: "The left side are the keywords used by default,\nThe right side are the keywords used in the current configuration. ",
+
+   TYPECONVERSION_GROUPBOX_TOOLTIP: ("The value of the IMAGETYP keywords are tested with each regular expression in turn (left column),\n" +
+           "at the first match, the corresponding value (right column) is returned as the synthetic variable &type;.\n" +
+           "The variables &0;, &1; ... may be used to insert the matching groups of the regular expression.\n"+
+           "The replaced values are 'cleaned' of special characters."),
+
+   FILTERCONVERSION_GROUPBOX_TOOLTIP: ("The value of the FILTER keywords are tested with each regular expression in turn (left column),\n" +
+           "at the first match, the corresponding value (right column) is returned as the synthetic variable &type;.\n" +
+           "The variables &0;, &1; ... may be used to insert the matching groups of the regular expression.\n"+
+           "The replaced values are 'cleaned' of special characters."),
+
+   OUTPUTDIR_TOOLTIP: "Select the base output directory.\nAny directory created by your template will be below this directory.",
+
+   OUTPUTDIR_SELECT_TOOLTIP: "Select the base output directory.",
+
+   TRANSFORM_TREEBOX_TOOLTIP: ("List of selected files and how they will be converted.\n" +
+                               "If there is any error, the corresponding file will be in red.\n"+
+                               "You can correct the error or uncheck the corresponding input file\n"+
+                               "The files are in the order of the input (do a Refresh if you sorted the input),\n"+
+                               "This matters for the &count; and &rank; keywords."),
+
+   CHECK_BUTTON_TOOLTIP: "Check that the target files are valid\nthis is automatically done before any other operation",
+
+   REFRESH_BUTTON_TOOLTIP:  "Refresh the list of operations\nrequired after a sort on an header (there is on onSort event)",
+
+   MOVE_BUTTON_TOOLTIP:  "Move the checked files to the output directory.\nNo HISTORY or ORIGFILE keyword added",
+
+   COPY_BUTTON_TOOLTIP: "Copy the checked files in the output directory.\nNo HISTORY or ORIGFILE keyword added",
+
+   LOADSAVE_BUTTON_TOOLTIP:  ("Load the checked files and save them in the output directory.\n" +
+         "BEWARE: Not supported for files containing multiple HDU (multiple images).\n"+
+         "Add ORIGFILE keyword with original file name if not already present.\n" +
+         "Add HISTORY keyword with new file name.\n"),
+
+
+   HELP_BUTTON_TOOLTIP:  "Browse Documentation",
+
+      COMPLETION_CONTINUE_BUTTON_TOOLTIP : "Continue working in FITSFileManager, moved files have been removed from input list",
+      COMPLETION_KEEP_BUTTON_TOOLTIP : "Keep checked files in input list",
+      COMPLETION_REMOVE_BUTTON_TOOLTIP : "Remove checked files from input list",
+      COMPLETION_LEAVE_BUTTON_TOOLTIP : "Exit FITS file manager",
+
+
    },
 
-// T: raw text (none)
+   // T: raw text
+   T: {
+      KEYWORDNAMES_GROUPBOX_TITLE: "Keyword remapping ",
+      TYPECONVERSION_GROUPBOX_TITLE: "Remapping of IMAGETYP ",
+      FILTERCONVERSION_GROUPBOX_TITLE: "Remapping of FILTER ",
+      REMAPPING_SECTION_PART_TEXT: "Remapping of keywords and values",
+      OUPUT_SECTION_TEXT_PART:  "Output base directory",
+      GET_DIRECTORY_DIALOG_CAPTION: "Select Output Directory",
+      RESULT_SECTION_PART_TEXT:  "Resulting operations" ,
+
+      CHECK_BUTTON_TEXT: "Check validity",
+      REFRESH_BUTTON_TEXT: "Refresh list",
+      MOVE_BUTTON_TEXT: "Move files",
+      COPY_BUTTON_TEXT: "Copy files",
+      LOADSAVE_BUTTON_TEXT:  "Load / SaveAs files",
+
+      COMPLETION_TITLE: "FITSFileManager operation result",
+      COMPLETION_CONTINUE_BUTTON_TEXT : "Continue in FITSFileManager",
+      COMPLETION_KEEP_BUTTON_TEXT : "Continue in FITSFileManager\nKeep checked files",
+      COMPLETION_REMOVE_BUTTON_TEXT : "Continue in FITSFileManager\nRemove checked files",
+      COMPLETION_LEAVE_BUTTON_TEXT : "Leave FITSFileManager",
+
+   }
 
    }; // return
 }) ();

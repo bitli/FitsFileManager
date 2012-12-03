@@ -211,9 +211,7 @@ function MainDialog(engine, guiParameters) {
    helpLabel.margin = 4;
    helpLabel.wordWrapping = true;
    helpLabel.useRichText = true;
-   helpLabel.text = "<b>" + TITLE + " v" + VERSION + "</b> &mdash; Copy or move FITS image " +
-           "files using values derived from FITS keywords and from original file name, using a template " +
-           "to create the target directory/file name. See the help for more details.";
+   helpLabel.text = Text.H.HELP_LABEL;
 
 
    //----------------------------------------------------------------------------------
@@ -229,12 +227,7 @@ function MainDialog(engine, guiParameters) {
    this.filesTreeBox.setHeaderText(0, "Filename");
    this.filesTreeBox.sort(0,true);
    this.filesTreeBox.setMinSize( 700, 200 );
-   this.filesTreeBox.toolTip = "List of input files - you can add and remove files with the buttons below.\n" +
-                               "Select the one you want to operate on with the check box,\n"+
-                               "The columns include synthethic and loaded FITS keywords,\n" +
-                               "select the columns with the 'text' icon button\n"+
-                               "You can sort the files by clicking on a column header. Then click the 'refresh' button.\n"+
-                               "Beware - sort is in alphabetical order even for numbers";
+   this.filesTreeBox.toolTip = Text.H.FILES_TREEBOX_TOOLTIP;
 
 
    // Assume that 'check' is the only operation that update the nodes,
@@ -255,7 +248,7 @@ function MainDialog(engine, guiParameters) {
    // -- Open FITS keyword dialog
    this.keyButton = new ToolButton( this );
    this.keyButton.icon = new Bitmap( ":/images/icons/text.png" );
-   this.keyButton.toolTip = "Show all keywords and variables of selected file,\nselec the columns of the Input File List";
+   this.keyButton.toolTip = Text.H.KEY_BUTTON_TOOLTIP;
    this.keyButton.onClick = function() {
    if (this.dialog.engine.keywordsSet.size()) {
          this.dialog.fitsKeysDialog.execute();
@@ -284,7 +277,7 @@ function MainDialog(engine, guiParameters) {
    // -- Add Directory
    this.dirAdd_Button = new ToolButton( this );
    this.dirAdd_Button.icon = new Bitmap( ":/images/icons/folders.png" );
-   this.dirAdd_Button.toolTip = "Add folder including subfolders";
+   this.dirAdd_Button.toolTip =Text.H.DIRADD_BUTTON_TOOLTIP;
    this.dirAdd_Button.onClick = function()
       {
          var gdd = new GetDirectoryDialog;
@@ -310,7 +303,7 @@ function MainDialog(engine, guiParameters) {
    // -- Check selected files
    this.checkSelected_Button = new ToolButton( this );
    this.checkSelected_Button.icon = new Bitmap( ":/images/process_explorer/expand_all.png" );
-   this.checkSelected_Button.toolTip = "<p>Check selected images.</p>";
+   this.checkSelected_Button.toolTip = Text.H.CHECK_SELECTED_BUTTON_TOOLTIP;
    this.checkSelected_Button.onClick = function() {
 #ifdef DEBUG
       debug("checkSelected_Button: onClick");
@@ -325,7 +318,7 @@ function MainDialog(engine, guiParameters) {
    // -- uncheck selected files
    this.uncheckSelected_Button = new ToolButton( this );
    this.uncheckSelected_Button.icon = new Bitmap( ":/images/process_explorer/collapse_all.png" );
-   this.uncheckSelected_Button.toolTip = "<p>Uncheck selected images.</p>";
+   this.uncheckSelected_Button.toolTip = Text.H.CHECK_UNSELECTED_BUTTON_TOOLTIP;
    this.uncheckSelected_Button.onClick = function() {
 #ifdef DEBUG
       debug("uncheckSelected_Button: onClick");
@@ -340,7 +333,7 @@ function MainDialog(engine, guiParameters) {
    // -- Remove selected files
    this.remove_files_Button = new ToolButton( this );
    this.remove_files_Button.icon = new Bitmap( ":/images/close.png" );
-   this.remove_files_Button.toolTip = "<p>Remove selected images from the list.</p>";
+   this.remove_files_Button.toolTip = Text.H.REMOVE_FILES_BUTTON_TOOLTIP;
    this.remove_files_Button.onClick = function() {
 #ifdef DEBUG
       debug("remove_files_Button: onClick");
@@ -364,7 +357,7 @@ function MainDialog(engine, guiParameters) {
    // -- Remove all files
    this.remove_all_files_Button = new ToolButton( this );
    this.remove_all_files_Button.icon = new Bitmap( ":/images/close_all.png" );
-   this.remove_all_files_Button.toolTip = "<p>Remove all images from the list.</p>";
+   this.remove_all_files_Button.toolTip = Text.H.REMOVE_ALL_FILES_BUTTON_TOOLTIP;
    this.remove_all_files_Button.onClick = function() {
 #ifdef DEBUG
       debug("remove_all_files_Button: onClick");
@@ -660,13 +653,13 @@ function MainDialog(engine, guiParameters) {
    // Keywords to use
    var keywordNames_GroupBox = new GroupBox(this);
 
-   keywordNames_GroupBox.title = "Keyword remapping ";
-   keywordNames_GroupBox.toolTip = "The left side are the keywords used by default,\nThe right side are the keywords used in the current configuration. ";
+   keywordNames_GroupBox.title = Text.T.KEYWORDNAMES_GROUPBOX_TITLE;
 
    var keywordNames_TreeBox = new TreeBox(keywordNames_GroupBox);
    keywordNames_TreeBox.rootDecoration = false;
    keywordNames_TreeBox.numberOfColumns = 2;
    keywordNames_TreeBox.headerVisible = false;
+   keywordNames_TreeBox.toolTip = Text.H.KEYWORDNAMES_GROUPBOX_TOOLTIP
 
 
    var refreshRemappedFITSkeywordsNames = function (keywordNames_TreeBox) {
@@ -685,11 +678,8 @@ function MainDialog(engine, guiParameters) {
    // Conversion of type names
    var typeConversion_GroupBox = new GroupBox(this);
 
-   typeConversion_GroupBox.title = "Remapping of IMAGETYP ";
-   typeConversion_GroupBox.toolTip = "The value of the IMAGETYP keywords are tested with each regular expression in turn (left column),\n" +
-           "at the first match, the corresponding value (right column) is returned as the synthetic variable &type;.\n" +
-           "The variables &0;, &1; ... may be used to insert the matching groups of the regular expression.\n"+
-           "The replaced values are 'cleaned' of special characters.";
+   typeConversion_GroupBox.title = Text.T.TYPECONVERSION_GROUPBOX_TITLE;
+   typeConversion_GroupBox.toolTip = Text.H.TYPECONVERSION_GROUPBOX_TOOLTIP;
 
    var typeConversion_TreeBox = new TreeBox(typeConversion_GroupBox);
    typeConversion_TreeBox.rootDecoration = false;
@@ -710,11 +700,8 @@ function MainDialog(engine, guiParameters) {
 
    // Conversion of filter names
    var filterConversion_GroupBox = new GroupBox(this);
-   filterConversion_GroupBox.title = "Remapping of FILTER";
-   filterConversion_GroupBox.toolTip = "The value of the FILTER keywords are tested with each regular expression in turn (left column),\n" +
-           "at the first match, the corresponding value (right column) is returned as the synthetic variable &filter;.\n" +
-           "The variables &0;, &1; ... may be used to insert the matching groups of the regular expression.\n"+
-           "The replaced values are 'cleaned' of special characters.";
+   filterConversion_GroupBox.title = Text.T.FILTERCONVERSION_GROUPBOX_TITLE;
+   filterConversion_GroupBox.toolTip = Text.H.FILTERCONVERSION_GROUPBOX_TOOLTIP;
 
 
    var filterConversion_TreeBox = new TreeBox(filterConversion_GroupBox);
@@ -756,7 +743,7 @@ function MainDialog(engine, guiParameters) {
        refreshRemappedFITSkeywordsNames(keywordNames_TreeBox);
        refreshTypeConversions(typeConversion_TreeBox);
        refreshFilterConversions(filterConversion_TreeBox);
-       this.dialog.barConversions.setCollapsedTitle("Remapping of keywords and values - " + ffM_Configuration.configurationList[guiParameters.currentConfigurationIndex]);
+       this.dialog.barConversions.setCollapsedTitle(Text.T.REMAPPING_SECTION_PART_TEXT + " - " + ffM_Configuration.configurationList[guiParameters.currentConfigurationIndex]);
 
       // If the rules are changed, all variables must be recalculated
       // TODO RECALCULATE VARIABLES
@@ -813,8 +800,8 @@ function MainDialog(engine, guiParameters) {
    this.conversion_GroupBox.sizer.add( currentState_GroupBox, 100);
 
    this.barConversions = new SectionBar( this, true );
-   this.barConversions.setTitle( "Remapping of keywords and values" );
-   this.barConversions.setCollapsedTitle("Remapping of keywords and values - " + ffM_Configuration.configurationList[guiParameters.currentConfigurationIndex] );
+   this.barConversions.setTitle(Text.T.REMAPPING_SECTION_PART_TEXT );
+   this.barConversions.setCollapsedTitle(Text.T.REMAPPING_SECTION_PART_TEXT + " - " + ffM_Configuration.configurationList[guiParameters.currentConfigurationIndex] );
    this.barConversions.setSection( this.conversion_GroupBox );
 
    //this.barConversions.toggleSection();
@@ -829,19 +816,19 @@ function MainDialog(engine, guiParameters) {
    this.outputDir_Edit = new Edit( this );
    this.outputDir_Edit.readOnly = true;
    this.outputDir_Edit.text = this.engine.outputDirectory;
-   this.outputDir_Edit.toolTip ="Select the base output directory.\nAny directory created by your template will be below this directory.";
+   this.outputDir_Edit.toolTip = Text.H.OUTPUTDIR_TOOLTIP;
 
    this.outputDirSelect_Button = new ToolButton( this );
    this.outputDirSelect_Button.icon = new Bitmap( ":/images/icons/select.png" );
-   this.outputDirSelect_Button.toolTip ="Select the base output directory.";
+   this.outputDirSelect_Button.toolTip = Text.H.OUTPUTDIR_SELECT_TOOLTIP;
    this.outputDirSelect_Button.onClick = function() {
       var gdd = new GetDirectoryDialog;
       gdd.initialPath = engine.outputDirectory;
-      gdd.caption = "Select Output Directory";
+      gdd.caption = Text.T.GET_DIRECTORY_DIALOG_CAPTION;
       if ( gdd.execute() ) {
          this.dialog.engine.outputDirectory = gdd.directory;
          this.dialog.outputDir_Edit.text = this.dialog.engine.outputDirectory;
-         this.dialog.barOutput.setCollapsedTitle( "Output base directory - " +  this.dialog.engine.outputDirectory);
+         this.dialog.barOutput.setCollapsedTitle( Text.T.OUPUT_SECTION_TEXT_PART + " - " +  this.dialog.engine.outputDirectory);
          this.dialog.updateButtonState();
       }
    }
@@ -854,8 +841,8 @@ function MainDialog(engine, guiParameters) {
    this.outputDir_GroupBox.sizer.add( this.outputDirSelect_Button );
 
    this.barOutput = new SectionBar( this );
-   this.barOutput.setTitle( "Output base directory" );
-   this.barOutput.setCollapsedTitle( "Output base directory - not specified" );
+   this.barOutput.setTitle(Text.T.OUPUT_SECTION_TEXT_PART );
+   this.barOutput.setCollapsedTitle(Text.T.OUPUT_SECTION_TEXT_PART + " - not specified" );
    this.barOutput.setSection( this.outputDir_GroupBox );
 
 
@@ -875,11 +862,7 @@ function MainDialog(engine, guiParameters) {
    this.transform_TreeBox.setHeaderText(0, "Filename");
    //this.transform_TreeBox.sort(0,false);
    this.transform_TreeBox.setMinSize( 700, 200 );
-   this.transform_TreeBox.toolTip = "List of selected files and how they will be converted.\n" +
-                               "If there is any error, the corresponding file will be in red.\n"+
-                               "You can correct the error or uncheck the corresponding input file\n"+
-                               "The files are in the order of the input (do a Refresh if you sorted the input),\n"+
-                               "This matters for the &count; and &rank; keywords.";
+   this.transform_TreeBox.toolTip = Text.H.TRANSFORM_TREEBOX_TOOLTIP;
 
    this.outputSummaryLabel = new Label( this );
    this.outputSummaryLabel.textAlignment = TextAlign_Left|TextAlign_VertCenter;
@@ -893,8 +876,8 @@ function MainDialog(engine, guiParameters) {
 
 
    this.barResult = new SectionBar( this );
-   this.barResult.setTitle( "Resulting operations" );
-   this.barResult.setCollapsedTitle( "Resulting operations - None" );
+   this.barResult.setTitle(Text.T.RESULT_SECTION_PART_TEXT );
+   this.barResult.setCollapsedTitle( Text.T.RESULT_SECTION_PART_TEXT + " - None" );
    this.barResult.setSection( this.outputFiles_GroupBox );
 
 
@@ -902,8 +885,8 @@ function MainDialog(engine, guiParameters) {
    // -- Action buttons --------------------------------------------------------------------------------------
 
    this.check_Button = new PushButton( this );
-   this.check_Button.text = "Check validity";
-   this.check_Button.toolTip = "Check that the target files are valid\nthis is automatically done before any other operation";
+   this.check_Button.text = Text.T.CHECK_BUTTON_TEXT;
+   this.check_Button.toolTip = Text.H.CHECK_BUTTON_TOOLTIP;
    this.check_Button.enabled = true;
    this.check_Button.onClick = function() {
       var listOfFiles = this.parent.makeListOfCheckedFiles();
@@ -939,8 +922,8 @@ function MainDialog(engine, guiParameters) {
    }
 
    this.refresh_Button = new PushButton( this );
-   this.refresh_Button.text = "Refresh list";
-   this.refresh_Button.toolTip = "Refresh the list of operations\nrequired after a sort on an header (there is on onSort event)";
+   this.refresh_Button.text = Text.T.REFRESH_BUTTON_TEXT;
+   this.refresh_Button.toolTip = Text.H.REFRESH_BUTTON_TOOLTIP;
    this.refresh_Button.enabled = true;
    this.refresh_Button.onClick = function() {
       this.parent.removeDeletedFiles();
@@ -950,8 +933,8 @@ function MainDialog(engine, guiParameters) {
 
 
    this.move_Button = new PushButton( this );
-   this.move_Button.text = "Move files";
-   this.move_Button.toolTip = "Move the checked files to the output directory.\nNo HISTORY or ORIGFILE keyword added";
+   this.move_Button.text = Text.T.MOVE_BUTTON_TEXT;
+   this.move_Button.toolTip = Text.H.MOVE_BUTTON_TOOLTIP;
    this.move_Button.enabled = false;
    this.move_Button.onClick = function() {
       var listOfFiles = this.parent.makeListOfCheckedFiles();
@@ -989,8 +972,8 @@ function MainDialog(engine, guiParameters) {
 
 
    this.copy_Button = new PushButton( this );
-   this.copy_Button.text = "Copy files";
-   this.copy_Button.toolTip = "Copy the checked files in the output directory.\nNo HISTORY or ORIGFILE keyword added";
+   this.copy_Button.text = Text.T.COPY_BUTTON_TEXT;
+   this.copy_Button.toolTip = Text.H.COPY_BUTTON_TOOLTIP;
    this.copy_Button.enabled = false;
    this.copy_Button.onClick = function() {
       var listOfFiles = this.parent.makeListOfCheckedFiles();
@@ -1039,11 +1022,8 @@ function MainDialog(engine, guiParameters) {
 
 
    this.loadSave_Button = new PushButton( this );
-   this.loadSave_Button.text = "Load / SaveAs files";
-   this.loadSave_Button.toolTip = "Load the checked files and save them in the output directory.\n" +
-         "BEWARE: Not supported for files containing multiple HDU (multiple images).\n"+
-         "Add ORIGFILE keyword with original file name if not already present.\n" +
-         "Add HISTORY keyword with new file name.\n";
+   this.loadSave_Button.text = Text.T.LOADSAVE_BUTTON_TEXT;
+   this.loadSave_Button.toolTip = Text.H.LOADSAVE_BUTTON_TOOLTIP;
    this.loadSave_Button.enabled = false;
    this.loadSave_Button.onClick = function() {
       var listOfFiles = this.parent.makeListOfCheckedFiles();
@@ -1105,7 +1085,7 @@ function MainDialog(engine, guiParameters) {
    // Help buton
    this.helpButton = new ToolButton( this );
    this.helpButton.icon = new Bitmap( ":/images/interface/browseDocumentationButton.png" );
-   this.helpButton.toolTip = "Browse Documentation";
+   this.helpButton.toolTip = Text.H.HELP_BUTTON_TOOLTIP;
    this.helpDialog = new HelpDialog(this);
    this.helpButton.onClick = function() {
       this.dialog.helpDialog.execute();
@@ -1490,7 +1470,7 @@ function CompletionDialog( parentDialog, engine ) {
    this.__base__ = Dialog;
    this.__base__();
 
-   this.windowTitle = "FITSFileManager operation result";
+   this.windowTitle = Text.T.COMPLETION_TITLE;
 
    this.resultBox = new TextBox( this );
    this.resultBox.readOnly = true;
@@ -1499,29 +1479,29 @@ function CompletionDialog( parentDialog, engine ) {
    this.resultBox.caretPosition = 0;
 
    this.continue_Button = new PushButton( this );
-   this.continue_Button.text = "Continue in FITSFileManager";
-   this.continue_Button.toolTip = "Continue working in FITSFileManager, moved files have been removed from input list";
+   this.continue_Button.text = Text.T.COMPLETION_CONTINUE_BUTTON_TEXT;
+   this.continue_Button.toolTip = Text.H.COMPLETION_CONTINUE_BUTTON_TOOLTIP;
    this.continue_Button.enabled = true;
    this.continue_Button.onClick = function() {
       this.dialog.done(CompletionDialog_doneContinue);
    }
    this.keep_Button = new PushButton( this );
-   this.keep_Button.text = "Continue in FITSFileManager\nKeep checked files";
-   this.keep_Button.toolTip = "Keep checked files in input list";
+   this.keep_Button.text = Text.T.COMPLETION_KEEP_BUTTON_TEXT;
+   this.keep_Button.toolTip = Text.H.COMPLETION_KEEP_BUTTON_TOOLTIP;
    this.keep_Button.enabled = true;
    this.keep_Button.onClick = function() {
       this.dialog.done(CompletionDialog_doneKeep);
    }
    this.remove_Button = new PushButton( this );
-   this.remove_Button.text = "Continue in FITSFileManager\nRemove checked files";
-   this.remove_Button.toolTip = "Remove checked files from input list";
+   this.remove_Button.text = Text.T.COMPLETION_REMOVE_BUTTON_TEXT;
+   this.remove_Button.toolTip = Text.H.COMPLETION_REMOVE_BUTTON_TOOLTIP;
    this.remove_Button.enabled = true;
    this.remove_Button.onClick = function() {
       this.dialog.done(CompletionDialog_doneRemove);
    }
    this.leave_Button = new PushButton( this );
-   this.leave_Button.text = "Leave FITSFileManager";
-   this.leave_Button.toolTip = "Exit FITS file manager";
+   this.leave_Button.text = Text.T.COMPLETION_LEAVE_BUTTON_TEXT;
+   this.leave_Button.toolTip = Text.H.COMPLETION_LEAVE_BUTTON_TOOLTIP;
    this.leave_Button.enabled = true;
    this.leave_Button.onClick = function() {
       this.dialog.done(CompletionDialog_doneLeave);
