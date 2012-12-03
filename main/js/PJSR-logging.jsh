@@ -17,8 +17,8 @@ var Log = (function() {
 
    // To escape HTML characters for the console
    var escapeMap = { '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' };
-   var escapeHtml = function (text) {
-        return text.replace(/[\"&<>]/g, function (a) { return chr[a]; });
+   var escapeHTML = function (text) {
+        return text.replace(/[\"&<>]/g, function (a) { return escapeMap[a]; });
     };
 
    // --- public properties and methods ---------------------------------------
@@ -47,7 +47,7 @@ var Log = (function() {
                   str += arg.toString();
                }
             }
-            Console.writeln(ffM_escapeHTML(str));
+            Console.writeln(escapeHTML(str));
             Console.flush();
          }
       }
@@ -59,6 +59,7 @@ var Log = (function() {
 debug = Log.debug;
 #endif
 
+// Example:
 //Log.debug("My list:", [1,2,3,4], "is", null);
 
 

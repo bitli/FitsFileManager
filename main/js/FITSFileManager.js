@@ -62,7 +62,7 @@
 // Set to false when doing hasardous developments...
 #define EXECUTE_COMMANDS true
 
-/ /Debug supprt is in the moduel PJSR-logging
+// Debug supprt is in the module PJSR-logging
 // Tracing - define DEBUG if you define any other DEBUG_xxx
 #define DEBUG
 //#define DEBUG_EVENTS

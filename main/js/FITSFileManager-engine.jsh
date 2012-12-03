@@ -30,7 +30,7 @@ function FFM_Engine(guiParameters) {
       this.inputVariables = [];  // Array of Map of stable synthethic variables for the corresponding input file
 
       // Global FITS key information - (the index of the name in keywordsSet.allValueKeywordNameList give also the column offset in the GUI)
-      this.keywordsSet = ffM_keywordsOfFile.makeKeywordsSet();   // array of names of all accumulated FITS keywords from all files
+      this.keywordsSet = ffM_FITS_Keywords.makeKeywordsSet();   // array of names of all accumulated FITS keywords from all files
       this.shownFITSKeyNames = {}; // A FITSKeyWord is shown in the source file table if its name is a key of this object
       this.shownSyntheticKeyNames = {}; // A synthethic variable is shown in the source file table if its name is a key of this object
 
@@ -92,7 +92,7 @@ function FFM_Engine(guiParameters) {
 #endif
          if (this.inputFiles.indexOf(fileNames[i]) < 0) // Skip files already in the list
          {
-            var imageKeywords = ffM_keywordsOfFile.makeImageKeywordsfromFile(fileNames[i]);
+            var imageKeywords = ffM_FITS_Keywords.makeImageKeywordsfromFile(fileNames[i]);
             this.inputFiles.push(fileNames[i]);
             this.inputFITSKeywords.push(imageKeywords);
             // Create the synthethic variables using the desired rules

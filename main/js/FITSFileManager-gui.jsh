@@ -756,7 +756,7 @@ function MainDialog(engine, guiParameters) {
       // rebuild all
       for (var i=0; i<this.dialog.engine.inputFiles.length; i++) {
          var fileName = this.dialog.engine.inputFiles[i];
-         var imageKeywords  = ffM_keywordsOfFile.makeImageKeywordsfromFile(fileName);
+         var imageKeywords  = ffM_FITS_Keywords.makeImageKeywordsfromFile(fileName);
          this.dialog.engine.inputFITSKeywords[i] = imageKeywords;
          // Create the synthethic variables using the desired rules
          var variables = makeSynthethicVariables(fileName, imageKeywords,
@@ -1167,7 +1167,7 @@ function MainDialog(engine, guiParameters) {
       this.filesTreeBox.clear();
       this.filesTreeBox.numberOfColumns = 1; // Filename
 
-      this.engine.keywordsSet = ffM_keywordsOfFile.makeKeywordsSet(); // clear
+      this.engine.keywordsSet = ffM_FITS_Keywords.makeKeywordsSet(); // clear
 
       // Add the synthetic keys columns
       for (var iSynthKey = 0; iSynthKey<syntheticVariableNames.length; iSynthKey++) {

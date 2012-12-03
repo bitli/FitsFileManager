@@ -164,31 +164,27 @@ function ffM_unquote(s) {
 }
 
 
-// TODO Use var hasOwnProperty = Object.prototype.hasOwnProperty
 
-// ------------------------------------------------------------------------------------------------------------------------
-// Global object to contains the FITS utility methods
-var ffM_keywordsOfFile = (function() {
 
+// ====================================================================================================================
+// FITS Keywords support module
+// ====================================================================================================================
+
+var ffM_FITS_Keywords = (function() {
+
+
+   // --- private properties and methods ---------------------------------------
 
    // ------------------------------------------------------------------------------------------------------------------------
-   // imageKeywords keeps track of the FITS keywords of a file, both as an array ordered
-   // as in the file and as a map of name to keywords for the values keywords (non null) for quick lookup
+   // ImageKeywords support - An 'ImageKeywords' keeps track of the FITS keywords of a file, both as an array ordered
+   // as in the file PDU and as a map of name to FITSKeyword for the value keywords (keywords that are not null)
    // ------------------------------------------------------------------------------------------------------------------------
-   // Common method for imageKeywords
+   // Prototype for methods operating on ImageKeywords
    var imageKeywordsPrototype = {
 
-      resetImageKeywords: function reset() {
-         var imageKeywords = this;
-         // This two attributes may be accessed by the callers, but this is not recommended
-         imageKeywords.fitsKeywordsMap = {};
-         imageKeywords.fitsKeywordsList = [];
-      },
-
-      // -- Clear and load the FITS keywords from the file, adding them to the value map too
+      // -- Load the FITS keywords from the file, adding them to the value map too
       loadFitsKeywords:  function loadFitsKeywords(filePath) {
          var imageKeywords = this;
-         this.resetImageKeywords();
          var name, fitsKeyFromList, i;
          imageKeywords.fitsKeywordsList = ffM_loadFITSKeywordsList(filePath);
          // Make a map of all fits keywords with a value (this remove the comment keywords)
@@ -213,7 +209,7 @@ var ffM_keywordsOfFile = (function() {
             return null;
          }
       },
-      // Reurn the value (that is the raw String, as read) of a FITSKeyword
+      // -- Return the value (that is the raw String, as read) of a FITSKeyword
       getValue: function getValue(name) {
          var kw = this.getValueKeyword(name);
          if (kw === null) {
@@ -222,7 +218,7 @@ var ffM_keywordsOfFile = (function() {
             return kw.value;
          }
       },
-      // Return the value as a stripped from outside quotes and trimmed (the PI way)
+      // -- Return the value as a stripped from outside quotes and trimmed (the PI way)
       getStrippedValue: function getStrippedValue(name) {
          var kw = this.getValueKeyword(name);
          if (kw === null) {
@@ -231,14 +227,14 @@ var ffM_keywordsOfFile = (function() {
             return kw.strippedValue;
          }
       },
-      // Return the string as a string, unuoted if it was a string, following the FITS rules
+      // -- Return the FITS keyword value as a string, unquoted if it was a string, following the FITS rules
       // (remove outside quote and inside double quote, trim trailing spaces but not leading spaces)
       // Note that it is not possible to distinguish a string value from a boolean or numeric value with
       // the same representation (both '123' and 123 will result in the same string)
       // The unquoted value is suitable for display
-      // This assume that the value was trimmed (the first character must be the quote for a string value)
-      getUnquotedValue: function getUnquotedValue(name) {
-         var kw = this.getValueKeyword(name);
+      // This assumes that the value was trimmed (the first and last characters must be the quotes if it is a string value)
+      getUnquotedValue: function getUnquotedValue(keywordName) {
+         var kw = this.getValueKeyword(keywordName);
          if (kw === null) {
             return null;
          } else {
@@ -255,9 +251,11 @@ var ffM_keywordsOfFile = (function() {
 
    };
 
-   // Factory method for an empty imageKeywords
+   // Factory method for an empty ImageKeywords
    var makeImageKeywords = function makeNew() {
       var imageKeywords = Object.create(imageKeywordsPrototype);
+      imageKeywords.fitsKeywordsMap = {};
+      imageKeywords.fitsKeywordsList = [];
       return imageKeywords;
    }
 
@@ -271,10 +269,10 @@ var ffM_keywordsOfFile = (function() {
 
 
    // ------------------------------------------------------------------------------------------------------------------------
-   // Keeps track of all values keywords in a set of files, in a specific order
-   // NOT YET USED
+   // KeywordsSet support - Keeps track of all values keywords in a set of files, in a specific order
    // ------------------------------------------------------------------------------------------------------------------------
-   var keywordSetPrototype = {
+   // private prototype
+   var keywordsSetPrototype = {
        putKeyword: function putKeyword(name) {
            var keywordsSet = this;
            if (!keywordsSet.allValueKeywordNames.hasOwnProperty(name)) {
@@ -296,13 +294,18 @@ var ffM_keywordsOfFile = (function() {
          return this.allValueKeywordNameList.length;
        }
    }
+
+   // Factory method to create empty KeywordsSet
    var makeKeywordsSet = function makeKeywordsSet () {
-      var keywordsSet = Object.create(keywordSetPrototype);
+      var keywordsSet = Object.create(keywordsSetPrototype);
       keywordsSet.allValueKeywordNameList = [];
       keywordsSet.allValueKeywordNames = {}; // Name to index
       return keywordsSet;
    }
 
+
+
+   // --- public properties and methods ---------------------------------------
 
    // Return public methods of this module
    return {
