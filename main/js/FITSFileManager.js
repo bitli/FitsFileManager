@@ -62,8 +62,9 @@
 // Set to false when doing hasardous developments...
 #define EXECUTE_COMMANDS true
 
+/ /Debug supprt is in the moduel PJSR-logging
 // Tracing - define DEBUG if you define any other DEBUG_xxx
-//#define DEBUG
+#define DEBUG
 //#define DEBUG_EVENTS
 //#define DEBUG_SHOW_FITS
 //#define DEBUG_FITS
@@ -72,14 +73,8 @@
 // ------------------------------------
 
 
-#ifdef DEBUG
-function debug(str) {
-   var s = replaceAmps(str.toString());
-   Console.writeln(s);
-   Console.flush();
-   //processEvents();  // This may interfere with event processing order
-}
-#endif
+
+
 
 // FITS keyword implementation is not yet fully OK and could not be implemented as may be part of PI 1.8
 // #define IMPLEMENTS_FITS_EXPORT
@@ -179,6 +174,7 @@ function debug(str) {
 
 
 
+#include "PJSR-logging.jsh"
 
 #include "FITSFileManager-parameters.jsh"
 #include "FITSFileManager-fits.jsh"

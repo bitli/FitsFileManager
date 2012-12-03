@@ -62,7 +62,7 @@ var ffM_Configuration = (function() {
    //     the keyword and some differentiating suffix if multiple keywords are required.
    //     This does not really matter, just more mnemotecnic than random text
    // TODO Support optional and multiple keywords (as EXPOSURE and EXPTIME) and default value
-   var kwMappingDefault = {
+   var keywordMapping_DEFAULT = {
        // Commonly used
       "BinningX": "XBINNING",
       "BinningY": "YBINNING",
@@ -76,7 +76,7 @@ var ffM_Configuration = (function() {
       "NightJD"      : "JD",
    };
 
-   var kwMappingCaha = {
+   var keywordMapping_CAHA = {
       // Commonly used
       "BinningX": "CDELT1",
       "BinningY": "CDELT2",
@@ -143,13 +143,13 @@ var ffM_Configuration = (function() {
    // The configuration is a map with the following entries:
    //    name - its name (used to save in settings)
    //    description - A one line description of the configuration (shown in UI)
-   //    kwMappingTable - The map of logical name to FITS key names
+   //    keywordMappingTable - The map of logical name to FITS key names
    //    filterConversion - The list of filter conversion operations
    //    typeConversion - The list of filter conversion operations
    var configuration_DEFAULT = {
      name: "DEFAULT",
      description: "Common and Star Arizona mappings",
-     kwMappingTable: kwMappingDefault,
+     keywordMappingTable: keywordMapping_DEFAULT,
      filterConversions: filterConversions_DEFAULT,
      typeConversions: typeConversions_DEFAULT,
      defaultShownKeywords: defaultShownKeywords_DEFAULT,
@@ -157,7 +157,7 @@ var ffM_Configuration = (function() {
    var configuration_CAHA = {
      name: "CAHA",
      description: "CAHA mapping",
-     kwMappingTable: kwMappingCaha,
+     keywordMappingTable: keywordMapping_CAHA,
      filterConversions: filterConversions_CAHA,
      typeConversions: typeConversions_CAHA,
      defaultShownKeywords: defaultShownKeywords_CAHA,
@@ -284,13 +284,13 @@ function FFM_GUIParameters() {
    }
 
 
-   // For debugging and logging
+   // For debugging and logging - result MUST be escaped if written to the console
    this.toString = function() {
       var s = "GUIParameters:\n";
-      s += "  targetFileNameTemplate:         " + replaceAmps(this.targetFileNameCompiledTemplate.templateString) + "\n";
-      s += "  sourceFileNameRegExp:           " + replaceAmps(regExpToString(this.sourceFileNameRegExp)) + "\n";
-      s += "  orderBy:                        " + replaceAmps(this.orderBy) + "\n";
-      s += "  groupByTemplate:                " + replaceAmps(this.groupByCompiledTemplate.templateString) + "\n";
+      s += "  targetFileNameTemplate:         " + this.targetFileNameCompiledTemplate.templateString + "\n";
+      s += "  sourceFileNameRegExp:           " + regExpToString(this.sourceFileNameRegExp) + "\n";
+      s += "  orderBy:                        " + this.orderBy + "\n";
+      s += "  groupByTemplate:                " + this.groupByCompiledTemplate.templateString + "\n";
       s += "  currentConfigurationIndex:          " + this.currentConfigurationIndex + "\n";
       return s;
    }
@@ -307,7 +307,7 @@ FFM_GUIParameters.prototype.loadSettings = function() {
    {
       var setting = Settings.read( FFM_SETTINGS_KEY_BASE + key, type );
 #ifdef DEBUG
-      Console.writeln("FFM_GUIParameters.load: ", key, ": ", (setting===null ? 'null' : replaceAmps(setting.toString())));
+      debug("FFM_GUIParameters.load: "+ key+ ": "+ (setting===null ? 'null' : setting.toString()));
 #endif
       return setting;
    }
@@ -386,14 +386,14 @@ FFM_GUIParameters.prototype.saveSettings = function()
 {
    function save( key, type, value ) {
 #ifdef DEBUG
-      Console.writeln("saveSettings: key=",key,", type=", type, ", value=" ,replaceAmps(value.toString()));
+      debug("saveSettings: key="+key+", type="+ type+ ", value=" +value.toString());
 #endif
       Settings.write( FFM_SETTINGS_KEY_BASE + key, type, value );
    }
 
    function saveIndexed( key, index, type, value ) {
 #ifdef DEBUG
-      Console.writeln("saveSettings: key=",key,", index=", index, ", type=", type, ", value=" ,replaceAmps(value.toString()));
+      debug("saveSettings: key="+key+", index="+ index+ ", type="+ type+ ", value=" +value.toString());
 #endif
       save( key + '_' + index.toString(), type, value );
    }

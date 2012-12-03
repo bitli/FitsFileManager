@@ -59,7 +59,7 @@ function FFM_Engine(guiParameters) {
 #endif
       this.filterConverter = ffM_LookupConverter.makeLookupConverter(configuration.filterConversions);
       this.typeConverter = ffM_LookupConverter.makeLookupConverter(configuration.typeConversions);
-      this.remappedFITSkeywords = configuration.kwMappingTable;
+      this.remappedFITSkeywords = configuration.keywordMappingTable;
 
       // We add default keywords, we do not remove old ones
       // Set 'is visible' for the list of default keywords

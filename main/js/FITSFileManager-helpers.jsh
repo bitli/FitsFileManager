@@ -19,12 +19,12 @@ function replaceAll (txt, replace, with_this) {
   return txt.replace(new RegExp(replace, 'g'),with_this);
 }
 
-var FFM_replaceAmpsRegExp = new RegExp('&', 'g');
-
-function replaceAmps (txt) {
-  return txt.replace(FFM_replaceAmpsRegExp,'&amp;');
-}
-
+var ffM_escapeHTML = (function () {
+    var chr = { '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' };
+    return function (text) {
+        return text.replace(/[\"&<>]/g, function (a) { return chr[a]; });
+    };
+}());
 
 // --- Pad a mumber with leading 0
 Number.prototype.pad = function(size){
