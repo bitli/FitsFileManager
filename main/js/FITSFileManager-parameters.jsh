@@ -22,13 +22,12 @@
 // Select the first sequence without -_. or the whole name in &1; (second group is non capturing)
 #define FFM_DEFAULT_SOURCE_FILENAME_REGEXP /([^-_.]+)(?:[._-]|$)/
 #define FFM_DEFAULT_TARGET_FILENAME_TEMPLATE "&1;_&binning;_&temp;C_&type;_&exposure;s_&filter;_&count;&extension;"
-// #define FFM_DEFAULT_TARGET_FILENAME_TEMPLATE "&filename;_AS_&1;_bin_&binning;_filter_&filter;_temp_&temp;_type_&type;_exp_&exposure;s_count_&count;&extension;";
 #define FFM_DEFAULT_GROUP_TEMPLATE "&targetDir;"
 
 
 // --- List of all synthethic variables and their comments (2 parallel arrays)
 //     All synthethic variables are currently added to the columns of the file TreeBox
-// TODO Should be in the module where they are created
+// TODO Should be defined in the module 'engine' that create them and passed to the gui
 var syntheticVariableNames = ['type','filter','exposure','temp','binning','night'];
 var syntheticVariableComments = ['Type of image (flat, bias, ...)',
    'Filter (clear, red, ...)',
@@ -45,22 +44,18 @@ var syntheticVariableComments = ['Type of image (flat, bias, ...)',
 #define FFM_SETTINGS_KEY_BASE  "FITSFileManager/"
 
 
-// ========================================================================================================================
-// Named configuration
-// ========================================================================================================================
+// ====================================================================================================================
+// Configuration support module
+// ====================================================================================================================
 var ffM_Configuration = (function() {
+   // This module is a singleton that supports 'named configuration' data objects,
+   // and the set of all named configurations known to FITSFileManager.
 
    // A named configuration is a named set of parameters that can be selected as a whole,
    // typically the configuration suitable for an observatory, an instrument and a user.
    // NOT ALL ELEMENTS OF A CONFIGURATION CAN YET BE EDITED INTERACTIVELY.
-   // The configuration is a map with the following entries:
-   // name - its name (used to save in settings)
-   // description - A one line description for the user
-   // kwMappingTable - The map of logical name to FITS key names
-   // filterConversion - The list of filter conversion operations
-   // typeConversion - The list of filter conversion operations
 
-   // Preconfigured configuration properties
+   // --- constants (predefined configuration elements)  ----------------------
 
    // --- Mapping of 'logical' FITS keywords (referenced in the code) to actual FITS keywords
    //     The logical keyword is by convention a 'PascalCased' name of the variable using
@@ -144,7 +139,13 @@ var ffM_Configuration = (function() {
       //"SET-TEMP","EXPOSURE","IMAGETYP","FILTER","XBINNING","YBINNING","OBJECT"
    ];
 
-   // -- Define the named configuration content
+   // -- Define the predefined named configurations
+   // The configuration is a map with the following entries:
+   //    name - its name (used to save in settings)
+   //    description - A one line description of the configuration (shown in UI)
+   //    kwMappingTable - The map of logical name to FITS key names
+   //    filterConversion - The list of filter conversion operations
+   //    typeConversion - The list of filter conversion operations
    var configuration_DEFAULT = {
      name: "DEFAULT",
      description: "Common and Star Arizona mappings",
@@ -163,10 +164,13 @@ var ffM_Configuration = (function() {
    };
 
 
-   // Private tables (in principles)
+   // --- private variables ---------------------------------------------------
+   // name string -> configuration
    var configurationTable = {};
+   // array of names
    var configurationList = [];
 
+   // --- method implementations ----------------------------------------------
    function addConfiguration(configuration) {
       configurationTable[configuration.name] = configuration;
       configurationList.push(configuration.name);
@@ -184,9 +188,8 @@ var ffM_Configuration = (function() {
    addConfiguration(configuration_DEFAULT);
    addConfiguration(configuration_CAHA);
 
-   // Return a 'module' with public properties and methods
+   // --- public properties and methods ---------------------------------------
    return {
-       //configurationTable: configurationTable,  // Consider readonly
        configurationList: configurationList, // Consider readonly
        getConfigurationByName: getConfigurationByName,
        getConfigurationByIndex: getConfigurationByIndex,
@@ -195,9 +198,9 @@ var ffM_Configuration = (function() {
 
 
 
-// ========================================================================================================================
+// ====================================================================================================================
 // User Interface Parameters
-// ========================================================================================================================
+// ====================================================================================================================
 
 // The object FFM_GUIParameters keeps track of the parameters that are saved between executions
 // (or that should be saved)

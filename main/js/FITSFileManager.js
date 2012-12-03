@@ -55,7 +55,7 @@
 // Thanks to Nikolay for sharing the original FITSKey
 
 
-#define VERSION   "0.8-snapshot"
+#define VERSION   "0.9-snapshot"
 #define TITLE     "FITSFileManager"
 
 // --- Debugging control ----------------
@@ -120,7 +120,7 @@ function debug(str) {
 //     Added &night as an experimental keyword
 //     Added alternate FITS keywords for creation of synthetic keywords
 //     Load HIERARCH FITS keywords
-// 2012-11-19 - 0.8 - Refactor, bug corrections
+// 2012-11-19 - 0.8 - Refactor, bug corrections, more configurability
 //     Refactored FITS keyword loading (separate js file), parameters (separate file) and quite some code
 //     Correcting error of selection of file in FITSKeyword window
 //     Corrected error of list entry reported by Vicent
@@ -136,6 +136,8 @@ function debug(str) {
 //     Handle cursor and console during file move/copy operations
 //     Additional tests
 //     Various presentation enhancements
+
+// 2012-12-01 - 0.9
 
 
 
@@ -182,6 +184,7 @@ function debug(str) {
 #include "FITSFileManager-fits.jsh"
 #include "FITSFileManager-helpers.jsh"
 #include "FITSFileManager-engine.jsh"
+#include "FITSFileManager-text.jsh"
 #include "FITSFileManager-gui.jsh"
 
 
