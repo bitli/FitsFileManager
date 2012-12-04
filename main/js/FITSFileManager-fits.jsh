@@ -144,24 +144,6 @@ var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
 };
 
 
-function ffM_unquote(s) {
-   if (s===null) { return null;} // Could this happen ?
-   if (s.length > 0 && s.charCodeAt(0) === 39 && s.charCodeAt(s.length-1) === 39) {
-      // Unquoted string
-      s = s.substring(1,s.length-1);
-      // Replace double quotes inside by single quotes
-      s = s.replace("''","'","g");
-      if (s.length>0) {
-         // Not the empty string,
-         // trim trailing spaces only, but keep the first character if it is a space
-         s = s.trimRight();
-         if (s.length===0) {
-            s = ' ';
-         }
-      }
-   }
-   return s;
-}
 
 
 
@@ -174,6 +156,28 @@ var ffM_FITS_Keywords = (function() {
 
 
    // --- private properties and methods ---------------------------------------
+
+   // Unquote a string value
+   var unquote = function unquote(s) {
+      if (s===null) { return null;} // Could this happen ?
+      if (s.length > 0 && s.charCodeAt(0) === 39 && s.charCodeAt(s.length-1) === 39) {
+         // Unquoted string
+         s = s.substring(1,s.length-1);
+         // Replace double quotes inside by single quotes
+         s = s.replace("''","'","g");
+         if (s.length>0) {
+            // Not the empty string,
+            // trim trailing spaces only, but keep the first character if it is a space
+            s = s.trimRight();
+            if (s.length===0) {
+               s = ' ';
+            }
+         }
+      }
+      return s;
+   }
+
+
 
    // ------------------------------------------------------------------------------------------------------------------------
    // ImageKeywords support - An 'ImageKeywords' keeps track of the FITS keywords of a file, both as an array ordered
@@ -238,7 +242,7 @@ var ffM_FITS_Keywords = (function() {
          if (kw === null) {
             return null;
          } else {
-            return ffM_unquote(kw.value);
+            return unquote(kw.value);
          }
       },
 
@@ -311,6 +315,11 @@ var ffM_FITS_Keywords = (function() {
    return {
       makeImageKeywordsfromFile: makeImageKeywordsfromFile,
       makeKeywordsSet: makeKeywordsSet,
+
+      // For unit testing only
+      UT: {
+         unquote: unquote,
+      }
    }
 
 

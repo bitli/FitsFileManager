@@ -24,13 +24,17 @@
 #include "../../main/js/FITSFileManager-fits.jsh"
 
 
-
 // ---------------------------------------------------------------------------------------------------------
 // Unit tests
 // ---------------------------------------------------------------------------------------------------------
 
 
+var ffM_allTests_filePath = #__FILE__ ;
+var ffM_allTests_baseDirectory = File.extractDrive(filePath) + File.extractDirectory(filePath) + "/../images";
+
 var ffM_allTests = {
+
+
 
    // --- Validate some assumption on how PJSR FITSKeyword works,
    //     as some code may depend on it.
@@ -148,62 +152,62 @@ var ffM_allTests = {
 
    // Test loading keywords from file by PI
    test_ffM_compare_files_simple: function() {
-      pT_compareTwoLoads(26,"C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/m31_Green_0028.fit");
+      pT_compareTwoLoads(26,ffM_allTests_baseDirectory+ "/" + "m31_Green_0028.fit");
    },
    test_ffM_compare_files_hierarch: function() {
-      pT_compareTwoLoads(151,"C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/dsaI_0008.fits");
+      pT_compareTwoLoads(151,ffM_allTests_baseDirectory+ "/" + "dsaI_0008.fits");
    },
    test_ffM_compare_files_manycases: function() {
-      pT_compareTwoLoads(151,"C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/manycases.fits");
+      pT_compareTwoLoads(151,ffM_allTests_baseDirectory+ "/" +"manycases.fits");
    },
 
 
    // Test of ffM_unquote
    test_ffM_unquote_null : function() {
-      pT_assertNull(ffM_unquote(null));
+      pT_assertNull(ffM_FITS_Keywords.UT.unquote(null));
    },
    test_ffM_unquote_number : function() {
-      pT_assertEquals("1234",ffM_unquote("1234"));
+      pT_assertEquals("1234",ffM_FITS_Keywords.UT.unquote("1234"));
    },
    test_ffM_unquote_true : function() {
-      pT_assertEquals("T",ffM_unquote("T"));
+      pT_assertEquals("T",ffM_FITS_Keywords.UT.unquote("T"));
    },
    test_ffM_unquote_non_fits_string : function() {
       // This should not occurs
-      pT_assertEquals(" abc ",ffM_unquote(" abc "));
+      pT_assertEquals(" abc ",ffM_FITS_Keywords.UT.unquote(" abc "));
    },
    test_ffM_unquote_non_trimmed_string : function() {
       // This should not occurs
-      pT_assertEquals(" ' abc ' ",ffM_unquote(" ' abc ' "));
+      pT_assertEquals(" ' abc ' ",ffM_FITS_Keywords.UT.unquote(" ' abc ' "));
    },
    // Various case of unuqoting
    test_ffM_unquoted_string_simple : function() {
-      pT_assertEquals("abc",ffM_unquote("'abc'"));
+      pT_assertEquals("abc",ffM_FITS_Keywords.UT.unquote("'abc'"));
    },
    test_ffM_unquoted_string_trim_tail : function() {
-      pT_assertEquals("  abc",ffM_unquote("'  abc   '"));
+      pT_assertEquals("  abc",ffM_FITS_Keywords.UT.unquote("'  abc   '"));
    },
    test_ffM_unquoted_string_quote_1 : function() {
-      pT_assertEquals("ab'c",ffM_unquote("'ab''c'"));
+      pT_assertEquals("ab'c",ffM_FITS_Keywords.UT.unquote("'ab''c'"));
    },
    test_ffM_unquoted_string_quote_2 : function() {
-      pT_assertEquals("ab''c",ffM_unquote("'ab''''c'"));
+      pT_assertEquals("ab''c",ffM_FITS_Keywords.UT.unquote("'ab''''c'"));
    },
    test_ffM_unquoted_string_quote_start_end : function() {
-      pT_assertEquals("'abc'",ffM_unquote("'''abc''"));
+      pT_assertEquals("'abc'",ffM_FITS_Keywords.UT.unquote("'''abc''"));
    },
    test_ffM_unquoted_string_space_only : function() {
-      pT_assertEquals(" ",ffM_unquote("'    '"));
+      pT_assertEquals(" ",ffM_FITS_Keywords.UT.unquote("'    '"));
    },
    test_ffM_unquoted_string_one_space : function() {
-      pT_assertEquals(" ",ffM_unquote("' '"));
+      pT_assertEquals(" ",ffM_FITS_Keywords.UT.unquote("' '"));
    },
    // This should not be converted to the 'space' string
    test_ffM_unquoted_strng_empty_string : function() {
-      pT_assertEquals("",ffM_unquote("''"));
+      pT_assertEquals("",ffM_FITS_Keywords.UT.unquote("''"));
    },
    test_ffM_unquoted_many_spaces : function() {
-      pT_assertEquals(" ",ffM_unquote("'        '"));
+      pT_assertEquals(" ",ffM_FITS_Keywords.UT.unquote("'        '"));
    },
 
 

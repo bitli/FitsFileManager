@@ -13,11 +13,14 @@
 // Test results (a property for each test named as the test function and with the result as a String, PT_TEST_OK if OK
 var pT_testResults={};
 
-var pT_replaceAmpsRegExp = new RegExp('&', 'g');
+var pT_replaceAmps = (function() {
+   var escapeMap = { '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' };
+   return function(text) {
+        return text.replace(/[\"&<>]/g, function (a) { return escapeMap[a]; });
+   }
+})();
 
-function pT_replaceAmps (txt) {
-  return txt.replace(FFM_replaceAmpsRegExp,'&amp;');
-}
+
 
 // List all test results
 function pT_showTestResults() {

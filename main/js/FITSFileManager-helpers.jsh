@@ -15,10 +15,6 @@
 
 // --- String functions
 
-function replaceAll (txt, replace, with_this) {
-  return txt.replace(new RegExp(replace, 'g'),with_this);
-}
-
 
 
 // --- Pad a mumber with leading 0
