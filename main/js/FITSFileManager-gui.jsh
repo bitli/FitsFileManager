@@ -1395,6 +1395,9 @@ function CompletionDialog( parentDialog, engine ) {
 CompletionDialog.prototype = new Dialog;
 
 
+
+
+
 // ========================================================================================================================
 // Configuration dialog
 // ========================================================================================================================
@@ -1407,12 +1410,13 @@ function ConfigurationDialog( parentDialog, engine, guiParameters) {
    this.windowTitle = Text.T.REMAPPING_SECTION_PART_TEXT;
 
 
-   // Keywords to use
+   // Mapping of variable 'logical keyword use' to FITS keyword names
    var keywordNames_GroupBox = new GroupBox(this);
 
    keywordNames_GroupBox.title = Text.T.KEYWORDNAMES_GROUPBOX_TITLE;
+   keywordNames_GroupBox.sizer = new VerticalSizer;
 
-   var keywordNames_TreeBox = new TreeBox(keywordNames_GroupBox);
+   var keywordNames_TreeBox = new TreeBox(this);
    keywordNames_TreeBox.rootDecoration = false;
    keywordNames_TreeBox.numberOfColumns = 2;
    keywordNames_TreeBox.headerVisible = false;
@@ -1431,14 +1435,17 @@ function ConfigurationDialog( parentDialog, engine, guiParameters) {
    }
 
    refreshRemappedFITSkeywordsNames(keywordNames_TreeBox);
+   keywordNames_GroupBox.sizer.add(keywordNames_TreeBox);
+
 
    // Conversion of type names
    var typeConversion_GroupBox = new GroupBox(this);
+   typeConversion_GroupBox.sizer = new VerticalSizer;
 
    typeConversion_GroupBox.title = Text.T.TYPECONVERSION_GROUPBOX_TITLE;
    typeConversion_GroupBox.toolTip = Text.H.TYPECONVERSION_GROUPBOX_TOOLTIP;
 
-   var typeConversion_TreeBox = new TreeBox(typeConversion_GroupBox);
+   var typeConversion_TreeBox = new TreeBox(this);
    typeConversion_TreeBox.rootDecoration = false;
    typeConversion_TreeBox.numberOfColumns = 2;
    typeConversion_TreeBox.headerVisible = false;
@@ -1454,14 +1461,17 @@ function ConfigurationDialog( parentDialog, engine, guiParameters) {
       }
    }
    refreshTypeConversions(typeConversion_TreeBox);
+   typeConversion_GroupBox.sizer.add(typeConversion_TreeBox);
+
 
    // Conversion of filter names
    var filterConversion_GroupBox = new GroupBox(this);
    filterConversion_GroupBox.title = Text.T.FILTERCONVERSION_GROUPBOX_TITLE;
    filterConversion_GroupBox.toolTip = Text.H.FILTERCONVERSION_GROUPBOX_TOOLTIP;
+   filterConversion_GroupBox.sizer = new VerticalSizer;
 
 
-   var filterConversion_TreeBox = new TreeBox(filterConversion_GroupBox);
+   var filterConversion_TreeBox = new TreeBox(this);
    filterConversion_TreeBox.rootDecoration = false;
    filterConversion_TreeBox.numberOfColumns = 2;
    filterConversion_TreeBox.headerVisible = false;
@@ -1476,6 +1486,7 @@ function ConfigurationDialog( parentDialog, engine, guiParameters) {
       }
    }
    refreshFilterConversions(filterConversion_TreeBox);
+   filterConversion_GroupBox.sizer.add(filterConversion_TreeBox);
 
    // Selection of mapping rules
    var mappingRules_ComboBox = new ComboBox( this );
@@ -1543,7 +1554,7 @@ function ConfigurationDialog( parentDialog, engine, guiParameters) {
    currentState_GroupBox.sizer.add( typeConversion_GroupBox);
    currentState_GroupBox.sizer.add( filterConversion_GroupBox);
    // TODO Find other way to fix minimal size
-   currentState_GroupBox.setMinHeight(150);
+   //currentState_GroupBox.setMinHeight(150);
 
 
    // Group and create section bar
@@ -1557,18 +1568,15 @@ function ConfigurationDialog( parentDialog, engine, guiParameters) {
    this.conversion_GroupBox.sizer.add( mappingRules_ComboBox);
    this.conversion_GroupBox.sizer.add( currentState_GroupBox, 100);
 
-    //this.barConversions.toggleSection();
+
+
+
+
    // Buttons
-   this.cancel_Button = new PushButton( this );
-   this.cancel_Button.text = "Cancel";
-   this.cancel_Button.enabled = true;
-   this.cancel_Button.onClick = function() {
-      this.dialog.cancel();
-   }
-   this.ok_Button = new PushButton( this );
-   this.ok_Button.text = "OK";
-   this.ok_Button.enabled = true;
-   this.ok_Button.onClick = function() {
+   this.done_Button = new PushButton( this );
+   this.done_Button.text = "Done"
+   this.done_Button.enabled = true;
+   this.done_Button.onClick = function() {
       this.dialog.ok();
    }
 
@@ -1576,8 +1584,7 @@ function ConfigurationDialog( parentDialog, engine, guiParameters) {
    this.buttonsSizer = new HorizontalSizer;
    this.buttonsSizer.spacing = 2;
    this.buttonsSizer.addStretch();
-   this.buttonsSizer.add( this.cancel_Button);
-   this.buttonsSizer.add( this.ok_Button);
+   this.buttonsSizer.add( this.done_Button);
 
 
    // Assemble configuration Dialog
@@ -1586,6 +1593,7 @@ function ConfigurationDialog( parentDialog, engine, guiParameters) {
    this.sizer.spacing = 4;
    this.sizer.add( this.conversion_GroupBox );
    this.sizer.add(this.buttonsSizer);
+   this.setVariableSize();
    this.adjustToContents();
 
 }
