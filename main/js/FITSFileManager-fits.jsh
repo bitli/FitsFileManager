@@ -315,6 +315,8 @@ var ffM_FITS_Keywords = (function() {
    return {
       makeImageKeywordsfromFile: makeImageKeywordsfromFile,
       makeKeywordsSet: makeKeywordsSet,
+      // Made public for short format of columns
+      unquote: unquote,
 
       // For unit testing only
       UT: {

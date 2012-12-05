@@ -56,7 +56,7 @@ var Log = (function() {
 })();
 
 #ifdef DEBUG
-debug = Log.debug;
+var debug = Log.debug;
 #endif
 
 // Example:

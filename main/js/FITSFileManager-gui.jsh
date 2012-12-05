@@ -26,6 +26,16 @@ var CompletionDialog_doneRemove = 2;
 var CompletionDialog_doneLeave= 3;
 
 
+// ------------------------------------------------------------------------------------------------------------------------
+// Section Group - support to switch between SectionBar and a group box
+// ------------------------------------------------------------------------------------------------------------------------
+
+function makeSectionGroup(parent, content, title, initialyCollapsed) {
+   var section = new SectionBar( parent,  initialyCollapsed);
+   section.setTitle( title );
+   section.setSection( content );
+   return section;
+}
 
 
 // ------------------------------------------------------------------------------------------------------------------------
@@ -405,10 +415,8 @@ function MainDialog(engine, guiParameters) {
    this.inputFiles_GroupBox.sizer.add( this.fileButonSizer );
 
 
-   this.barInput = new SectionBar( this );
-   this.barInput.setTitle( "Input" );
+   this.barInput = makeSectionGroup(this,this.inputFiles_GroupBox,"Input",false);
    this.barInput.setCollapsedTitle( "Input - No file" );
-   this.barInput.setSection( this.inputFiles_GroupBox );
 
 
 
@@ -640,171 +648,9 @@ function MainDialog(engine, guiParameters) {
    this.rules_GroupBox.sizer.add( this.regexp_ComboBox_sizer );
    this.rules_GroupBox.sizer.add( this.groupTemplate_ComboBox_sizer );
 
-   this.barRules = new SectionBar( this );
-   this.barRules.setTitle( "Rules" );
-   this.barRules.setSection( this.rules_GroupBox );
+   this.barRules = makeSectionGroup(this, this.rules_GroupBox,"Rules",false);
 
 
-
-   //----------------------------------------------------------------------------------
-   // -- Conversion definition and mapping rules section
-   //----------------------------------------------------------------------------------
-
-   // Keywords to use
-   var keywordNames_GroupBox = new GroupBox(this);
-
-   keywordNames_GroupBox.title = Text.T.KEYWORDNAMES_GROUPBOX_TITLE;
-
-   var keywordNames_TreeBox = new TreeBox(keywordNames_GroupBox);
-   keywordNames_TreeBox.rootDecoration = false;
-   keywordNames_TreeBox.numberOfColumns = 2;
-   keywordNames_TreeBox.headerVisible = false;
-   keywordNames_TreeBox.toolTip = Text.H.KEYWORDNAMES_GROUPBOX_TOOLTIP
-
-
-   var refreshRemappedFITSkeywordsNames = function (keywordNames_TreeBox) {
-      keywordNames_TreeBox.clear();
-      var remappedFITSkeywordsNames = Object.keys(engine.remappedFITSkeywords);
-      for (var ic=0; ic<remappedFITSkeywordsNames.length; ic++) {
-         var node = new TreeBoxNode(keywordNames_TreeBox);
-         node.setText( 0, remappedFITSkeywordsNames[ic] );
-         node.setText( 1, engine.remappedFITSkeywords[remappedFITSkeywordsNames[ic]] );
-         node.checkable = false;
-      }
-   }
-
-   refreshRemappedFITSkeywordsNames(keywordNames_TreeBox);
-
-   // Conversion of type names
-   var typeConversion_GroupBox = new GroupBox(this);
-
-   typeConversion_GroupBox.title = Text.T.TYPECONVERSION_GROUPBOX_TITLE;
-   typeConversion_GroupBox.toolTip = Text.H.TYPECONVERSION_GROUPBOX_TOOLTIP;
-
-   var typeConversion_TreeBox = new TreeBox(typeConversion_GroupBox);
-   typeConversion_TreeBox.rootDecoration = false;
-   typeConversion_TreeBox.numberOfColumns = 2;
-   typeConversion_TreeBox.headerVisible = false;
-
-   var refreshTypeConversions = function (typeConversion_TreeBox) {
-      typeConversion_TreeBox.clear();
-      var typeConversions = guiParameters.getCurrentConfiguration().typeConversions;
-      for (var ic=0; ic<typeConversions.length; ic++) {
-         var node = new TreeBoxNode(typeConversion_TreeBox);
-         node.setText( 0, typeConversions[ic][0].toString() );
-         node.setText( 1, typeConversions[ic][1] );
-         node.checkable = false;
-      }
-   }
-   refreshTypeConversions(typeConversion_TreeBox);
-
-   // Conversion of filter names
-   var filterConversion_GroupBox = new GroupBox(this);
-   filterConversion_GroupBox.title = Text.T.FILTERCONVERSION_GROUPBOX_TITLE;
-   filterConversion_GroupBox.toolTip = Text.H.FILTERCONVERSION_GROUPBOX_TOOLTIP;
-
-
-   var filterConversion_TreeBox = new TreeBox(filterConversion_GroupBox);
-   filterConversion_TreeBox.rootDecoration = false;
-   filterConversion_TreeBox.numberOfColumns = 2;
-   filterConversion_TreeBox.headerVisible = false;
-   var refreshFilterConversions = function (filterConversion_TreeBox) {
-      filterConversion_TreeBox.clear();
-      var filterConversions = guiParameters.getCurrentConfiguration().filterConversions;
-      for (var ic=0; ic<filterConversions.length; ic++) {
-         var node = new TreeBoxNode(filterConversion_TreeBox);
-         node.setText( 0, filterConversions[ic][0].toString() );
-         node.setText( 1, filterConversions[ic][1] );
-         node.checkable = false;
-      }
-   }
-   refreshFilterConversions(filterConversion_TreeBox);
-
-   // Selection of mapping rules
-   var mappingRules_ComboBox = new ComboBox( this );
-   mappingRules_ComboBox.toolTip = "Select rules";
-   mappingRules_ComboBox.enabled = true;
-   var mappingList = ffM_Configuration.configurationList;
-   for (var it = 0; it<mappingList.length; it++) {
-      mappingRules_ComboBox.addItem( mappingList[it] +  " - " + ffM_Configuration.getConfigurationByName(mappingList[it]).description);
-   }
-   mappingRules_ComboBox.currentItem = guiParameters.currentConfigurationIndex;
-
-   mappingRules_ComboBox.onItemSelected = function() {
-#ifdef DEBUG
-      debug("mappingRules_ComboBox: onItemSelected " + this.currentItem );
-#endif
-       if (this.currentItem >= mappingList.length) {
-          return; // Protect against CR in input field
-       }
-       guiParameters.currentConfigurationIndex = this.currentItem;
-       engine.setConfiguration(guiParameters.getCurrentConfiguration());
-
-       refreshRemappedFITSkeywordsNames(keywordNames_TreeBox);
-       refreshTypeConversions(typeConversion_TreeBox);
-       refreshFilterConversions(filterConversion_TreeBox);
-       this.dialog.barConversions.setCollapsedTitle(Text.T.REMAPPING_SECTION_PART_TEXT + " - " + ffM_Configuration.configurationList[guiParameters.currentConfigurationIndex]);
-
-      // If the rules are changed, all variables must be recalculated
-      // TODO RECALCULATE VARIABLES
-      // TODO We can probably clear in one go
-//      for ( var i = this.dialog.filesTreeBox.numberOfChildren; --i >= 0; ) {
-//            this.dialog.filesTreeBox.remove( i );
-//      }
-//      this.dialog.engine.reset();
-
-      // rebuild all
-      for (var i=0; i<this.dialog.engine.inputFiles.length; i++) {
-         var fileName = this.dialog.engine.inputFiles[i];
-         var imageKeywords  = ffM_FITS_Keywords.makeImageKeywordsfromFile(fileName);
-         this.dialog.engine.inputFITSKeywords[i] = imageKeywords;
-         // Create the synthethic variables using the desired rules
-         var variables = makeSynthethicVariables(fileName, imageKeywords,
-              this.dialog.engine.remappedFITSkeywords,
-              this.dialog.engine.filterConverter, this.dialog.engine.typeConverter);
-         this.dialog.engine.inputVariables[i] = variables;
-      }
-
-      // TODO - Merge with action on add files
-      //this.dialog.rebuildFilesTreeBox();
-      this.dialog.updateButtonState();
-      this.dialog.updateTotal();
-      this.dialog.refreshTargetFiles();
-    }
-
-
-
-   // Group the list boxed of the current mapping and conversions
-   var currentState_GroupBox = new Control( this );
-
-   currentState_GroupBox.sizer = new HorizontalSizer;
-   currentState_GroupBox.sizer.margin = 6;
-   currentState_GroupBox.sizer.spacing = 4;
-
-   currentState_GroupBox.sizer.add( keywordNames_GroupBox);
-   currentState_GroupBox.sizer.add( typeConversion_GroupBox);
-   currentState_GroupBox.sizer.add( filterConversion_GroupBox);
-   // TODO Find other way to fix minimal size
-   currentState_GroupBox.setMinHeight(150);
-
-
-   // Group and create section bar
-
-   this.conversion_GroupBox = new GroupBox( this );
-
-   this.conversion_GroupBox.sizer = new VerticalSizer;
-   this.conversion_GroupBox.sizer.margin = 6;
-   this.conversion_GroupBox.sizer.spacing = 4;
-
-   this.conversion_GroupBox.sizer.add( mappingRules_ComboBox);
-   this.conversion_GroupBox.sizer.add( currentState_GroupBox, 100);
-
-   this.barConversions = new SectionBar( this, true );
-   this.barConversions.setTitle(Text.T.REMAPPING_SECTION_PART_TEXT );
-   this.barConversions.setCollapsedTitle(Text.T.REMAPPING_SECTION_PART_TEXT + " - " + ffM_Configuration.configurationList[guiParameters.currentConfigurationIndex] );
-   this.barConversions.setSection( this.conversion_GroupBox );
-
-   //this.barConversions.toggleSection();
 
 
 
@@ -840,10 +686,7 @@ function MainDialog(engine, guiParameters) {
    this.outputDir_GroupBox.sizer.add( this.outputDir_Edit, 100 );
    this.outputDir_GroupBox.sizer.add( this.outputDirSelect_Button );
 
-   this.barOutput = new SectionBar( this );
-   this.barOutput.setTitle(Text.T.OUPUT_SECTION_TEXT_PART );
-   this.barOutput.setCollapsedTitle(Text.T.OUPUT_SECTION_TEXT_PART + " - not specified" );
-   this.barOutput.setSection( this.outputDir_GroupBox );
+   this.barOutput = makeSectionGroup(this, this.outputDir_GroupBox, Text.T.OUPUT_SECTION_TEXT_PART, false);
 
 
    //----------------------------------------------------------------------------------
@@ -875,10 +718,8 @@ function MainDialog(engine, guiParameters) {
    this.outputFiles_GroupBox.sizer.add( this.outputSummaryLabel );
 
 
-   this.barResult = new SectionBar( this );
-   this.barResult.setTitle(Text.T.RESULT_SECTION_PART_TEXT );
+   this.barResult = makeSectionGroup(this, this.outputFiles_GroupBox, Text.T.RESULT_SECTION_PART_TEXT, false);
    this.barResult.setCollapsedTitle( Text.T.RESULT_SECTION_PART_TEXT + " - None" );
-   this.barResult.setSection( this.outputFiles_GroupBox );
 
 
 
@@ -1071,6 +912,16 @@ function MainDialog(engine, guiParameters) {
    }
 
 
+   this.configure_Button = new PushButton( this );
+   this.configure_Button.text = "Configure" //Text.T.LOADSAVE_BUTTON_TEXT;
+   //this.configure_Button.toolTip = Text.H.LOADSAVE_BUTTON_TOOLTIP;
+   this.configure_Button.enabled = true;
+   this.configurationDialog = new ConfigurationDialog(this, engine, guiParameters);
+   this.configure_Button.onClick = function() {
+      this.dialog.configurationDialog.execute();
+   }
+
+
 #ifdef IMPLEMENTS_FITS_EXPORT
 // Export FITS values button
    this.txt_Button = new PushButton( this );
@@ -1103,6 +954,7 @@ function MainDialog(engine, guiParameters) {
    this.buttonSizer.add( this.move_Button);
    this.buttonSizer.add( this.copy_Button);
    this.buttonSizer.add( this.loadSave_Button);
+   this.buttonSizer.add( this.configure_Button);
 #ifdef IMPLEMENTS_FITS_EXPORT
    this.buttonSizer.add( this.txt_Button);
 #endif
@@ -1123,8 +975,6 @@ function MainDialog(engine, guiParameters) {
    this.sizer.add( this.inputFiles_GroupBox,50 );
    this.sizer.add(this.barRules);
    this.sizer.add(this.rules_GroupBox);
-   this.sizer.add(this.barConversions);
-   this.sizer.add(this.conversion_GroupBox);
    this.sizer.add(this.barOutput);
    this.sizer.add( this.outputDir_GroupBox );
    this.sizer.add(this.barResult);
@@ -1263,7 +1113,7 @@ function MainDialog(engine, guiParameters) {
                      formattedValue = key.strippedValue;
                   }
                } else {
-                  formattedValue = ffM_unquote(key.value);
+                  formattedValue = ffM_FITS_Keywords.unquote(key.value);
                }
                node.setText(colOffset + indexOfKey, formattedValue);
             }
@@ -1545,6 +1395,201 @@ function CompletionDialog( parentDialog, engine ) {
 CompletionDialog.prototype = new Dialog;
 
 
+// ========================================================================================================================
+// Configuration dialog
+// ========================================================================================================================
+// ---------------------------------------------------------------------------------------------------------
+function ConfigurationDialog( parentDialog, engine, guiParameters) {
+   this.__base__ = Dialog;
+   this.__base__();
+   this.engine = engine;
+   this.guiParameters = guiParameters;
+   this.windowTitle = Text.T.REMAPPING_SECTION_PART_TEXT;
+
+
+   // Keywords to use
+   var keywordNames_GroupBox = new GroupBox(this);
+
+   keywordNames_GroupBox.title = Text.T.KEYWORDNAMES_GROUPBOX_TITLE;
+
+   var keywordNames_TreeBox = new TreeBox(keywordNames_GroupBox);
+   keywordNames_TreeBox.rootDecoration = false;
+   keywordNames_TreeBox.numberOfColumns = 2;
+   keywordNames_TreeBox.headerVisible = false;
+   keywordNames_TreeBox.toolTip = Text.H.KEYWORDNAMES_GROUPBOX_TOOLTIP
+
+
+   var refreshRemappedFITSkeywordsNames = function (keywordNames_TreeBox) {
+      keywordNames_TreeBox.clear();
+      var remappedFITSkeywordsNames = Object.keys(engine.remappedFITSkeywords);
+      for (var ic=0; ic<remappedFITSkeywordsNames.length; ic++) {
+         var node = new TreeBoxNode(keywordNames_TreeBox);
+         node.setText( 0, remappedFITSkeywordsNames[ic] );
+         node.setText( 1, engine.remappedFITSkeywords[remappedFITSkeywordsNames[ic]] );
+         node.checkable = false;
+      }
+   }
+
+   refreshRemappedFITSkeywordsNames(keywordNames_TreeBox);
+
+   // Conversion of type names
+   var typeConversion_GroupBox = new GroupBox(this);
+
+   typeConversion_GroupBox.title = Text.T.TYPECONVERSION_GROUPBOX_TITLE;
+   typeConversion_GroupBox.toolTip = Text.H.TYPECONVERSION_GROUPBOX_TOOLTIP;
+
+   var typeConversion_TreeBox = new TreeBox(typeConversion_GroupBox);
+   typeConversion_TreeBox.rootDecoration = false;
+   typeConversion_TreeBox.numberOfColumns = 2;
+   typeConversion_TreeBox.headerVisible = false;
+
+   var refreshTypeConversions = function (typeConversion_TreeBox) {
+      typeConversion_TreeBox.clear();
+      var typeConversions = guiParameters.getCurrentConfiguration().typeConversions;
+      for (var ic=0; ic<typeConversions.length; ic++) {
+         var node = new TreeBoxNode(typeConversion_TreeBox);
+         node.setText( 0, typeConversions[ic][0].toString() );
+         node.setText( 1, typeConversions[ic][1] );
+         node.checkable = false;
+      }
+   }
+   refreshTypeConversions(typeConversion_TreeBox);
+
+   // Conversion of filter names
+   var filterConversion_GroupBox = new GroupBox(this);
+   filterConversion_GroupBox.title = Text.T.FILTERCONVERSION_GROUPBOX_TITLE;
+   filterConversion_GroupBox.toolTip = Text.H.FILTERCONVERSION_GROUPBOX_TOOLTIP;
+
+
+   var filterConversion_TreeBox = new TreeBox(filterConversion_GroupBox);
+   filterConversion_TreeBox.rootDecoration = false;
+   filterConversion_TreeBox.numberOfColumns = 2;
+   filterConversion_TreeBox.headerVisible = false;
+   var refreshFilterConversions = function (filterConversion_TreeBox) {
+      filterConversion_TreeBox.clear();
+      var filterConversions = guiParameters.getCurrentConfiguration().filterConversions;
+      for (var ic=0; ic<filterConversions.length; ic++) {
+         var node = new TreeBoxNode(filterConversion_TreeBox);
+         node.setText( 0, filterConversions[ic][0].toString() );
+         node.setText( 1, filterConversions[ic][1] );
+         node.checkable = false;
+      }
+   }
+   refreshFilterConversions(filterConversion_TreeBox);
+
+   // Selection of mapping rules
+   var mappingRules_ComboBox = new ComboBox( this );
+   mappingRules_ComboBox.toolTip = "Select rules";
+   mappingRules_ComboBox.enabled = true;
+   var mappingList = ffM_Configuration.configurationList;
+   for (var it = 0; it<mappingList.length; it++) {
+      mappingRules_ComboBox.addItem( mappingList[it] +  " - " + ffM_Configuration.getConfigurationByName(mappingList[it]).description);
+   }
+   mappingRules_ComboBox.currentItem = guiParameters.currentConfigurationIndex;
+
+   mappingRules_ComboBox.onItemSelected = function() {
+#ifdef DEBUG
+      debug("mappingRules_ComboBox: onItemSelected " + this.currentItem );
+#endif
+       if (this.currentItem >= mappingList.length) {
+          return; // Protect against CR in input field
+       }
+       guiParameters.currentConfigurationIndex = this.currentItem;
+       engine.setConfiguration(guiParameters.getCurrentConfiguration());
+
+       refreshRemappedFITSkeywordsNames(keywordNames_TreeBox);
+       refreshTypeConversions(typeConversion_TreeBox);
+       refreshFilterConversions(filterConversion_TreeBox);
+//     somehow show the current configuration
+//       this.dialog.barConversions.setCollapsedTitle(Text.T.REMAPPING_SECTION_PART_TEXT + " - " + ffM_Configuration.configurationList[guiParameters.currentConfigurationIndex]);
+
+      // If the rules are changed, all variables must be recalculated
+      // TODO RECALCULATE VARIABLES
+      // TODO We can probably clear in one go
+//      for ( var i = this.dialog.filesTreeBox.numberOfChildren; --i >= 0; ) {
+//            this.dialog.filesTreeBox.remove( i );
+//      }
+//      this.dialog.engine.reset();
+
+      // rebuild all
+      for (var i=0; i<this.dialog.engine.inputFiles.length; i++) {
+         var fileName = this.dialog.engine.inputFiles[i];
+         var imageKeywords  = ffM_FITS_Keywords.makeImageKeywordsfromFile(fileName);
+         this.dialog.engine.inputFITSKeywords[i] = imageKeywords;
+         // Create the synthethic variables using the desired rules
+         var variables = makeSynthethicVariables(fileName, imageKeywords,
+              this.dialog.engine.remappedFITSkeywords,
+              this.dialog.engine.filterConverter, this.dialog.engine.typeConverter);
+         this.dialog.engine.inputVariables[i] = variables;
+      }
+
+      // TODO - Merge with action on add files
+      //this.dialog.rebuildFilesTreeBox();
+      parentDialog.updateButtonState();
+      parentDialog.updateTotal();
+      parentDialog.refreshTargetFiles();
+    }
+
+
+
+   // Group the list boxed of the current mapping and conversions
+   var currentState_GroupBox = new Control( this );
+
+   currentState_GroupBox.sizer = new HorizontalSizer;
+   currentState_GroupBox.sizer.margin = 6;
+   currentState_GroupBox.sizer.spacing = 4;
+
+   currentState_GroupBox.sizer.add( keywordNames_GroupBox);
+   currentState_GroupBox.sizer.add( typeConversion_GroupBox);
+   currentState_GroupBox.sizer.add( filterConversion_GroupBox);
+   // TODO Find other way to fix minimal size
+   currentState_GroupBox.setMinHeight(150);
+
+
+   // Group and create section bar
+
+   this.conversion_GroupBox = new GroupBox( this );
+
+   this.conversion_GroupBox.sizer = new VerticalSizer;
+   this.conversion_GroupBox.sizer.margin = 6;
+   this.conversion_GroupBox.sizer.spacing = 4;
+
+   this.conversion_GroupBox.sizer.add( mappingRules_ComboBox);
+   this.conversion_GroupBox.sizer.add( currentState_GroupBox, 100);
+
+    //this.barConversions.toggleSection();
+   // Buttons
+   this.cancel_Button = new PushButton( this );
+   this.cancel_Button.text = "Cancel";
+   this.cancel_Button.enabled = true;
+   this.cancel_Button.onClick = function() {
+      this.dialog.cancel();
+   }
+   this.ok_Button = new PushButton( this );
+   this.ok_Button.text = "OK";
+   this.ok_Button.enabled = true;
+   this.ok_Button.onClick = function() {
+      this.dialog.ok();
+   }
+
+
+   this.buttonsSizer = new HorizontalSizer;
+   this.buttonsSizer.spacing = 2;
+   this.buttonsSizer.addStretch();
+   this.buttonsSizer.add( this.cancel_Button);
+   this.buttonsSizer.add( this.ok_Button);
+
+
+   // Assemble configuration Dialog
+   this.sizer = new VerticalSizer;
+   this.sizer.margin = 4;
+   this.sizer.spacing = 4;
+   this.sizer.add( this.conversion_GroupBox );
+   this.sizer.add(this.buttonsSizer);
+   this.adjustToContents();
+
+}
+ConfigurationDialog.prototype = new Dialog;
 
 
 // ========================================================================================================================
