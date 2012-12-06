@@ -25,16 +25,6 @@
 #define FFM_DEFAULT_GROUP_TEMPLATE "&targetDir;"
 
 
-// --- List of all synthethic variables and their comments (2 parallel arrays)
-//     All synthethic variables are currently added to the columns of the file TreeBox
-// TODO Should be defined in the module 'engine' that create them and passed to the gui
-var syntheticVariableNames = ['type','filter','exposure','temp','binning','night'];
-var syntheticVariableComments = ['Type of image (flat, bias, ...)',
-   'Filter (clear, red, ...)',
-   'Exposure in seconds',
-   'Temperature in C',
-   'Binning as 1x1, 2x2, ...',
-   'night (experimental)'];
 
 
 

@@ -150,7 +150,7 @@ var ffM_LookupConverter = function() {
                // Assumed frequent case of copying input
                conversionResultFunction = function(compiledEntry, unquotedName) {
                   // Cleanup from special characters
-                  return filterFITSValue(unquotedName);
+                  return ffM_variables.filterFITSValue(unquotedName);
                }
             } else if (backReferenceRegExp.test(conversionResultTemplate)) {
                // There are back refernce, using a replacing function
@@ -165,7 +165,7 @@ var ffM_LookupConverter = function() {
                            return "BACKREFERENCETOOLARGE"; // Cannot replace, index too large
                         } else {
                            // Cleanup the returned value to avoid special characters
-                           return filterFITSValue(matchedGroups[matchIndex]);
+                           return ffM_variables.filterFITSValue(matchedGroups[matchIndex]);
                         }
                      };
 
@@ -187,7 +187,7 @@ var ffM_LookupConverter = function() {
          return c;
       }
    }
-}();
+} ();
 
 
 
@@ -195,9 +195,9 @@ var ffM_LookupConverter = function() {
 
 
 
-//=========================================================================================================================
-// Template parsing and execution
-// ------------------------------------------------------------------------------------------------------------------------
+// ====================================================================================================================
+// Template parsing and execution module
+// ====================================================================================================================
 
 // Create template support in a 'module' like object
 var ffM_template = (function() {
@@ -295,7 +295,7 @@ var ffM_template = (function() {
   }
 
 
-  // Public interface
+   // --- public properties and methods ---------------------------------------
   return {
     // Analyze a template string and return the compiled template (or null),
     // push the errors to templateErrors, which must be an array
@@ -356,16 +356,122 @@ var ffM_template = (function() {
 
 
 
+// ====================================================================================================================
+// Variable definition and lookup module
+// ====================================================================================================================
+
+var ffM_variables = (function() {
+
+
+
+   //   &binning     Binning from XBINNING and YBINNING formated as a pair of integers, like 2x2.
+   function binningParser(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords) {
+      var xBinning = parseInt(imageKeywords.getValue(remappedFITSkeywords['BinningX']));
+      var yBinning = parseInt(imageKeywords.getValue(remappedFITSkeywords['BinningY']));
+      if (isNaN(xBinning) || isNaN(yBinning)) {
+         return null;
+      } else {
+         return xBinning.toFixed(0)+"x"+yBinning.toFixed(0);
+      }
+   }
+
+   //   &exposure;   The exposure from EXPOSURE, formatted as an integer (assume seconds)
+   function exposureParser(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords) {
+      var exposure = imageKeywords.getValue(remappedFITSkeywords['Exposure']);
+      var exposureF =  parseFloat(exposure);
+      if (isNaN(exposureF)) {
+         return null;
+      } else {
+         return exposureF.toFixed(0);
+      }
+   }
+
+   //   &extension;   The extension of the source file (with the dot)
+   function extensionParser(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords, inputFile) {
+      return  File.extractExtension(inputFile);
+   }
+
+   //   &filename;   The file name part of the source file
+   function filenameParser(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords, inputFile) {
+       return  File.extractName(inputFile);
+   }
+
+   //   &filter:     The filter name from FILTER as lower case trimmed normalized name.
+   function filterParser(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords) {
+      var filter = imageKeywords.getUnquotedValue(remappedFITSkeywords['Filter']);
+      return filterConverter.convert(filter);
+   }
+
+   //   &temp;       The SET-TEMP temperature in C as an integer
+   function tempParser(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords) {
+      var temp = imageKeywords.getValue(remappedFITSkeywords['Temp']);
+      var tempF = parseFloat(temp);
+      if (isNaN(tempF)) {
+         return null;
+      } else {
+         return tempF.toFixed(0);
+      }
+   }
+
+   //   &type:       The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'
+   function typeParser(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords) {
+      var imageType = imageKeywords.getUnquotedValue(remappedFITSkeywords['Type']);
+      return typeConverter.convert(imageType);
+   }
+
+
+   //  &night;     EXPERIMENTAL
+   function nightParser(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords) {
+      var longObs = imageKeywords.getValue(remappedFITSkeywords['NightLongObs']); // East in degree
+      // longObs = -110;
+      // TODO Support default longObs
+      var jd = imageKeywords.getValue(remappedFITSkeywords['NightJD']);
+      if (longObs && jd) {
+         var jdLocal = Number(jd) + (Number(longObs) / 360.0) ;
+         var nightText = (Math.floor(jdLocal) % 1000).toString();
+         return nightText;
+      } else {
+         return null;
+      }
+   }
 
 
 
 
-// Parsing the keywords in the targetFileNameTemplate (1 characters will be removed at
-// head (&) and tail (;), this is hard coded and must be modified if required.
-// We take everything between & and ;, as we may have -, _, etc...
-//var variableRegExp = /&[a-zA-Z0-9]+;/g;
-var variableRegExp = /&[^&]+;/g;
+   // Variable definitions
+   // Each definiton has a name and a factory method
+   // All definitions are in an array (ordered)
+   var variableDefinitions = [];
+   function defineVariable(name, description, method) {
+      return {
+         name: name,
+         description: description,
+         method: method,
+      }
+   }
 
+
+   variableDefinitions.push(defineVariable('type','Type of image (flat, bias, ...)',typeParser));
+   variableDefinitions.push(defineVariable('filter','Filter (clear, red, ...)',filterParser));
+   variableDefinitions.push(defineVariable('exposure','Exposure in seconds',exposureParser));
+   variableDefinitions.push(defineVariable('exposure','Exposure in seconds',exposureParser));
+   variableDefinitions.push(defineVariable('temp','Temperature in C',tempParser));
+   variableDefinitions.push(defineVariable('binning','Binning as 1x1, 2x2, ...',binningParser));
+   variableDefinitions.push(defineVariable('night','night (experimental)',nightParser));
+   var shownVariablesNumber = variableDefinitions.length;
+   variableDefinitions.push(defineVariable('filename','Input file name',filenameParser));
+   variableDefinitions.push(defineVariable('extension','Input file extension',extensionParser));
+
+
+   // --- List of all synthethic variables and their comments (2 parallel arrays)
+   //     All synthethic variables are currently added to the columns of the file TreeBox
+   // TODO Should directly access definitions
+   var syntheticVariableNames = [];
+   var syntheticVariableComments = [];
+   for (var i=0; i<shownVariablesNumber; i++) {
+      syntheticVariableNames.push(variableDefinitions[i].name);
+      syntheticVariableComments.push(variableDefinitions[i].description);
+   }
 
 
 
@@ -386,6 +492,11 @@ function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords,
 
    var variables = [];
 
+   for (var i=0; i<variableDefinitions.length; i++) {
+      var vd = variableDefinitions[i];
+      variables[vd.name] = vd.method(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords, inputFileName);
+   }
+#ifdef OLDVAR
    //   &binning     Binning from XBINNING and YBINNING formated as a pair of integers, like 2x2.
    var xBinning = parseInt(imageKeywords.getValue(remappedFITSkeywords['BinningX']));
    var yBinning = parseInt(imageKeywords.getValue(remappedFITSkeywords['BinningY']));
@@ -440,6 +551,7 @@ function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords,
       variables['night'] = nightText;
    }
 
+#endif
 
 #ifdef DEBUG
    debug("makeSynthethicVariables: made " + Object.keys(variables).length + " synthetics keys for file " + inputFileName);
@@ -513,5 +625,17 @@ function filterViewId(id) {
    }
    return fId;
 }
+
+   // --- public properties and methods ---------------------------------------
+   return {
+      makeSynthethicVariables: makeSynthethicVariables,
+      filterFITSValue: filterFITSValue,
+      filterViewId: filterViewId,
+      syntheticVariableNames: syntheticVariableNames,
+      syntheticVariableComments: syntheticVariableComments,
+   }
+
+}) ();
+
 
 

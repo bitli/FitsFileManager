@@ -69,8 +69,8 @@ function FFM_Engine(guiParameters) {
          this.shownFITSKeyNames[name] = true;
       }
       // Currently all synthetic variables are visible by default
-      for (var i = 0; i<syntheticVariableNames.length;i++) {
-         var name = syntheticVariableNames[i];
+      for (var i = 0; i<ffM_variables.syntheticVariableNames.length;i++) {
+         var name = ffM_variables.syntheticVariableNames[i];
          this.shownSyntheticKeyNames[name] = true;
       }
 
@@ -96,7 +96,7 @@ function FFM_Engine(guiParameters) {
             this.inputFiles.push(fileNames[i]);
             this.inputFITSKeywords.push(imageKeywords);
             // Create the synthethic variables using the desired rules
-            var variables = makeSynthethicVariables(fileNames[i], imageKeywords,
+            var variables = ffM_variables.makeSynthethicVariables(fileNames[i], imageKeywords,
                 this.remappedFITSkeywords,
                 this.filterConverter, this.typeConverter);
 
@@ -187,7 +187,7 @@ function FFM_Engine(guiParameters) {
                } else if (regexpVariables.hasOwnProperty(v)) {
                   return regexpVariables[v];
                } else {
-                  return filterFITSValue(fitsKeywords.getUnquotedValue(v));
+                  return ffM_variables.filterFITSValue(fitsKeywords.getUnquotedValue(v));
                }
       };
 
@@ -203,7 +203,7 @@ function FFM_Engine(guiParameters) {
                } else if (regexpVariables.hasOwnProperty(v) ) {
                   return regexpVariables[v];
                } else {
-                  return filterFITSValue(fitsKeywords.getUnquotedValue(v));
+                  return ffM_variables.filterFITSValue(fitsKeywords.getUnquotedValue(v));
                }
       };
 
@@ -218,7 +218,7 @@ function FFM_Engine(guiParameters) {
                } else if (regexpVariables.hasOwnProperty(v) ) {
                   return regexpVariables[v];
                } else {
-                  return filterFITSValue(fitsKeywords.getUnquotedValue(v));
+                  return ffM_variables.filterFITSValue(fitsKeywords.getUnquotedValue(v));
                }
       };
 

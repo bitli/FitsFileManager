@@ -30,12 +30,32 @@ var CompletionDialog_doneLeave= 3;
 // Section Group - support to switch between SectionBar and a group box
 // ------------------------------------------------------------------------------------------------------------------------
 
+
+#ifdef USE_SECTION_BAR
 function makeSectionGroup(parent, content, title, initialyCollapsed) {
    var section = new SectionBar( parent,  initialyCollapsed);
    section.setTitle( title );
    section.setSection( content );
    return section;
 }
+#else
+var dummySectionPrototype = {
+    setCollapsedTitle: function(title) { return; },
+    setSection: function(section) { this.section = section; },
+    addSection: function(sizer, weight) {
+      sizer.add(this.section, weight);
+   },
+}
+// The content is a group box
+function makeSectionGroup(parent, content, title, initialyCollapsed) {
+   // Return an object that fake a section bar, without any functionality,
+   // show just the GroupBox with title
+   var section = Object.create(dummySectionPrototype);
+   content.title = title;
+   section.setSection(content);
+   return section;
+}
+#endif
 
 
 // ------------------------------------------------------------------------------------------------------------------------
@@ -182,6 +202,11 @@ function SectionBar( parent, initialyCollapsed ) {
       }
       this.updateIcon();
    };
+
+   this.addSection = function(sizer, weight) {
+      sizer.add(this);
+      sizer.add(this.section, weight);
+   }
 
 
 }
@@ -409,8 +434,8 @@ function MainDialog(engine, guiParameters) {
 
    this.inputFiles_GroupBox = new GroupBox( this );
    this.inputFiles_GroupBox.sizer = new VerticalSizer;
-   this.inputFiles_GroupBox.sizer.margin = 6;
-   this.inputFiles_GroupBox.sizer.spacing = 4;
+   this.inputFiles_GroupBox.sizer.margin = 4;
+   this.inputFiles_GroupBox.sizer.spacing = 2;
    this.inputFiles_GroupBox.sizer.add( this.filesTreeBox,100 );
    this.inputFiles_GroupBox.sizer.add( this.fileButonSizer );
 
@@ -424,6 +449,24 @@ function MainDialog(engine, guiParameters) {
    //----------------------------------------------------------------------------------
    // -- Rules section
    //----------------------------------------------------------------------------------
+
+   // Define ruleset (configuration)
+
+   this.configurationName_Label = new Label();
+   this.configurationName_Label.text		=  ffM_Configuration.configurationList[guiParameters.currentConfigurationIndex];
+   this.configurationName_Label.textAlignment	= TextAlign_Left | TextAlign_VertCenter;
+
+   this.configuration_Button = new PushButton( this );
+   this.configuration_Button.text = "Configure" //Text.T.LOADSAVE_BUTTON_TEXT;
+   //this.configure_Button.toolTip = Text.H.LOADSAVE_BUTTON_TOOLTIP;
+   this.configuration_Button.enabled = true;
+   this.configurationDialog = new ConfigurationDialog(this, engine, guiParameters);
+   this.configuration_Button.onClick = function() {
+      this.dialog.configurationDialog.execute();
+      this.dialog.configurationName_Label.text		=  ffM_Configuration.configurationList[guiParameters.currentConfigurationIndex];
+   }
+
+
 
    // Target template --------------------------------------------------------------------------------------
 
@@ -602,6 +645,20 @@ function MainDialog(engine, guiParameters) {
 
    // Sizers for Rules section
 
+   this.configurationSelection_sizer = new HorizontalSizer;
+   this.configurationSelection_sizer.margin = 4;
+   this.configurationSelection_sizer.spacing = 2;
+   var label = new Label();
+   label.setFixedWidth(labelWidth);
+   label.text		= "Configuration: ";
+   label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
+
+   this.configurationSelection_sizer.add( label );
+   this.configurationSelection_sizer.add( this.configurationName_Label );
+   this.configurationSelection_sizer.addStretch( );
+   this.configurationSelection_sizer.add( this.configuration_Button );
+
+
    this.targetFileTemplate_Edit_sizer = new HorizontalSizer;
    this.targetFileTemplate_Edit_sizer.margin = 4;
    this.targetFileTemplate_Edit_sizer.spacing = 2;
@@ -612,6 +669,7 @@ function MainDialog(engine, guiParameters) {
 
    this.targetFileTemplate_Edit_sizer.add( label );
    this.targetFileTemplate_Edit_sizer.add( this.targetFileTemplate_ComboBox,100 );
+
 
 
    this.regexp_ComboBox_sizer = new HorizontalSizer;
@@ -641,9 +699,10 @@ function MainDialog(engine, guiParameters) {
    this.rules_GroupBox = new GroupBox( this );
 
    this.rules_GroupBox.sizer = new VerticalSizer;
-   this.rules_GroupBox.sizer.margin = 6;
-   this.rules_GroupBox.sizer.spacing = 4;
+   this.rules_GroupBox.sizer.margin = 4;
+   this.rules_GroupBox.sizer.spacing = 2;
 
+   this.rules_GroupBox.sizer.add( this.configurationSelection_sizer );
    this.rules_GroupBox.sizer.add( this.targetFileTemplate_Edit_sizer, 100);
    this.rules_GroupBox.sizer.add( this.regexp_ComboBox_sizer );
    this.rules_GroupBox.sizer.add( this.groupTemplate_ComboBox_sizer );
@@ -681,8 +740,8 @@ function MainDialog(engine, guiParameters) {
 
    this.outputDir_GroupBox = new GroupBox( this );
    this.outputDir_GroupBox.sizer = new HorizontalSizer;
-   this.outputDir_GroupBox.sizer.margin = 6;
-   this.outputDir_GroupBox.sizer.spacing = 4;
+   this.outputDir_GroupBox.sizer.margin = 4;
+   this.outputDir_GroupBox.sizer.spacing = 2;
    this.outputDir_GroupBox.sizer.add( this.outputDir_Edit, 100 );
    this.outputDir_GroupBox.sizer.add( this.outputDirSelect_Button );
 
@@ -709,11 +768,12 @@ function MainDialog(engine, guiParameters) {
 
    this.outputSummaryLabel = new Label( this );
    this.outputSummaryLabel.textAlignment = TextAlign_Left|TextAlign_VertCenter;
+   this.outputSummaryLabel.text = "No operation";
 
    this.outputFiles_GroupBox = new GroupBox( this );
    this.outputFiles_GroupBox.sizer = new VerticalSizer;
-   this.outputFiles_GroupBox.sizer.margin = 6;
-   this.outputFiles_GroupBox.sizer.spacing = 4;
+   this.outputFiles_GroupBox.sizer.margin = 4;
+   this.outputFiles_GroupBox.sizer.spacing = 2;
    this.outputFiles_GroupBox.sizer.add( this.transform_TreeBox, 100);
    this.outputFiles_GroupBox.sizer.add( this.outputSummaryLabel );
 
@@ -912,16 +972,6 @@ function MainDialog(engine, guiParameters) {
    }
 
 
-   this.configure_Button = new PushButton( this );
-   this.configure_Button.text = "Configure" //Text.T.LOADSAVE_BUTTON_TEXT;
-   //this.configure_Button.toolTip = Text.H.LOADSAVE_BUTTON_TOOLTIP;
-   this.configure_Button.enabled = true;
-   this.configurationDialog = new ConfigurationDialog(this, engine, guiParameters);
-   this.configure_Button.onClick = function() {
-      this.dialog.configurationDialog.execute();
-   }
-
-
 #ifdef IMPLEMENTS_FITS_EXPORT
 // Export FITS values button
    this.txt_Button = new PushButton( this );
@@ -948,13 +998,13 @@ function MainDialog(engine, guiParameters) {
    // Sizer for Operation List and Actions section
 
    this.buttonSizer = new HorizontalSizer;
+   this.buttonSizer.margin = 4;
    this.buttonSizer.spacing = 2;
    this.buttonSizer.add( this.refresh_Button);
    this.buttonSizer.add( this.check_Button);
    this.buttonSizer.add( this.move_Button);
    this.buttonSizer.add( this.copy_Button);
    this.buttonSizer.add( this.loadSave_Button);
-   this.buttonSizer.add( this.configure_Button);
 #ifdef IMPLEMENTS_FITS_EXPORT
    this.buttonSizer.add( this.txt_Button);
 #endif
@@ -968,17 +1018,13 @@ function MainDialog(engine, guiParameters) {
    // Sizer for dialog
 
    this.sizer = new VerticalSizer;
-   this.sizer.margin = 2;
-   this.sizer.spacing = 2;
+   this.sizer.margin = 4;
+   this.sizer.spacing = 6;
    this.sizer.add( helpLabel );
-   this.sizer.add(this.barInput);
-   this.sizer.add( this.inputFiles_GroupBox,50 );
-   this.sizer.add(this.barRules);
-   this.sizer.add(this.rules_GroupBox);
-   this.sizer.add(this.barOutput);
-   this.sizer.add( this.outputDir_GroupBox );
-   this.sizer.add(this.barResult);
-   this.sizer.add(this.outputFiles_GroupBox,501);
+   this.barInput.addSection(this.sizer, 50);
+   this.barRules.addSection(this.sizer,0);
+   this.barOutput.addSection(this.sizer,0);
+   this.barResult.addSection(this.sizer, 50);
    this.sizer.add( this.buttonSizer );
 
 
@@ -995,12 +1041,12 @@ function MainDialog(engine, guiParameters) {
    this.showOrHideFITSkey = function () {
       var allFITSKeyNames = this.engine.keywordsSet.allValueKeywordNameList;
       // +1 as the file name is always visible
-      for (var i = 0; i<syntheticVariableNames.length;i++) {
+      for (var i = 0; i<ffM_variables.syntheticVariableNames.length;i++) {
          var c = i + 1;
-         this.filesTreeBox.showColumn( c, this.engine.shownSyntheticKeyNames.hasOwnProperty(syntheticVariableNames[i]));
+         this.filesTreeBox.showColumn( c, this.engine.shownSyntheticKeyNames.hasOwnProperty(ffM_variables.syntheticVariableNames[i]));
       }
       for (var i = 0; i<allFITSKeyNames.length;i++) {
-         var c = i + 1 + syntheticVariableNames.length;
+         var c = i + 1 + ffM_variables.syntheticVariableNames.length;
          this.filesTreeBox.showColumn( c, this.engine.shownFITSKeyNames.hasOwnProperty(allFITSKeyNames[i]));
       }
    }
@@ -1020,8 +1066,8 @@ function MainDialog(engine, guiParameters) {
       this.engine.keywordsSet = ffM_FITS_Keywords.makeKeywordsSet(); // clear
 
       // Add the synthetic keys columns
-      for (var iSynthKey = 0; iSynthKey<syntheticVariableNames.length; iSynthKey++) {
-         var name = syntheticVariableNames[iSynthKey];
+      for (var iSynthKey = 0; iSynthKey<ffM_variables.syntheticVariableNames.length; iSynthKey++) {
+         var name = ffM_variables.syntheticVariableNames[iSynthKey];
          this.filesTreeBox.numberOfColumns++;// add new column
          this.filesTreeBox.setHeaderText(this.filesTreeBox.numberOfColumns-1, name);//set name of new column
 #ifdef DEBUG
@@ -1066,13 +1112,13 @@ function MainDialog(engine, guiParameters) {
 #ifdef DEBUG
          debug("rebuildFilesTreeBox: adding " + Object.keys(syntheticKeywords) + " synthetics keys, " + keys.length + " FITS keys to row " + i);
 #endif
-         for (var iSynthKey = 0; iSynthKey<syntheticVariableNames.length; iSynthKey++) {
-            var name = syntheticVariableNames[iSynthKey];
+         for (var iSynthKey = 0; iSynthKey<ffM_variables.syntheticVariableNames.length; iSynthKey++) {
+            var name = ffM_variables.syntheticVariableNames[iSynthKey];
             var textSynthKey = syntheticKeywords[name];
             node.setText(iSynthKey+colOffset, textSynthKey ? textSynthKey : "");
          }
          // Skip next columns
-         colOffset += syntheticVariableNames.length;
+         colOffset += ffM_variables.syntheticVariableNames.length;
 
          // Adding FITS keyword columns (based on FITS keywords in current file and map of keywords to column index)
 #ifdef DEBUG
@@ -1238,7 +1284,7 @@ function MainDialog(engine, guiParameters) {
 
       var barResultTitle = "";
       if (nmbFilesExamined === 0) {
-          barResultTitle += "None";
+          barResultTitle += "No operation";
       } else {
          barResultTitle += "" + nmbFilesExamined + " files checked" ;
          if (this.engine.nmbFilesTransformed >0) {
@@ -1528,7 +1574,7 @@ function ConfigurationDialog( parentDialog, engine, guiParameters) {
          var imageKeywords  = ffM_FITS_Keywords.makeImageKeywordsfromFile(fileName);
          this.dialog.engine.inputFITSKeywords[i] = imageKeywords;
          // Create the synthethic variables using the desired rules
-         var variables = makeSynthethicVariables(fileName, imageKeywords,
+         var variables = ffM_variables.makeSynthethicVariables(fileName, imageKeywords,
               this.dialog.engine.remappedFITSkeywords,
               this.dialog.engine.filterConverter, this.dialog.engine.typeConverter);
          this.dialog.engine.inputVariables[i] = variables;
@@ -1672,9 +1718,9 @@ function FITSKeysDialog( parentDialog, engine) {
       }
       var variableRoootNode = this.parent.keyword_TreeBox.child(0);
       engine.shownSyntheticKeyNames = {};
-      for (var i = 0; i< syntheticVariableNames.length; i++) {
+      for (var i = 0; i< ffM_variables.syntheticVariableNames.length; i++) {
          var checked = variableRoootNode.child(i).checked; // List and rows are in same order
-         var name = syntheticVariableNames[i];
+         var name = ffM_variables.syntheticVariableNames[i];
          if (checked) {
              engine.shownSyntheticKeyNames[name] = true;
          }
@@ -1749,10 +1795,10 @@ function FITSKeysDialog( parentDialog, engine) {
 
 
       // Fill the name column form a fixed list of synthetic keywords names
-      for (var i =0; i<syntheticVariableNames.length; i++) {
+      for (var i =0; i<ffM_variables.syntheticVariableNames.length; i++) {
          var node = new TreeBoxNode(synthRootNode);
-         node.setText( 0, syntheticVariableNames[i] );
-         node.checked = engine.shownSyntheticKeyNames.hasOwnProperty(syntheticVariableNames[i]);;
+         node.setText( 0, ffM_variables.syntheticVariableNames[i] );
+         node.checked = engine.shownSyntheticKeyNames.hasOwnProperty(ffM_variables.syntheticVariableNames[i]);;
       }
 
       // Create list of FITS keywords used as variables as a second subtree
@@ -1801,8 +1847,8 @@ function FITSKeysDialog( parentDialog, engine) {
       // Update the values of the synthethic keywords from a predefined list and engine values
       var synthRootNode = this.keyword_TreeBox.child(0);
 
-      for (var i =0; i<syntheticVariableNames.length; i++) {
-         var keyName = syntheticVariableNames[i];
+      for (var i =0; i<ffM_variables.syntheticVariableNames.length; i++) {
+         var keyName = ffM_variables.syntheticVariableNames[i];
          var variables = engine.inputVariables[index];
          var variable = variables[keyName];
          if (variable !== null) {
@@ -1814,7 +1860,7 @@ function FITSKeysDialog( parentDialog, engine) {
 
             synthRootNode.child(i).setText(1,variable);
             synthRootNode.child(i).setText(2,'');
-            synthRootNode.child(i).setText(3,syntheticVariableComments[i]);
+            synthRootNode.child(i).setText(3, ffM_variables.syntheticVariableComments[i]);
          } else {
             synthRootNode.child(i).setTextColor(0,0x00FF0000);
             synthRootNode.child(i).setText(1,'');
@@ -1841,7 +1887,7 @@ function FITSKeysDialog( parentDialog, engine) {
             fitsVarRootNode.child(i).setText(2,'');
             fitsVarRootNode.child(i).setText(3,'');
          } else {
-            var nullOrValue = filterFITSValue(keyValue.value);
+            var nullOrValue = ffM_variables.filterFITSValue(keyValue.value);
             if (nullOrValue === null) {
                // All spaces value
                fitsVarRootNode.child(i).setTextColor(0,0x00FF0000);  // Red
