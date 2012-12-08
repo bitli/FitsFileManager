@@ -136,6 +136,7 @@
 //     More 'module' structure, made logging in module
 //     Separate text
 //     Rework the UI - separate dialog for configuration, avoid use of section bar
+//     Rework variable as a module
 
 
 

@@ -53,6 +53,8 @@ function FFM_Engine(guiParameters) {
       this.nmbFilesSkipped = 0;
     };
 
+   // Set the rules to laod variables from images and context information
+   // Called at initialization and in case of change
     this.setConfiguration = function(configuration) {
 #ifdef DEBUG
       debug("FFM_Engine.setConfiguration - " + configuration.name);
