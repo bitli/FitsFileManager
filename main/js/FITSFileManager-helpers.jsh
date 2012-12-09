@@ -454,7 +454,6 @@ var ffM_variables = (function() {
    variableDefinitions.push(defineVariable('type','Type of image (flat, bias, ...)',typeParser));
    variableDefinitions.push(defineVariable('filter','Filter (clear, red, ...)',filterParser));
    variableDefinitions.push(defineVariable('exposure','Exposure in seconds',exposureParser));
-   variableDefinitions.push(defineVariable('exposure','Exposure in seconds',exposureParser));
    variableDefinitions.push(defineVariable('temp','Temperature in C',tempParser));
    variableDefinitions.push(defineVariable('binning','Binning as 1x1, 2x2, ...',binningParser));
    variableDefinitions.push(defineVariable('night','night (experimental)',nightParser));

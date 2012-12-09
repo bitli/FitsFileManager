@@ -18,6 +18,8 @@
 // For debugging inside the gui
 #define DEBUG true
 
+#include "../../main/js/PJSR-logging.jsh"
+
 #include "../../main/js/FITSFileManager-text.jsh"
 
 
@@ -52,7 +54,7 @@ function vP_testGuiRuleSet()
    for ( ;; )
    {
 
-      if ( !dialog.execute() ) {
+      if (! dialog.execute() ) {
 
          // Show result
 
@@ -61,6 +63,7 @@ function vP_testGuiRuleSet()
       }
 
    }
+   Console.writeln("RESULT:" + Log.pp(dialog.listModel,0,true));
 
    Console.writeln("FITSFileManager-test-gui - exiting");
 
