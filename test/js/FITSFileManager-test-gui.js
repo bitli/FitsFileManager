@@ -53,17 +53,17 @@ function vP_testGuiRuleSet()
    var dialog =  ffM_GUI_RuleSet.makeDialog(null, ruleSet);
    for ( ;; )
    {
+      var result = dialog.execute();
+      debug("result", result);
 
-      if (! dialog.execute() ) {
+      if (result) {
 
-         // Show result
+         Console.writeln("RESULT:" + Log.pp(dialog.listModel,0,true));
 
-         // Only exit on Cancel
-         break;
-      }
+       }
+       if (!result) break;
 
    }
-   Console.writeln("RESULT:" + Log.pp(dialog.listModel,0,true));
 
    Console.writeln("FITSFileManager-test-gui - exiting");
 
