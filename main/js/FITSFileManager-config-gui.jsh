@@ -18,14 +18,12 @@
 // Rule data (the variables is an ordered list)
 //    {name: aString, description: aString, variableList: []}
 
-// Variable: (the parameters dictionary depends on the resolver)
-//    {name: aString, description: aString, resolver: aName, parameters: {}}
+// Variable: (the parameters dictionary depends on the resolver, the parameters of a resolver
+//            are qualified by the resolver name allowing multiple resolvers at the same
+//            time while in memory)
+//    {name: aString, description: aString, resolver: aName, parameters: {resolverName: {}}}
 
 
-// Part of Model (rules to handle the 'pure data'):
-// The resolvers are fixed, they are defined as:
-//   {name: aString, description: aString, control: aControl}
-// (more information may be added later).
 
 var ffM_RuleSet_Model = (function(){
 
@@ -39,6 +37,33 @@ var ffM_RuleSet_Model = (function(){
       return names;
    }
 
+   // Get the rule by name
+   var ruleByName = function(ruleSet, name) {
+      for (var i=0; i<ruleSet.length; i++) {
+         if (ruleSet[i].name === name) return ruleSet[i];
+      }
+      return null;
+   }
+
+
+   // Model of variable - define a new variable
+   var defineVariable = function(name, description, resolver) {
+      return {
+         name: name,
+         description: description,
+         resolver: resolver,
+         parameters: {},
+      }
+   }
+
+   // Get the rule by name
+   var variableByName = function(variableList, name) {
+      for (var i=0; i<variableList.length; i++) {
+         if (variableList[i].name === name) return variableList[i];
+      }
+      return null;
+   }
+
 
 
    // Define specific rule parameters
@@ -50,20 +75,12 @@ var ffM_RuleSet_Model = (function(){
       }
    }
 
-  var currentVariable = '';
+
 
 
    // ========================================================================================================================
-   // SUPPORT FOR TESTS
+   // SUPPORT FOR TESTSTextEntryRow
 
-   // Model of variable - define a new variable
-   var defineVariable = function(name, description, resolver) {
-      return {
-         name: name,
-         description: description,
-         resolver: resolver,
-      }
-   }
 
    // Model object wrap data object and behavior
    var newRuleData = function(name, description) {
@@ -106,34 +123,66 @@ var ffM_RuleSet_Model = (function(){
       typeMapping[defaultTypes[i].name] = defaultTypes[i];
    }
 
-
+   // --------------------------
    // Default definition for test
    var defaultRule = newRuleData('Default', 'Common FITS rules')
-   .addVariable(defineVariable('type','Type of image (flat, bias, ...)','Type'))
-   .addVariable(defineVariable('filter','Filter (clear, red, ...)','Filter'))
-   .addVariable(defineVariable('exposure','Exposure in seconds','Exposure'))
-   .addVariable(defineVariable('temp','Temperature in C','Temperature'))
-   .addVariable(defineVariable('binning','Binning as 1x1, 2x2, ...','Binning'))
-   .addVariable(defineVariable('night','night (experimental)','Night'))
-   .addVariable(defineVariable('filename','Input file name','FileName'))
-   .addVariable(defineVariable('extension','Input file extension','Extension'))
+   .addVariable(defineVariable('type','Type of image (flat, bias, ...)','RegExpList'))
+   .addVariable(defineVariable('filter','Filter (clear, red, ...)','RegExpList'))
+   .addVariable(defineVariable('exposure','Exposure in seconds','Constant'))
+   .addVariable(defineVariable('temp','Temperature in C','Constant'))
+   .addVariable(defineVariable('binning','Binning as 1x1, 2x2, ...','Constant'))
+   .addVariable(defineVariable('night','night (experimental)','Constant'))
+   .addVariable(defineVariable('filename','Input file name','Constant'))
+   .addVariable(defineVariable('extension','Input file extension','Constant'))
    .build();
 
+
    var testRule = newRuleData('Test', 'A test rule')
-   .addVariable(defineVariable('object','Object','Object'))
+   .addVariable(defineVariable('object','Object','Constant'))
    .build();
+
+   var emptyRule = newRuleData('Empty', 'An empty rule')
+   .build();
+   var largeRule = newRuleData('Large', 'Many variables')
+   .addVariable(defineVariable('object 1','Object','Constant'))
+   .addVariable(defineVariable('object 2','Object','Constant'))
+   .addVariable(defineVariable('object 3','Object','Constant'))
+   .addVariable(defineVariable('object 4','Object','Constant'))
+   .addVariable(defineVariable('object 5','Object','Constant'))
+   .addVariable(defineVariable('object 6','Object','Constant'))
+   .addVariable(defineVariable('object 7','Object','Constant'))
+   .addVariable(defineVariable('object 8','Object','Constant'))
+   .addVariable(defineVariable('object 9','Object','Constant'))
+   .addVariable(defineVariable('object 10','Object','Constant'))
+   .addVariable(defineVariable('object 11','Object','Constant'))
+   .addVariable(defineVariable('object 12','Object','Constant'))
+   .addVariable(defineVariable('object 13','Object','Constant'))
+   .addVariable(defineVariable('object 14','Object','Constant'))
+   .addVariable(defineVariable('object 15','Object','Constant'))
+   .addVariable(defineVariable('object 16','Object','Constant'))
+   .addVariable(defineVariable('object 17','Object','Constant'))
+   .addVariable(defineVariable('object 18','Object','Constant'))
+   .addVariable(defineVariable('object 19','Object','Constant'))
+   .addVariable(defineVariable('object 20','Object','Constant'))
+   .build();
+
+
 
    // Test Rules
    var testRules = [];
    testRules.push(defaultRule);
    testRules.push(testRule);
+   testRules.push(emptyRule);
+   testRules.push(largeRule);
 
 
    return {
       ruleNames: ruleNames,
+      ruleByName: ruleByName,
+      defineVariable: defineVariable,
+
       // For tests
       testRules: testRules,
-      currentVariable: currentVariable,
    }
 }) ();
 
@@ -144,7 +193,6 @@ var ffM_RuleSet_Model = (function(){
 
 
 var ffM_GUI_support = (function (){
-
 
 
 // ---------------------------------------------------------------------------------------------------------
@@ -220,25 +268,27 @@ function ManagedList_Box(parent, initialListModel, elementFactory, toolTip, sele
    treeBox.toolTip = toolTip;
 
 
-
+   // -- Model update action
    this.modelListChanged = function(newModelList) {
 
+      // Cleanr current list
       var i;
       var nmbNodes = treeBox.numberOfChildren;
       for (i=nmbNodes; i>0; i--) {
          treeBox.remove(i-1);
       }
-
+      // Update variable tracking current model
       listModel = newModelList;
 
+      // Add new nodes
       for (i=0; i<listModel.length; i++) {
          // Just making the nodes add them to the treeBox
          makeNode(treeBox, listModel[i], i);
       }
    }
-   //this.modelListChanged(initialListModel);
+   this.modelListChanged(initialListModel);
 
-
+   // -- Internal actions
    var upAction = function() {
       var nodeToMove,  nodeIndex, element1, element2;
       if (treeBox.selectedNodes.length>0) {
@@ -358,6 +408,32 @@ return {
 // ========================================================================================================================
 var ffM_GUI_RuleSet = (function (){
 
+// The resolvers are fixed, they are defined as:
+//   {name: aString, description: aString, control: aControl}
+// (more information may be added later).
+// The resolver control manage its parameters, it has a 'populate()' method
+
+   var i;
+
+   // The control will be populated when they are created
+   var resolvers = [
+      {name: 'RegExpList', description: 'Type of image (flat, bias, ...)', control: null},
+      {name: 'Constant', description: 'Constant value', control: null}
+   ];
+
+   var resolverByName = function(name) {
+      for (var i=0; i<resolvers.length; i++) {
+         if (resolvers[i].name === name) return resolvers[i];
+      }
+      return null;
+   }
+   var resolverNames = [];
+   for ( i=0; i<resolvers.length; i++) {
+      resolverNames.push(resolvers[i].name);
+   }
+
+
+
 function makeOKCancel(parentDialog) {
    var cancel_Button, ok_Button;
 
@@ -393,7 +469,7 @@ function makeOKCancel(parentDialog) {
 // ---------------------------------------------------------------------------------------------------------
 
 // Top pane - Selection of ruleset
-var makeRuleSetSelection_ComboBox = function(parent, ruleSetNames) {
+var makeRuleSetSelection_ComboBox = function(parent, ruleSetNames, ruleSetSelectedCallback) {
    var i;
    var comboBox = new ComboBox( parent );
    comboBox.toolTip = Text.H.GROUP_TEMPLATE_TOOLTIP;
@@ -405,7 +481,9 @@ var makeRuleSetSelection_ComboBox = function(parent, ruleSetNames) {
    comboBox.currentItem = 0;
 
    comboBox.onItemSelected = function() {
-      Console.writeln("SELECTED " + this.currentItem);
+      if (this.currentItem>=0) {
+         ruleSetSelectedCallback(ruleSetNames[this.currentItem]);
+      }
    }
 
    return comboBox;
@@ -428,13 +506,18 @@ function TextEntryRow(parent, minLabelWidth, name) {
    var name_Edit = new Edit(this);
    this.sizer.add(name_Edit);
    name_Edit.text = name;
+
+   this.setText = function(text) {
+      name_Edit.text = text;
+   }
+
 }
 TextEntryRow.prototype = new Control;
 
 
 
-// -- Various middle right panes (entry of variabel values).
-var makeMappingSetSelection_ComboBox = function(parent, mappingNames, mappingSelectionCallback) {
+// -- Middle right sub-panes (components to edit variables)
+var makeResolverSelection_ComboBox = function(parent, mappingNames, mappingSelectionCallback) {
    var i;
    var comboBox = new ComboBox( parent );
    comboBox.toolTip = "Mapping";
@@ -451,77 +534,100 @@ var makeMappingSetSelection_ComboBox = function(parent, mappingNames, mappingSel
       }
    }
 
+   comboBox.selectResolver = function(name) {
+   for (i=0; i<mappingNames.length;i++) {
+         if (name === mappingNames[i]) {
+            comboBox.currentItem = i;
+            break;
+         }
+      }
+   }
+
    return comboBox;
 }
 
-function MapFirstRegExpControl(parent) {
+// -- Controls for resolver
+
+function MapFirstRegExpControl(parent, labelWidth) {
    this.__base__ = Control;
    this.__base__(parent);
 
    this.sizer = new VerticalSizer;
 
-   var labelWidth1 = this.font.width( "MMMMMMMMMMMM: " );
-
-   var variableNameRow = new TextEntryRow(this, labelWidth1, "name");
+   var variableNameRow = new TextEntryRow(this, labelWidth, "name");
    this.sizer.add(variableNameRow);
 
-   var formatRow = new TextEntryRow(this, labelWidth1, "format");
+   var formatRow = new TextEntryRow(this, labelWidth, "format");
    this.sizer.add(formatRow);
 
-
+   this.populate = function(variableDefinition) {
+      variableNameRow.setText(variableDefinition.name);
+      formatRow.setText('RegExp');
+   }
 }
 MapFirstRegExpControl.prototype = new Control;
 
 
-function MapFirstRegExpControlTEST(parent) {
+
+function ConstantValueResolverControl(parent, resolverName, labelWidth) {
    this.__base__ = Control;
    this.__base__(parent);
 
    this.sizer = new VerticalSizer;
+   var constantValueRow = new TextEntryRow(this, labelWidth, "value");
+   this.sizer.add(constantValueRow);
 
-   var labelWidth1 = this.font.width( "MMMMMMMMMMMM: " );
+   this.initialize = function(variableDefinition) {
+      if (!variableDefinition.parameters.hasOwnProperty(resolverName)) {
+         variableDefinition.parameters[resolverName] = {value: ''};
+      }
+   }
 
-   var variableNameRow = new TextEntryRow(this, labelWidth1, "name");
-   this.sizer.add(variableNameRow);
-
-   var formatRow = new TextEntryRow(this, labelWidth1, "TEST");
-   this.sizer.add(formatRow);
-
-
+   this.populate = function(variableDefinition) {
+      // Should probably be somewhere else
+      this.initialize(variableDefinition);
+      constantValueRow.setText(variableDefinition.parameters[resolverName].value);
+   }
 }
-MapFirstRegExpControlTEST.prototype = new Control;
+ConstantValueResolverControl.prototype = new Control;
 
 
 
-// var temp data
-var mappingUIs = {}
 
 
 
-// -- Middle pane - Variable definitions
-function VariableUIControl(parent) {
+// -- Middle pane - Variable definitions (two panes: add/remove variables and edit selected variables)
+function VariableUIControl(parent, variableDefinitionFactory ) {
    this.__base__ = Control;
    this.__base__(parent);
+   var that = this;
+
+   // -- Model data - set by selectVariable()
+   this.currentVariableDefinition = null;
+
+   // -- UI data
+   // this.resolverSelection_GroupBox = null; // defined later
+   this.currentResolver = null;
 
    this.sizer = new HorizontalSizer;
    this.sizer.margin = 6;
    this.sizer.spacing = 4;
 
-   // ---------- TEMPROARY call backs and definitions
-   var elementFactory = function() {
-        return ffM_RuleSet_Model.defineVariable('new',Date.now().toString(),'xxx');
-   }
+   var labelWidth = this.font.width( "MMMMMMMMMMMM: " );
 
+   var variableList = null;
+
+   // -- GUI action callbacks
+   // Variable selected in current rule, forward to the model handling later in this object
    var variableSelectionCallback = function(variableDefinition) {
-      Console.writeln("Variable selected: " + Log.pp(variableDefinition));
+      Log.debug("VariableUIControl: variableSelectionCallback - Variable selected: " + Log.pp(variableDefinition));
+      that.selectVariable(variableDefinition);
    }
-   // TODO Must be dynamic
-   var currentRule = ffM_RuleSet_Model.testRules[0];
-   var currentVariableList = currentRule.variableList
 
 
 
-   // -- Left side - select variables
+
+   // -- Left side - select variable being edited, add/remove variables
 
    var variableListSelection_GroupBox = new GroupBox(this);
    this.sizer.add(variableListSelection_GroupBox);
@@ -530,17 +636,19 @@ function VariableUIControl(parent) {
 
    var variableListSelection_Box = new ffM_GUI_support.ManagedList_Box(
          variableListSelection_GroupBox,
-         [], //currentVariableList,
-         elementFactory,
+         [], // Its model will be initialized dynamically
+         variableDefinitionFactory,
          "Variable definitions",
          variableSelectionCallback
    );
    variableListSelection_GroupBox.sizer.add(variableListSelection_Box);
 
+
+
    //--  Right side - Enter parameters corresponding to selected variables
-   var mappingSelectionCallback = function(mapping) {
-      Console.writeln("Mapping selected: " + Log.pp(mapping));
-      mappingUIs[mapping].hide();
+   var resolverSelectionCallback = function(resolverName) {
+      Log.debug("VariableUIControl: resolverSelectionCallback - selected:",resolverName);
+      that.updateResolver(resolverName);
    }
 
    var variableDetails_GroupBox = new GroupBox(this);
@@ -549,23 +657,71 @@ function VariableUIControl(parent) {
 
    variableDetails_GroupBox.sizer = new VerticalSizer;
 
-   var cb =  makeMappingSetSelection_ComboBox(this,["map1","map2"], mappingSelectionCallback);
-   variableDetails_GroupBox.sizer.add(cb);
+   this.resolverSelection_GroupBox =  makeResolverSelection_ComboBox(this, resolverNames, resolverSelectionCallback);
+   variableDetails_GroupBox.sizer.add(this.resolverSelection_GroupBox);
 
-   // Make all section windows
-   var map1 = new MapFirstRegExpControl(variableDetails_GroupBox);
-   variableDetails_GroupBox.sizer.add(map1);
-   mappingUIs['map1'] = map1;
+   this.variableNameRow = new TextEntryRow(this, labelWidth, "name");
+   variableDetails_GroupBox.sizer.add(this.variableNameRow);
+   this.descriptionRow = new TextEntryRow(this, labelWidth, "description");
+   variableDetails_GroupBox.sizer.add(this.descriptionRow);
 
-   var map2 = new MapFirstRegExpControlTEST(variableDetails_GroupBox);
-   variableDetails_GroupBox.sizer.add(map2);
-   mappingUIs['map2'] = map2;
+   // Make all resolver controls, only the selected one will be shown
+   var resolverRegExpList = new MapFirstRegExpControl(variableDetails_GroupBox,labelWidth);
+   variableDetails_GroupBox.sizer.add(resolverRegExpList);
+   resolverByName('RegExpList').control = resolverRegExpList;
+   resolverRegExpList.hide();
+
+   var resolverConstantValue = new ConstantValueResolverControl(variableDetails_GroupBox, 'Constant', labelWidth);
+   variableDetails_GroupBox.sizer.add(resolverConstantValue);
+   resolverByName('Constant').control = resolverConstantValue;
+   resolverConstantValue.hide();
 
    variableDetails_GroupBox.sizer.addStretch();
 
-   // -- Update of the model
+
+
+   // -- Update the model
+   // The resolver name was updated (by select box, by changing variable or initially)
+   this.updateResolver = function(resolverName) {
+      var resolver = resolverByName(resolverName);
+      if (resolver === null) {
+         throw "Invalid resolver '" + resolverName + "' for variable '"+ variableDefinition.name+"'";
+      }
+      if (that.currentResolver != null) {
+         that.currentResolver.control.hide();
+         that.currentResolver =null;
+      }
+      // record the new resolver
+      that.currentVariableDefinition.resolver = resolverName;
+      // Populate and show it
+      that.currentResolver = resolver;
+      resolver.control.populate(that.currentVariableDefinition );
+      resolver.control.show();
+   }
+   // The variable to edit was selected (in the list, initially, or as a new)
+   this.selectVariable = function(variableDefinition) {
+      //Log.debug("VariableUIControl: selectVariable - Variable selected ",variableDefinition.name );
+      var resolverName;
+
+      that.currentVariableDefinition = variableDefinition;
+
+      // populate the common fiels
+      this.variableNameRow.setText(variableDefinition.name);
+      this.descriptionRow.setText(variableDefinition.description);
+
+      // Find new resolver, populate and show it
+      resolverName = that.currentVariableDefinition.resolver;
+      that.updateResolver(resolverName);
+
+      // Update the UI
+      this.resolverSelection_GroupBox.selectResolver(resolverName);
+
+   }
+
+
    this.updateVariableList = function(newVariableList) {
       variableListSelection_Box.modelListChanged(newVariableList);
+      that.variableList = variableList;
    }
 
 }
@@ -575,13 +731,26 @@ VariableUIControl.prototype = new Control;
 
 
 // ---------------------------------------------------------------------------------------------------------
+// This Dialog controls the update of a ruleSet, starting at a current rule set.
+// The rule set may be modified or not, at the end the caller must get
+// the ruleset and current rule set name properties from the dialog to get the current
+// state.
 
-function ConfigurationDialog( parentDialog, ruleSet) {
+function ConfigurationDialog( parentDialog, ruleSet, currentRuleSetName) {
    this.__base__ = Dialog;
    this.__base__();
+   var that = this;
 
+   // Model -
+   // Keeps track of rule set and current rule set selected
+   // This will be the updated rule set at the end
    this.ruleSet = ruleSet;
+   this.currentRuleSetName = currentRuleSetName;
+
+   // For the selection of the current rule set
    var ruleSetNames = ffM_RuleSet_Model.ruleNames(ruleSet);
+
+   this.newVariableCounter = 0;
 
    this.windowTitle = Text.T.REMAPPING_SECTION_PART_TEXT;
 
@@ -589,13 +758,37 @@ function ConfigurationDialog( parentDialog, ruleSet) {
    this.sizer.margin = 6;
    this.sizer.spacing = 4;
 
-   // Top pane
-   var ruleSetSelection_ComboBox = makeRuleSetSelection_ComboBox(this, ruleSetNames);
+   // -- GUI actions callbacks
+   // Rule set changed (also used in initialization)
+   var ruleSetSelectedCallback = function(ruleSetName) {
+      Log.debug("ConfigurationDialog: ruleSetSelectedCallback - RuleSet selected:",ruleSetName);
+      var selectedRule = ffM_RuleSet_Model.ruleByName(ruleSet, ruleSetName);
+      if (selectedRule == null) {
+         throw "Invalid rule set name '" + ruleSetName +"'";
+      }
+      // Update model
+      that.currentRuleSetName = ruleSetName;
+      // Update UI
+      that.variableUI.updateVariableList(selectedRule.variableList);
+   }
+
+   // -- Model call backs
+   // New variable requested in current rule, define one with default values
+   var variableDefinitionFactory = function() {
+        Log.debug("ConfigurationDialog: variableDefinitionFactory - create new variable");
+        that.newVariableCounter++;
+        return ffM_RuleSet_Model.defineVariable("new_" + that.newVariableCounter,'','Constant');
+   }
+
+   // -- Build the top level pane
+
+   // Top pane - select rule set
+   var ruleSetSelection_ComboBox = makeRuleSetSelection_ComboBox(this, ruleSetNames, ruleSetSelectedCallback);
    this.sizer.add(ruleSetSelection_ComboBox);
 
-   // Middle pane
-   var variableUI = new VariableUIControl(this);
-   this.sizer.add(variableUI);
+   // Middle pane - variabel rules
+   this.variableUI = new VariableUIControl(this, variableDefinitionFactory);
+   this.sizer.add(this.variableUI);
 
    // Bottom pane - buttons
    var okCancelButtons = makeOKCancel(this);
@@ -604,16 +797,17 @@ function ConfigurationDialog( parentDialog, ruleSet) {
    this.setVariableSize();
    //this.adjustToContents();
 
-   // FOR TESTS AT END
-   var currentVariableList = ffM_RuleSet_Model.testRules[0].variableList;
-   variableUI.updateVariableList(currentVariableList);
 
+   // Initialize content
+   ruleSetSelectedCallback(currentRuleSetName);
 }
 ConfigurationDialog.prototype = new Dialog;
 
+
+
 return {
-   makeDialog: function(parent, ruleSet) {
-      return new ConfigurationDialog(parent, ruleSet);
+   makeDialog: function(parent, ruleSet, ruleSetName) {
+      return new ConfigurationDialog(parent, ruleSet, ruleSetName);
    }
 
 }

@@ -49,17 +49,18 @@ function vP_testGuiRuleSet()
    Console.writeln("FITSFileManager-test-gui - Actions on the GUI will be logged on the console");
 
    var ruleSet = ffM_RuleSet_Model.testRules;
-   Console.writeln("Initiale ruleset: " + Log.pp(ruleSet));
+   // Noe: this log takes forever...
+   //Console.writeln("Initiale ruleset:\n" + Log.pp(ruleSet));
 
-   var dialog =  ffM_GUI_RuleSet.makeDialog(null, ruleSet);
+   var dialog =  ffM_GUI_RuleSet.makeDialog(null, ruleSet, ruleSet[0].name);
    for ( ;; )
    {
       var result = dialog.execute();
-      debug("result", result);
+      debug("vP_testGuiRuleSet: Result", result);
 
       if (result) {
 
-         Console.writeln("RESULT:" + Log.pp(dialog.listModel,0,true));
+         Console.writeln("vP_testGuiRuleSet: currentRuleSetName: " + Log.pp(dialog.currentRuleSetName,0,true));
 
        }
        if (!result) break;
