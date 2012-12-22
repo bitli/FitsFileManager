@@ -61,7 +61,7 @@ function vP_testGuiRuleSet()
       if (result) {
 
          Console.writeln("vP_testGuiRuleSet: currentRuleSetName: " + Log.pp(dialog.currentRuleSetName,0,true));
-
+         Console.writeln(Log.pp(dialog.ruleSet));
        }
        if (!result) break;
 

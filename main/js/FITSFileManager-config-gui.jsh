@@ -136,7 +136,7 @@ var ffM_RuleSet_Model = (function(){
    .addVariable(defineVariable('extension','Input file extension','Constant'))
    .build();
 
-
+#ifdef TESTRULESETS
    var testRule = newRuleData('Test', 'A test rule')
    .addVariable(defineVariable('object','Object','Constant'))
    .build();
@@ -166,15 +166,17 @@ var ffM_RuleSet_Model = (function(){
    .addVariable(defineVariable('object 20','Object','Constant'))
    .build();
 
+#endif
 
 
    // Test Rules
    var testRules = [];
    testRules.push(defaultRule);
+#ifdef TESTRULESETS
    testRules.push(testRule);
    testRules.push(emptyRule);
    testRules.push(largeRule);
-
+#endif
 
    return {
       ruleNames: ruleNames,
@@ -356,7 +358,9 @@ function ManagedList_Box(parent, initialListModel, elementFactory, toolTip, sele
       if (treeBox.selectedNodes.length>0) {
          var selectedNode = treeBox.selectedNodes[0];
          var selectedIndex = treeBox.childIndex(selectedNode);
-         selectionCallback(listModel[selectedIndex]);
+         if (selectedIndex>=0 && selectedIndex<listModel.length) {
+            selectionCallback(listModel[selectedIndex]);
+         }
       }
    }
 
@@ -489,13 +493,18 @@ var makeRuleSetSelection_ComboBox = function(parent, ruleSetNames, ruleSetSelect
    return comboBox;
 }
 
-// Utility pane - A Label - Text row to put in a list
-function TextEntryRow(parent, minLabelWidth, name) {
+// Utility pane - A Label - Labelled text field of a property of an object
+function TextEntryRow(parent, minLabelWidth, name, property) {
    this.__base__ = Control;
    this.__base__(parent);
+   var that = this;
+
    this.sizer = new HorizontalSizer;
    this.sizer.margin = 2;
    this.sizer.spacing = 2;
+
+   this.property = property;
+   this.target = null;
 
    var the_Label = new Label( this );
    this.sizer.add(the_Label);
@@ -504,12 +513,29 @@ function TextEntryRow(parent, minLabelWidth, name) {
    the_Label.text = name + ": ";
 
    var name_Edit = new Edit(this);
-   this.sizer.add(name_Edit);
-   name_Edit.text = name;
+   this.sizer.add(name_Edit)
 
-   this.setText = function(text) {
-      name_Edit.text = text;
+   name_Edit.onTextUpdated = function() {
+      if (that.target !== null) {
+         Log.debug("TextEntryRow: onTextUpdated:",property,this.text);
+         that.target[property] = this.text;
+      }
    }
+
+   this.updateTarget = function(target) {
+      that.target = target;
+      if (target === null) {
+         name_Edit.text = '';
+         name_Edit.enabled = false;
+      } else {
+         if (! target.hasOwnProperty(property)) {
+            throw "Entry '" + name + "' does not have property '" + property + "': " + Log.pp(target);
+         }
+         name_Edit.text = target[property];
+         name_Edit.enabled = true;
+      }
+   }
+   this.updateTarget(null);
 
 }
 TextEntryRow.prototype = new Control;
@@ -548,21 +574,29 @@ var makeResolverSelection_ComboBox = function(parent, mappingNames, mappingSelec
 
 // -- Controls for resolver
 
-function MapFirstRegExpControl(parent, labelWidth) {
+function MapFirstRegExpControl(parent, resolverName, labelWidth) {
    this.__base__ = Control;
    this.__base__(parent);
 
    this.sizer = new VerticalSizer;
 
-   var variableNameRow = new TextEntryRow(this, labelWidth, "name");
+   var variableNameRow = new TextEntryRow(this, labelWidth, "key", "key");
    this.sizer.add(variableNameRow);
 
-   var formatRow = new TextEntryRow(this, labelWidth, "format");
+   var formatRow = new TextEntryRow(this, labelWidth, "format", "format");
    this.sizer.add(formatRow);
 
+   this.initialize = function(variableDefinition) {
+      if (!variableDefinition.parameters.hasOwnProperty(resolverName)) {
+         variableDefinition.parameters[resolverName] = {key: '', format: ''};
+      }
+   }
+
    this.populate = function(variableDefinition) {
-      variableNameRow.setText(variableDefinition.name);
-      formatRow.setText('RegExp');
+      // Should probably be somewhere else
+      this.initialize(variableDefinition);
+      variableNameRow.updateTarget(variableDefinition.parameters[resolverName]);
+      formatRow.updateTarget(variableDefinition.parameters[resolverName]);
    }
 }
 MapFirstRegExpControl.prototype = new Control;
@@ -574,7 +608,7 @@ function ConstantValueResolverControl(parent, resolverName, labelWidth) {
    this.__base__(parent);
 
    this.sizer = new VerticalSizer;
-   var constantValueRow = new TextEntryRow(this, labelWidth, "value");
+   var constantValueRow = new TextEntryRow(this, labelWidth, "value", "value");
    this.sizer.add(constantValueRow);
 
    this.initialize = function(variableDefinition) {
@@ -586,7 +620,7 @@ function ConstantValueResolverControl(parent, resolverName, labelWidth) {
    this.populate = function(variableDefinition) {
       // Should probably be somewhere else
       this.initialize(variableDefinition);
-      constantValueRow.setText(variableDefinition.parameters[resolverName].value);
+      constantValueRow.updateTarget(variableDefinition.parameters[resolverName]);
    }
 }
 ConstantValueResolverControl.prototype = new Control;
@@ -615,12 +649,10 @@ function VariableUIControl(parent, variableDefinitionFactory ) {
 
    var labelWidth = this.font.width( "MMMMMMMMMMMM: " );
 
-   var variableList = null;
-
    // -- GUI action callbacks
    // Variable selected in current rule, forward to the model handling later in this object
    var variableSelectionCallback = function(variableDefinition) {
-      Log.debug("VariableUIControl: variableSelectionCallback - Variable selected: " + Log.pp(variableDefinition));
+      //Log.debug("VariableUIControl: variableSelectionCallback - Variable selected: " +variableDefinition.name);
       that.selectVariable(variableDefinition);
    }
 
@@ -660,13 +692,13 @@ function VariableUIControl(parent, variableDefinitionFactory ) {
    this.resolverSelection_GroupBox =  makeResolverSelection_ComboBox(this, resolverNames, resolverSelectionCallback);
    variableDetails_GroupBox.sizer.add(this.resolverSelection_GroupBox);
 
-   this.variableNameRow = new TextEntryRow(this, labelWidth, "name");
+   this.variableNameRow = new TextEntryRow(this, labelWidth, "name","name");
    variableDetails_GroupBox.sizer.add(this.variableNameRow);
-   this.descriptionRow = new TextEntryRow(this, labelWidth, "description");
+   this.descriptionRow = new TextEntryRow(this, labelWidth, "description","description");
    variableDetails_GroupBox.sizer.add(this.descriptionRow);
 
    // Make all resolver controls, only the selected one will be shown
-   var resolverRegExpList = new MapFirstRegExpControl(variableDetails_GroupBox,labelWidth);
+   var resolverRegExpList = new MapFirstRegExpControl(variableDetails_GroupBox,'RegExpList', labelWidth);
    variableDetails_GroupBox.sizer.add(resolverRegExpList);
    resolverByName('RegExpList').control = resolverRegExpList;
    resolverRegExpList.hide();
@@ -682,32 +714,36 @@ function VariableUIControl(parent, variableDefinitionFactory ) {
 
    // -- Update the model
    // The resolver name was updated (by select box, by changing variable or initially)
+   // null if no resolver (like an empty variable list)
    this.updateResolver = function(resolverName) {
-      var resolver = resolverByName(resolverName);
-      if (resolver === null) {
-         throw "Invalid resolver '" + resolverName + "' for variable '"+ variableDefinition.name+"'";
-      }
       if (that.currentResolver != null) {
          that.currentResolver.control.hide();
          that.currentResolver =null;
       }
-      // record the new resolver
-      that.currentVariableDefinition.resolver = resolverName;
-      // Populate and show it
-      that.currentResolver = resolver;
-      resolver.control.populate(that.currentVariableDefinition );
-      resolver.control.show();
+      if (resolverName != null) {
+         var resolver = resolverByName(resolverName);
+         if (resolver === null) {
+            throw "Invalid resolver '" + resolverName + "' for variable '"+ variableDefinition.name+"'";
+         }
+         // record the new resolver
+         that.currentVariableDefinition.resolver = resolverName;
+         // Populate and show it
+         that.currentResolver = resolver;
+         resolver.control.populate(that.currentVariableDefinition );
+         resolver.control.show();
+      }
    }
-   // The variable to edit was selected (in the list, initially, or as a new)
+
+   // The variable to edit was selected
    this.selectVariable = function(variableDefinition) {
       //Log.debug("VariableUIControl: selectVariable - Variable selected ",variableDefinition.name );
       var resolverName;
 
       that.currentVariableDefinition = variableDefinition;
 
-      // populate the common fiels
-      this.variableNameRow.setText(variableDefinition.name);
-      this.descriptionRow.setText(variableDefinition.description);
+      // populate the common fields
+      this.variableNameRow.updateTarget(variableDefinition);
+      this.descriptionRow.updateTarget(variableDefinition);
 
       // Find new resolver, populate and show it
       resolverName = that.currentVariableDefinition.resolver;
@@ -715,13 +751,12 @@ function VariableUIControl(parent, variableDefinitionFactory ) {
 
       // Update the UI
       this.resolverSelection_GroupBox.selectResolver(resolverName);
+    }
 
-   }
-
-
+   // The list of variables was changed externally (initial or change or rule set)
    this.updateVariableList = function(newVariableList) {
+      // Update UI
       variableListSelection_Box.modelListChanged(newVariableList);
-      that.variableList = variableList;
    }
 
 }
