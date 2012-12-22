@@ -48,7 +48,8 @@ function vP_testGuiRuleSet()
    Console.show();
    Console.writeln("FITSFileManager-test-gui - Actions on the GUI will be logged on the console");
 
-   var ruleSet = {};
+   var ruleSet = ffM_RuleSet_Model.testRules;
+   Console.writeln("Initiale ruleset: " + Log.pp(ruleSet));
 
    var dialog =  ffM_GUI_RuleSet.makeDialog(null, ruleSet);
    for ( ;; )
