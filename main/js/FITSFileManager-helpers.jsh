@@ -565,98 +565,98 @@ var ffM_variables = (function() {
 
 
 
-// Extract the variables to form group names and file names from the file name and the FITS keywords
-// They act as 'synthethic' keywords (the purpose is to normalize their representation for ease of use)
-// The list of all synthethic keywords must be in the global array syntheticVariableNames in FITSFileManager-gui.js
-// Parameters:
-//    inputFile: Full path of input file (to extract file anme etc...)
-//    imageKeywords: A FitsFileManager imageKeyword object (all FITS keywords of the image)
-//    remappedFITSKeywords: Map from logical to real keywords
-//    filterConverter: The method to convert filter values
-//    typeConverter: The method to convert type values
-function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords, filterConverter, typeConverter) {
+   // Extract the variables to form group names and file names from the file name and the FITS keywords
+   // They act as 'synthethic' keywords (the purpose is to normalize their representation for ease of use)
+   // The list of all synthethic keywords must be in the global array syntheticVariableNames in FITSFileManager-gui.js
+   // Parameters:
+   //    inputFile: Full path of input file (to extract file anme etc...)
+   //    imageKeywords: A FitsFileManager imageKeyword object (all FITS keywords of the image)
+   //    remappedFITSKeywords: Map from logical to real keywords
+   //    filterConverter: The method to convert filter values
+   //    typeConverter: The method to convert type values
+   function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords, filterConverter, typeConverter) {
 
-   var inputFileName =  File.extractName(inputFile);
+      var inputFileName =  File.extractName(inputFile);
 
-   var variables = [];
+      var variables = [];
 
-   for (var i=0; i<variableDefinitions.length; i++) {
-      var vd = variableDefinitions[i];
-      variables[vd.name] = vd.method(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords, inputFileName);
-   }
+      for (var i=0; i<variableDefinitions.length; i++) {
+         var vd = variableDefinitions[i];
+         variables[vd.name] = vd.method(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords, inputFileName);
+      }
 
 #ifdef DEBUG
-   debug("makeSynthethicVariables: made " + Object.keys(variables).length + " synthetics keys for file " + inputFileName);
+      debug("makeSynthethicVariables: made " + Object.keys(variables).length + " synthetics keys for file " + inputFileName);
 #endif
 
-   return variables;
+      return variables;
 
-}
-
-
-
-
-// Remove special characters from FITS key values to avoid bizare or illegal file names
-// Leading and trailing blank and invalid characters are removed
-// Embedded invalid characters are collapsed to one underline.
-// An all blank value will return null, considering the keyword as 'missing' when used in templates,
-// this helps supporting files created with a program like SIPS that write keywords as OBJECT even
-// when it is all blank.
-// Parameter
-//    value: an unquoted string (without the FITS quotes, embedded quote will be handled as special characters)
-// Return:
-//    null if it is an all space value, the cleaned up string
-function filterFITSValue(value) {
-   if (value === null) {
-      return null;
    }
-   var name = value.trim();
-   var result = '';
-   var i = 0;
-   var hadValidChar = false;
-   var mustAddUnderline = false;
-   while (i<value.length) {
-     var c = name.charAt(i);
-     // TODO Make the list of special characters configurable
-     if ( ("0" <= c && c <= "9") || ("a" <= c && c <= "z") || ("A" <= c && c <= "Z") || (c === '-') || (c === '.') || (c === '_') ) {
-        if (mustAddUnderline) {
-           result = result + '_';
-           mustAddUnderline = false;
-        };
-        result = result + c;
-        hadValidChar = true;
-     } else if (hadValidChar) {
-        mustAddUnderline = true;
-     }
-     i++;
-   }
-   return (result.length>0) ? result : null;
-}
 
 
-// NOT YET USED
-// From mschuster
-// ...something strange like l`~!@#$%^&()_-+= {}[];',ïnput.fit maps to l___nput.
-function filterViewId(id) {
-   var fId = "";
-   if (id.length == 0) {
-      return "_";
-   }
-   var c = id.charAt(0);
-   if ("0" <= c && c <= "9") {
-      fId = fId + "_";
-   }
-   for (var i = 0; i != id.length; ++i) {
-      c = id.charAt(i);
-      fId = fId + (
-         (("0" <= c && c <= "9") || ("a" <= c && c <= "z") || ("A" <= c && c <= "Z")) ? c : "_"
-      );
-      if (fId.length > 3 && fId.substring(fId.length - 4, fId.length) == "____") {
-         fId = fId.substring(0, fId.length - 1);
+
+
+   // Remove special characters from FITS key values to avoid bizare or illegal file names
+   // Leading and trailing blank and invalid characters are removed
+   // Embedded invalid characters are collapsed to one underline.
+   // An all blank value will return null, considering the keyword as 'missing' when used in templates,
+   // this helps supporting files created with a program like SIPS that write keywords as OBJECT even
+   // when it is all blank.
+   // Parameter
+   //    value: an unquoted string (without the FITS quotes, embedded quote will be handled as special characters)
+   // Return:
+   //    null if it is an all space value, the cleaned up string
+   function filterFITSValue(value) {
+      if (value === null) {
+         return null;
       }
+      var name = value.trim();
+      var result = '';
+      var i = 0;
+      var hadValidChar = false;
+      var mustAddUnderline = false;
+      while (i<value.length) {
+      var c = name.charAt(i);
+      // TODO Make the list of special characters configurable
+      if ( ("0" <= c && c <= "9") || ("a" <= c && c <= "z") || ("A" <= c && c <= "Z") || (c === '-') || (c === '.') || (c === '_') ) {
+         if (mustAddUnderline) {
+            result = result + '_';
+            mustAddUnderline = false;
+         };
+         result = result + c;
+         hadValidChar = true;
+      } else if (hadValidChar) {
+         mustAddUnderline = true;
+      }
+      i++;
+      }
+      return (result.length>0) ? result : null;
    }
-   return fId;
-}
+
+
+   // NOT YET USED
+   // From mschuster
+   // ...something strange like l`~!@#$%^&()_-+= {}[];',ïnput.fit maps to l___nput.
+   function filterViewId(id) {
+      var fId = "";
+      if (id.length == 0) {
+         return "_";
+      }
+      var c = id.charAt(0);
+      if ("0" <= c && c <= "9") {
+         fId = fId + "_";
+      }
+      for (var i = 0; i != id.length; ++i) {
+         c = id.charAt(i);
+         fId = fId + (
+            (("0" <= c && c <= "9") || ("a" <= c && c <= "z") || ("A" <= c && c <= "Z")) ? c : "_"
+         );
+         if (fId.length > 3 && fId.substring(fId.length - 4, fId.length) == "____") {
+            fId = fId.substring(0, fId.length - 1);
+         }
+      }
+      return fId;
+   }
 
    // --- public properties and methods ---------------------------------------
    return {
