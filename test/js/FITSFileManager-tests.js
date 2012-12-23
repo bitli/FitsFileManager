@@ -13,7 +13,10 @@
 
 #define VERSION "0.8-tests"
 
+#include "../../main/js/PJSR-logging.jsh"
+
 #include "../../main/js/FITSFileManager-helpers.jsh"
+#include "../../main/js/FITSFileManager-json.jsh"
 #include "../../main/js/FITSFileManager-engine.jsh"
 #include "../../main/js/FITSFileManager-parameters.jsh"
 #include "../../main/js/FITSFileManager-gui.jsh"
@@ -40,7 +43,59 @@ var ffM_rv = function(obj) {
 
 var ffM_allTests = {
 
+   // Test json
+   test_JSONstringify: function() {
+      var o = {s:12, a:[1,2,3]};
+      var r = JSON.stringify(o);
+      pT_assertEquals('{"s":12,"a":[1,2,3]}', r);
+   },
+   test_JSONparse: function() {
+      var o = JSON.parse('{"s":12,"a":[1,2,3]}');
+      var r = JSON.stringify(o);
+      pT_assertEquals('{"s":12,"a":[1,2,3]}', r);
+   },
+
+
    // Test helper
+
+   test_RegExpToString: function() {
+      var r = /[a-z]+/i;
+      var s = regExpToString(r);
+      pT_assertEquals('/[a-z]+/i', s);
+   },
+   test_RegExpToString_null: function() {
+      var s = regExpToString(null);
+      pT_assertEquals('', s);
+   },
+
+   test_RegExpFromString_null: function() {
+      var s = regExpFromString(null);
+      pT_assertEquals(null, s);
+   },
+   test_RegExpFromString_empty: function() {
+      var s = regExpFromString('');
+      pT_assertEquals(null, s);
+   },
+   test_RegExpFromString_1: function() {
+      var s = regExpFromString('/^[a-z]+/ig');
+      pT_assertEquals('/^[a-z]+/gi', s.toString());
+   },
+   test_RegExpFromString_2: function() {
+      var s = regExpFromString('/[a-z]+/i');
+      pT_assertEquals('/[a-z]+/i', s.toString());
+   },
+
+   test_RegExpFromUserString_withSlash: function() {
+      var s = regExpFromUserString('/[a-z]+/i');
+      pT_assertEquals('/[a-z]+/i', s.toString());
+   },
+   test_RegExpFromUserString_noSlash: function() {
+      var s = regExpFromUserString('[a-z]+');
+      pT_assertEquals('/[a-z]+/', s.toString());
+   },
+
+
+
    test_deep_copy_null: function() {
       pT_assertEquals(null,deepCopyData(null));
    },
@@ -53,6 +108,11 @@ var ffM_allTests = {
       pT_assertEquals(s.toString(),d.toString());
       d.setFullYear(d.getFullYear()+1);
       pT_assertEquals(s.getFullYear()+1,d.getFullYear());
+   },
+   test_deep_copy_regexp: function() {
+      var s = /[a-z]+/i;
+      var d = deepCopyData(s);
+      pT_assertEquals(s.toString(),d.toString());
    },
    test_deep_copy_array: function() {
       var s = [1,2,3];

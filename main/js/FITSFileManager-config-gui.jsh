@@ -447,7 +447,7 @@ var propertyTypes = {
    REG_EXP: {
       name: "REG_EXP",
       propertyToText: function(value) {return regExpToString(value)},
-      textToProperty: function(text) {return new RegExp(text)},
+      textToProperty: function(text) {return regExpFromUserString(text)},
    }
 }
 

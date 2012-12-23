@@ -26,18 +26,62 @@ Number.prototype.pad = function(size){
 
 // --- RegExp utility functions
 
+
+// Return the RE as if it would be in source (with / and flags)
 function regExpToString(re) {
    if (re === null) {
       return "";
    } else {
-   // Remove leading and trailing slahes and trailing flag
-      var reString = re.toString();
-      //var secondSeparator = reString.lastIndexOf(reString[0]);
-      //return  reString.substring(1, secondSeparator);
-      return  reString.substring(1, reString.length-1);
+      return re.toSource();
    }
 }
 
+
+// Parse a regexp WITH the '/' and flags, throw exception in case of error
+function regExpFromString(reString) {
+   if (reString === null) {
+      return null;
+   }
+   if (typeof reString !=='string') {
+      throw "PROGRAMMING ERROR - Invalid regexp string"
+   }
+
+   if (reString.length===0) {
+      return null;
+   } else if (reString.length<2) {
+      throw "Invalid regular expression - too small"
+   } else {
+      var reChar = reString.charCodeAt(0);
+      if (reChar !== 47) {
+         throw "Invalid regular expression - dot not start with /"
+      }
+      var lastSlash = reString.lastIndexOf("/");
+      if (lastSlash<=0 || lastSlash>reString.length) {
+         throw "Invalid regular expression - no terminating /"
+      }
+      var rePart = reString.substring(1,lastSlash);
+      var flagsPart = reString.substring(lastSlash+1);
+
+      return new RegExp(rePart, flagsPart);
+   }
+}
+
+// Parse a regular expression typed by the user. If it does not start wit /,
+// assume that it is surrounded with / and has no flag.
+function regExpFromUserString(reString) {
+   if (reString === null) {
+      return null;
+   }
+   if (typeof reString !=='string') {
+      throw "PROGRAMMING ERROR - Invalid regexp string";
+   }
+
+   if (reString.length>=2 && reString.charCodeAt(0) !== 47) {
+      reString = "/" + reString + "/";
+   }
+   return regExpFromString(reString);
+
+}
 
 
 
@@ -66,7 +110,7 @@ function deepCopyData(object) {
    } else if (object.constructor === Number) {
       result = new Number(object);
    } else if (object.constructor === RegExp) {
-      result = new RegExp(object.toString());
+      result = regExpFromString(regExpToString(object));
    } else if (object.constructor === Function) {
       throw "Cannot deep copy function";
    } else {
