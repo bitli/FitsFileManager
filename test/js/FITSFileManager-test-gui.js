@@ -20,6 +20,7 @@
 
 #include "../../main/js/PJSR-logging.jsh"
 
+#include "../../main/js/FITSFileManager-helpers.jsh"
 #include "../../main/js/FITSFileManager-text.jsh"
 
 
@@ -41,6 +42,99 @@
 
 //
 
+  // ========================================================================================================================
+   // SUPPORT FOR TESTSTextEntryRow
+
+var ffM_TestConfigUi = (function(){
+
+   var addVariable = ffM_RuleSet_Model.addVariable;
+   var defineVariable = ffM_RuleSet_Model.defineVariable;
+
+
+   // Model object wrap data object and behavior
+   var newRuleData = function(name, description) {
+      var rule = {
+         name: name,
+         description: description,
+         variableList: [],
+      };
+      var builder = {
+         // Operations on the variable list
+         addVariable: function(variable) {
+            rule.variableList.push(variable);
+            return builder;
+         },
+         build: function() {
+            return rule;
+         },
+      }
+
+      return  builder;
+
+   }
+
+
+   // --------------------------
+   // Default definition for test
+   var defaultRule = newRuleData('Default', 'Common FITS rules')
+   .addVariable(defineVariable('type','Type of image (flat, bias, ...)','RegExpList'))
+   .addVariable(defineVariable('filter','Filter (clear, red, ...)','RegExpList'))
+   .addVariable(defineVariable('exposure','Exposure in seconds','Integer'))
+   .addVariable(defineVariable('temp','Temperature in C','Integer'))
+   .addVariable(defineVariable('binning','Binning as 1x1, 2x2, ...','IntegerPair'))
+   .addVariable(defineVariable('night','night (experimental)','Constant'))
+   .addVariable(defineVariable('filename','Input file name','Constant'))
+   .addVariable(defineVariable('extension','Input file extension','Constant'))
+   .build();
+
+#ifdef TESTRULESETS
+   var testRule = newRuleData('Test', 'A test rule')
+   .addVariable(defineVariable('object','Object','Constant'))
+   .build();
+
+   var emptyRule = newRuleData('Empty', 'An empty rule')
+   .build();
+   var largeRule = newRuleData('Large', 'Many variables')
+   .addVariable(defineVariable('object 1','Object','Constant'))
+   .addVariable(defineVariable('object 2','Object','Constant'))
+   .addVariable(defineVariable('object 3','Object','Constant'))
+   .addVariable(defineVariable('object 4','Object','Constant'))
+   .addVariable(defineVariable('object 5','Object','Constant'))
+   .addVariable(defineVariable('object 6','Object','Constant'))
+   .addVariable(defineVariable('object 7','Object','Constant'))
+   .addVariable(defineVariable('object 8','Object','Constant'))
+   .addVariable(defineVariable('object 9','Object','Constant'))
+   .addVariable(defineVariable('object 10','Object','Constant'))
+   .addVariable(defineVariable('object 11','Object','Constant'))
+   .addVariable(defineVariable('object 12','Object','Constant'))
+   .addVariable(defineVariable('object 13','Object','Constant'))
+   .addVariable(defineVariable('object 14','Object','Constant'))
+   .addVariable(defineVariable('object 15','Object','Constant'))
+   .addVariable(defineVariable('object 16','Object','Constant'))
+   .addVariable(defineVariable('object 17','Object','Constant'))
+   .addVariable(defineVariable('object 18','Object','Constant'))
+   .addVariable(defineVariable('object 19','Object','Constant'))
+   .addVariable(defineVariable('object 20','Object','Constant'))
+   .build();
+
+#endif
+
+
+   // Test Rules
+   var testRules = [];
+   testRules.push(defaultRule);
+#ifdef TESTRULESETS
+   testRules.push(testRule);
+   testRules.push(emptyRule);
+   testRules.push(largeRule);
+#endif
+
+   return {
+      // For tests
+      testRules: testRules,
+   }
+}) ();
+
 
 function vP_testGuiRuleSet()
 {
@@ -48,7 +142,7 @@ function vP_testGuiRuleSet()
    Console.show();
    Console.writeln("FITSFileManager-test-gui - Actions on the GUI will be logged on the console");
 
-   var ruleSet = ffM_RuleSet_Model.testRules;
+   var ruleSet = ffM_TestConfigUi.testRules;
    // Noe: this log takes forever...
    //Console.writeln("Initiale ruleset:\n" + Log.pp(ruleSet));
 

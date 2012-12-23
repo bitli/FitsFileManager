@@ -27,6 +27,38 @@
 
 var ffM_RuleSet_Model = (function(){
 
+// The resolvers are fixed, they are defined as:
+//   {name: aString, description: aString, control: aControl}
+// (more information may be added later).
+// The resolver control manage its parameters, it has a 'populate()' method
+
+   var i;
+
+   // Describe the resolver types
+   // The initial value will be deep copied to the parameter
+   // The control will be populated when they are created
+   var resolvers = [
+      {name: 'RegExpList', description: 'Type of image (flat, bias, ...)',
+            initial:{key: '?', reChecks: [{regexp: /.*/, replacement: '?'}]},  control: null},
+      {name: 'Constant', description: 'Constant value',
+            initial:{value: ''}, control: null},
+      {name: 'Integer', description: 'Integer value',
+            initial:{key: '?', format:'%4.4d'}, control: null},
+      {name: 'IntegerPair', description: 'Pair of integers (binning)',
+            initial:{key1: '?', key2: '?', format:'%dx%d'}, control: null}
+   ];
+
+   var resolverByName = function(name) {
+      for (var i=0; i<resolvers.length; i++) {
+         if (resolvers[i].name === name) return resolvers[i];
+      }
+      return null;
+   }
+   var resolverNames = [];
+   for ( i=0; i<resolvers.length; i++) {
+      resolverNames.push(resolvers[i].name);
+   }
+
    // -- RuleSet support functions
    // Get the names of the rules
    var ruleNames = function(ruleSet) {
@@ -48,11 +80,14 @@ var ffM_RuleSet_Model = (function(){
 
    // Model of variable - define a new variable
    var defineVariable = function(name, description, resolver) {
+      var initialValues = deepCopyData(resolverByName(resolver).initial);
+      var initialParameters = {};
+      initialParameters[resolver] = initialValues;
       return {
          name: name,
          description: description,
          resolver: resolver,
-         parameters: {},
+         parameters: initialParameters,
       }
    }
 
@@ -65,110 +100,19 @@ var ffM_RuleSet_Model = (function(){
    }
 
 
-
-   // Define specific rule parameters
-   // First RegExp match value
-   var makeFirstRegExpMapping = function(aFITSKey) {
-      return {
-         regexp: /.*/,
-         replacement: '',
-      }
-   }
-
-
-
-
-   // ========================================================================================================================
-   // SUPPORT FOR TESTSTextEntryRow
-
-
-   // Model object wrap data object and behavior
-   var newRuleData = function(name, description) {
-      var rule = {
-         name: name,
-         description: description,
-         variableList: [],
-      };
-      var builder = {
-         // Operations on the variable list
-         addVariable: function(variable) {
-            rule.variableList.push(variable);
-            return builder;
-         },
-         build: function() {
-            return rule;
-         },
-      }
-
-      return  builder;
-
-   }
-
-
-   // --------------------------
-   // Default definition for test
-   var defaultRule = newRuleData('Default', 'Common FITS rules')
-   .addVariable(defineVariable('type','Type of image (flat, bias, ...)','RegExpList'))
-   .addVariable(defineVariable('filter','Filter (clear, red, ...)','RegExpList'))
-   .addVariable(defineVariable('exposure','Exposure in seconds','Constant'))
-   .addVariable(defineVariable('temp','Temperature in C','Constant'))
-   .addVariable(defineVariable('binning','Binning as 1x1, 2x2, ...','Constant'))
-   .addVariable(defineVariable('night','night (experimental)','Constant'))
-   .addVariable(defineVariable('filename','Input file name','Constant'))
-   .addVariable(defineVariable('extension','Input file extension','Constant'))
-   .build();
-
-#ifdef TESTRULESETS
-   var testRule = newRuleData('Test', 'A test rule')
-   .addVariable(defineVariable('object','Object','Constant'))
-   .build();
-
-   var emptyRule = newRuleData('Empty', 'An empty rule')
-   .build();
-   var largeRule = newRuleData('Large', 'Many variables')
-   .addVariable(defineVariable('object 1','Object','Constant'))
-   .addVariable(defineVariable('object 2','Object','Constant'))
-   .addVariable(defineVariable('object 3','Object','Constant'))
-   .addVariable(defineVariable('object 4','Object','Constant'))
-   .addVariable(defineVariable('object 5','Object','Constant'))
-   .addVariable(defineVariable('object 6','Object','Constant'))
-   .addVariable(defineVariable('object 7','Object','Constant'))
-   .addVariable(defineVariable('object 8','Object','Constant'))
-   .addVariable(defineVariable('object 9','Object','Constant'))
-   .addVariable(defineVariable('object 10','Object','Constant'))
-   .addVariable(defineVariable('object 11','Object','Constant'))
-   .addVariable(defineVariable('object 12','Object','Constant'))
-   .addVariable(defineVariable('object 13','Object','Constant'))
-   .addVariable(defineVariable('object 14','Object','Constant'))
-   .addVariable(defineVariable('object 15','Object','Constant'))
-   .addVariable(defineVariable('object 16','Object','Constant'))
-   .addVariable(defineVariable('object 17','Object','Constant'))
-   .addVariable(defineVariable('object 18','Object','Constant'))
-   .addVariable(defineVariable('object 19','Object','Constant'))
-   .addVariable(defineVariable('object 20','Object','Constant'))
-   .build();
-
-#endif
-
-
-   // Test Rules
-   var testRules = [];
-   testRules.push(defaultRule);
-#ifdef TESTRULESETS
-   testRules.push(testRule);
-   testRules.push(emptyRule);
-   testRules.push(largeRule);
-#endif
-
    return {
       ruleNames: ruleNames,
       ruleByName: ruleByName,
       defineVariable: defineVariable,
 
-      // For tests
-      testRules: testRules,
+      resolverNames: resolverNames,
+      resolverByName: resolverByName,
+      resolvers: resolvers,
+
    }
 }) ();
+
+
 
 
 // ========================================================================================================================
@@ -432,29 +376,7 @@ return {
 // ========================================================================================================================
 var ffM_GUI_RuleSet = (function (){
 
-// The resolvers are fixed, they are defined as:
-//   {name: aString, description: aString, control: aControl}
-// (more information may be added later).
-// The resolver control manage its parameters, it has a 'populate()' method
 
-   var i;
-
-   // The control will be populated when they are created
-   var resolvers = [
-      {name: 'RegExpList', description: 'Type of image (flat, bias, ...)', control: null},
-      {name: 'Constant', description: 'Constant value', control: null}
-   ];
-
-   var resolverByName = function(name) {
-      for (var i=0; i<resolvers.length; i++) {
-         if (resolvers[i].name === name) return resolvers[i];
-      }
-      return null;
-   }
-   var resolverNames = [];
-   for ( i=0; i<resolvers.length; i++) {
-      resolverNames.push(resolvers[i].name);
-   }
 
 
 
@@ -513,8 +435,35 @@ var makeRuleSetSelection_ComboBox = function(parent, ruleSetNames, ruleSetSelect
    return comboBox;
 }
 
+
+
+
+var propertyTypes = {
+   FREE_TEXT: {
+      name: "FREE_TEXT",
+      propertyToText: function(value) {return value.toString()},
+      textToProperty: function(text) {return text},
+   },
+   REG_EXP: {
+      name: "REG_EXP",
+      propertyToText: function(value) {return regExpToString(value)},
+      textToProperty: function(text) {return new RegExp(text)},
+   }
+}
+
+
+
 // Utility pane - A Label - Labelled text field of a property of an object
-function TextEntryRow(parent, minLabelWidth, minDataWidth,name, property, valueChangedCallback) {
+//  parent: UI parent control
+//  style: Style related properties (minLabelWidth, minDataWidth)
+//  name: Text of the label of this text field
+//  property: Name of property of the target that will be used as source of text and destination of text
+//  propertyType: An object with two functions:
+//     propertyToText: that format the property as text
+//     textToProperty: that parse the text and return the property value, throw an exception in case of error
+//  valueChangedCallback(): function that will be called if the text is successfuly updated - if null there is no callback
+// The target (the object containing the property to edit) is specified dynamically (including at initialization)
+function TextEntryRow(parent, style, name, property, propertyType, valueChangedCallback) {
    this.__base__ = Control;
    this.__base__(parent);
    var that = this;
@@ -529,19 +478,27 @@ function TextEntryRow(parent, minLabelWidth, minDataWidth,name, property, valueC
    var the_Label = new Label( this );
    this.sizer.add(the_Label);
    the_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
-   the_Label.minWidth = minLabelWidth;
+   the_Label.minWidth = style.minLabelWidth;
    the_Label.text = name + ": ";
 
    var name_Edit = new Edit(this);
-   name_Edit.minWidth = minDataWidth;
+   name_Edit.minWidth = style.minDataWidth;
    this.sizer.add(name_Edit)
 
    name_Edit.onTextUpdated = function() {
+      var value;
       if (that.target !== null) {
          //Log.debug("TextEntryRow: onTextUpdated:",property,this.text);
-         that.target[property] = this.text;
-         if (valueChangedCallback != null) {
-            valueChangedCallback();
+         try {
+            value =  propertyType.textToProperty(this.text);
+            // Next lines will only execute if value was correctly parsed
+            name_Edit.textColor = 0x000000;
+            that.target[property] = value;
+            if (valueChangedCallback != null) {
+               valueChangedCallback();
+            }
+         } catch (error) {
+            name_Edit.textColor = 0xFF0000;
          }
       }
    }
@@ -555,7 +512,7 @@ function TextEntryRow(parent, minLabelWidth, minDataWidth,name, property, valueC
          if (! target.hasOwnProperty(property)) {
             throw "Entry '" + name + "' does not have property '" + property + "': " + Log.pp(target);
          }
-         name_Edit.text = target[property].toString();
+         name_Edit.text = propertyType.propertyToText(target[property]);
          name_Edit.enabled = true;
       }
    }
@@ -602,7 +559,7 @@ var makeResolverSelection_ComboBox = function(parent, mappingNames, mappingSelec
    return comboBox;
 }
 
-function ResolverSelectionRow(parent, minLabelWidth, minDataWidth, name, mappingNames, mappingSelectionCallback) {
+function ResolverSelectionRow(parent, rowStyle, name, mappingNames, mappingSelectionCallback) {
    this.__base__ = Control;
    this.__base__(parent);
    var that=this;
@@ -614,11 +571,11 @@ function ResolverSelectionRow(parent, minLabelWidth, minDataWidth, name, mapping
    var the_Label = new Label( this );
    this.sizer.add(the_Label);
    the_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
-   the_Label.minWidth = minLabelWidth;
+   the_Label.minWidth = rowStyle.minLabelWidth;
    the_Label.text = name + ": ";
 
    var resolver_ComboBox = makeResolverSelection_ComboBox (parent, mappingNames, mappingSelectionCallback);
-   resolver_ComboBox.minWidth = minDataWidth;
+   resolver_ComboBox.minWidth = rowStyle.minDataWidth;
    this.sizer.add(resolver_ComboBox);
 
    this.selectResolver = function(name) {
@@ -632,20 +589,22 @@ ResolverSelectionRow.prototype = new Control;
 // -- Controls for resolver
 // ..............................................................................................
 
-function MapFirstRegExpControl(parent, resolverName, labelWidth, dataWidth) {
+function MapFirstRegExpControl(parent, resolverName, rowStyle) {
    this.__base__ = Control;
    this.__base__(parent);
    var that = this;
 
+   this.resolverName = resolverName;
+
    this.sizer = new VerticalSizer;
 
    // FITS Key
-   var keyRow = new TextEntryRow(this, labelWidth, dataWidth, "key", "key", null);
+   var keyRow = new TextEntryRow(this, rowStyle, "FITS key", "key", propertyTypes.FREE_TEXT, null);
    this.sizer.add(keyRow);
 
 
    var transformationDefinitionFactory = function() {
-      return {regexp: /.*/, replacement: ''}
+      return {regexp: /.*/, replacement: '?'}
    }
 
    var transformationSelectionCallback = function(transformationModel) {
@@ -665,10 +624,12 @@ function MapFirstRegExpControl(parent, resolverName, labelWidth, dataWidth) {
    this.sizer.add(regExpListSelection_Box);
 
 
-   var currentRegExpRow = new TextEntryRow(this, labelWidth, dataWidth, "regexp", "regexp",
+   var currentRegExpRow = new TextEntryRow(this, rowStyle, "regexp", "regexp",
+      propertyTypes.REG_EXP,
       function() {regExpListSelection_Box.currentModelElementChanged()});
    this.sizer.add(currentRegExpRow);
-   var currentReplacementRow = new TextEntryRow(this, labelWidth, dataWidth, "replacement", "replacement",
+   var currentReplacementRow = new TextEntryRow(this,rowStyle, "replacement", "replacement",
+      propertyTypes.FREE_TEXT,
       function() {regExpListSelection_Box.currentModelElementChanged()});
    this.sizer.add(currentReplacementRow);
 
@@ -680,7 +641,7 @@ function MapFirstRegExpControl(parent, resolverName, labelWidth, dataWidth) {
 
    this.initialize = function(variableDefinition) {
       if (!variableDefinition.parameters.hasOwnProperty(resolverName)) {
-         variableDefinition.parameters[resolverName] = {key: '', reChecks: [{regexp: /.*/, replacement: ''}]};
+         variableDefinition.parameters[resolverName] = deepCopyData(ffM_RuleSet_Model.resolverByName(resolverName).initial);
       }
    }
 
@@ -695,17 +656,19 @@ MapFirstRegExpControl.prototype = new Control;
 
 // ..............................................................................................
 
-function ConstantValueResolverControl(parent, resolverName, labelWidth, dataWidth) {
+function ConstantValueResolverControl(parent, resolverName, rowStyle) {
    this.__base__ = Control;
    this.__base__(parent);
 
+   this.resolverName = resolverName;
+
    this.sizer = new VerticalSizer;
-   var constantValueRow = new TextEntryRow(this, labelWidth, dataWidth, "value", "value", null);
+   var constantValueRow = new TextEntryRow(this, rowStyle, "value", "value", propertyTypes.FREE_TEXT, null);
    this.sizer.add(constantValueRow);
 
    this.initialize = function(variableDefinition) {
       if (!variableDefinition.parameters.hasOwnProperty(resolverName)) {
-         variableDefinition.parameters[resolverName] = {value: ''};
+         variableDefinition.parameters[resolverName] = deepCopyData(ffM_RuleSet_Model.resolverByName(resolverName).initial);
       }
    }
 
@@ -716,6 +679,75 @@ function ConstantValueResolverControl(parent, resolverName, labelWidth, dataWidt
    }
 }
 ConstantValueResolverControl.prototype = new Control;
+
+// ..............................................................................................
+
+function IntegerValueResolverControl(parent, resolverName, rowStyle) {
+   this.__base__ = Control;
+   this.__base__(parent);
+
+   this.resolverName = resolverName;
+
+   this.sizer = new VerticalSizer;
+
+   // FITS Key
+   var keyRow = new TextEntryRow(this, rowStyle, "FITS key", "key", propertyTypes.FREE_TEXT, null);
+   this.sizer.add(keyRow);
+
+   var formatRow = new TextEntryRow(this, rowStyle, "Format", "format", propertyTypes.FREE_TEXT, null);
+   this.sizer.add(formatRow);
+
+   this.initialize = function(variableDefinition) {
+      if (!variableDefinition.parameters.hasOwnProperty(resolverName)) {
+         variableDefinition.parameters[resolverName] = deepCopyData(ffM_RuleSet_Model.resolverByName(resolverName).initial);
+      }
+   }
+
+   this.populate = function(variableDefinition) {
+      // Should probably be somewhere else
+      this.initialize(variableDefinition);
+      keyRow.updateTarget(variableDefinition.parameters[resolverName]);
+      formatRow.updateTarget(variableDefinition.parameters[resolverName]);
+   }
+}
+IntegerValueResolverControl.prototype = new Control;
+
+
+// ..............................................................................................
+
+function IntegerPairValueResolverControl(parent, resolverName, rowStyle) {
+   this.__base__ = Control;
+   this.__base__(parent);
+
+   this.resolverName = resolverName;
+
+   this.sizer = new VerticalSizer;
+
+   // FITS Key 1
+   var key1Row = new TextEntryRow(this, rowStyle, "FITS key 1", "key1", propertyTypes.FREE_TEXT, null);
+   this.sizer.add(key1Row);
+
+   var key2Row = new TextEntryRow(this, rowStyle, "FITS key 2", "key2", propertyTypes.FREE_TEXT, null);
+   this.sizer.add(key2Row);
+
+   var formatRow = new TextEntryRow(this, rowStyle, "Format", "format", propertyTypes.FREE_TEXT, null);
+   this.sizer.add(formatRow);
+
+   this.initialize = function(variableDefinition) {
+      if (!variableDefinition.parameters.hasOwnProperty(resolverName)) {
+         variableDefinition.parameters[resolverName] = deepCopyData(ffM_RuleSet_Model.resolverByName(resolverName).initial);
+      }
+   }
+
+   this.populate = function(variableDefinition) {
+      // Should probably be somewhere else
+      this.initialize(variableDefinition);
+      key1Row.updateTarget(variableDefinition.parameters[resolverName]);
+      key2Row.updateTarget(variableDefinition.parameters[resolverName]);
+      formatRow.updateTarget(variableDefinition.parameters[resolverName]);
+   }
+}
+IntegerPairValueResolverControl.prototype = new Control;
 
 
 
@@ -742,6 +774,10 @@ function VariableUIControl(parent, variableDefinitionFactory ) {
 
    var labelWidth = this.font.width( "MMMMMMMMMMMM: " );
    var dataWidth = this.font.width( "MMMMMMMMMMMMMMMMMMMMMMM" );
+   var rowStyle = {
+      minLabelWidth: labelWidth,
+      minDataWidth: dataWidth,
+   }
 
    // -- GUI action callbacks
    // Variable selected in current rule, forward to the model handling later in this object
@@ -788,24 +824,32 @@ function VariableUIControl(parent, variableDefinitionFactory ) {
 
 
    //this.resolverSelection_GroupBox =  makeResolverSelection_ComboBox(this, resolverNames, resolverSelectionCallback);
-   this.resolverSelectionRow =  new ResolverSelectionRow(this, labelWidth, dataWidth, "type", resolverNames, resolverSelectionCallback);
+   this.resolverSelectionRow =  new ResolverSelectionRow(this, rowStyle, "type", ffM_RuleSet_Model.resolverNames, resolverSelectionCallback);
    variableDetails_GroupBox.sizer.add(this.resolverSelectionRow);
 
-   this.variableNameRow = new TextEntryRow(this, labelWidth, dataWidth, "name","name", function() {variableListSelection_Box.currentModelElementChanged()});
+   this.variableNameRow = new TextEntryRow(this, rowStyle, "name","name",
+      propertyTypes.FREE_TEXT,
+      function() {variableListSelection_Box.currentModelElementChanged()});
    variableDetails_GroupBox.sizer.add(this.variableNameRow);
-   this.descriptionRow = new TextEntryRow(this, labelWidth, dataWidth, "description","description", function() {variableListSelection_Box.currentModelElementChanged()});
+   this.descriptionRow = new TextEntryRow(this, rowStyle, "description","description",
+      propertyTypes.FREE_TEXT,
+      function() {variableListSelection_Box.currentModelElementChanged()});
    variableDetails_GroupBox.sizer.add(this.descriptionRow);
 
-   // Make all resolver controls, only the selected one will be shown
-   var resolverConstantValue = new ConstantValueResolverControl(variableDetails_GroupBox, 'Constant', labelWidth, dataWidth);
-   variableDetails_GroupBox.sizer.add(resolverConstantValue);
-   resolverByName('Constant').control = resolverConstantValue;
-   resolverConstantValue.hide();
+   var addNewResolverControl = function(resolverControl){
+      variableDetails_GroupBox.sizer.add(resolverControl);
+      ffM_RuleSet_Model.resolverByName(resolverControl.resolverName).control = resolverControl;
+      resolverControl.hide();
+   }
 
-   var resolverRegExpList = new MapFirstRegExpControl(variableDetails_GroupBox,'RegExpList', labelWidth, dataWidth);
-   variableDetails_GroupBox.sizer.add(resolverRegExpList);
-   resolverByName('RegExpList').control = resolverRegExpList;
-   resolverRegExpList.hide();
+   // Make all resolver controls, only the selected one will be shown
+   addNewResolverControl(new ConstantValueResolverControl(variableDetails_GroupBox, 'Constant', rowStyle));
+
+   addNewResolverControl(new IntegerValueResolverControl(variableDetails_GroupBox, 'Integer', rowStyle));
+
+   addNewResolverControl(new IntegerPairValueResolverControl(variableDetails_GroupBox, 'IntegerPair', rowStyle));
+
+   addNewResolverControl(new MapFirstRegExpControl(variableDetails_GroupBox,'RegExpList', rowStyle));
 
 
    variableDetails_GroupBox.sizer.addStretch();
@@ -821,7 +865,7 @@ function VariableUIControl(parent, variableDefinitionFactory ) {
          that.currentResolver =null;
       }
       if (resolverName != null) {
-         var resolver = resolverByName(resolverName);
+         var resolver = ffM_RuleSet_Model.resolverByName(resolverName);
          if (resolver === null) {
             throw "Invalid resolver '" + resolverName + "' for variable '"+ variableDefinition.name+"'";
          }
@@ -873,19 +917,19 @@ VariableUIControl.prototype = new Control;
 // the ruleset and current rule set name properties from the dialog to get the current
 // state.
 
-function ConfigurationDialog( parentDialog, ruleSet, currentRuleSetName) {
+function ConfigurationDialog( parentDialog, originalRuleSet, currentRuleSetName) {
    this.__base__ = Dialog;
    this.__base__();
    var that = this;
 
    // Model -
    // Keeps track of rule set and current rule set selected
-   // This will be the updated rule set at the end
-   this.ruleSet = ruleSet;
+   // in a copy, so in case of cancel nothing is changed
+   this.ruleSet = deepCopyData(originalRuleSet);
    this.currentRuleSetName = currentRuleSetName;
 
    // For the selection of the current rule set
-   var ruleSetNames = ffM_RuleSet_Model.ruleNames(ruleSet);
+   var ruleSetNames = ffM_RuleSet_Model.ruleNames(this.ruleSet);
 
    this.newVariableCounter = 0;
 
@@ -899,7 +943,7 @@ function ConfigurationDialog( parentDialog, ruleSet, currentRuleSetName) {
    // Rule set changed (also used in initialization)
    var ruleSetSelectedCallback = function(ruleSetName) {
       Log.debug("ConfigurationDialog: ruleSetSelectedCallback - RuleSet selected:",ruleSetName);
-      var selectedRule = ffM_RuleSet_Model.ruleByName(ruleSet, ruleSetName);
+      var selectedRule = ffM_RuleSet_Model.ruleByName(that.ruleSet, ruleSetName);
       if (selectedRule == null) {
          throw "Invalid rule set name '" + ruleSetName +"'";
       }

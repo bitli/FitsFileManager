@@ -40,6 +40,51 @@ function regExpToString(re) {
 
 
 
+
+//=========================================================================================================================
+// Object data support
+// ------------------------------------------------------------------------------------------------------------------------
+// Deep copy an object (with object, array, basic types and RegExp only)
+function deepCopyData(object) {
+   var i;
+   var result;
+   if (object === null) {
+      result = null;
+   } else if (Array.isArray(object)) {
+      result = [];
+      for (i=0; i<object.length;i++) {
+         result.push(deepCopyData(object[i]));
+      }
+   } else if (typeof object !== "object") {
+      result = object;
+   } else if (object.constructor === Date) {
+      result = new Date(object.getTime());
+   } else if (object.constructor === String) {
+      result = new String(object);
+   } else if (object.constructor === Boolean) {
+      result = new Boolean(object);
+   } else if (object.constructor === Number) {
+      result = new Number(object);
+   } else if (object.constructor === RegExp) {
+      result = new RegExp(object.toString());
+   } else if (object.constructor === Function) {
+      throw "Cannot deep copy function";
+   } else {
+      // Any other data object
+      result = {};
+      var ps = Object.getOwnPropertyNames(object);
+      for ( i=0; i<ps.length;i++) {
+         result[ps[i]] = deepCopyData(object[ps[i]]);
+      }
+   }
+
+   return result;
+}
+
+
+
+
+
 //=========================================================================================================================
 // File utility functions
 // ------------------------------------------------------------------------------------------------------------------------

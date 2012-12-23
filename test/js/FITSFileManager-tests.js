@@ -39,6 +39,53 @@ var ffM_rv = function(obj) {
 
 
 var ffM_allTests = {
+
+   // Test helper
+   test_deep_copy_null: function() {
+      pT_assertEquals(null,deepCopyData(null));
+   },
+   test_deep_copy_base: function() {
+      pT_assertEquals(6,deepCopyData(6));
+   },
+   test_deep_copy_date: function() {
+      var s = new Date();
+      var d = deepCopyData(s);
+      pT_assertEquals(s.toString(),d.toString());
+      d.setFullYear(d.getFullYear()+1);
+      pT_assertEquals(s.getFullYear()+1,d.getFullYear());
+   },
+   test_deep_copy_array: function() {
+      var s = [1,2,3];
+      var d = deepCopyData(s);
+      //Log.debug(Log.pp(d));
+      pT_assertArrayEquals([1,2,3],d);
+      s[1] = 4;
+      pT_assertEquals(2,d[1]);
+   },
+   test_deep_copy_array_empty: function() {
+      var d = deepCopyData([]);
+      //Log.debug(Log.pp(d));
+      pT_assertArrayEquals([],d);
+   },
+   test_deep_copy_object: function() {
+      var s = {k:1,v:3};
+      var d= deepCopyData(s);
+      //Log.debug(Log.pp(d));
+      pT_assertEquals(3,d.v);
+      d.v=5;
+      pT_assertEquals(3,s.v);
+   },
+   test_deep_copy: function() {
+      var s = {k:1,v: new Date(), a:[1,3, {anobj: 5}]};
+      var d= deepCopyData(s);
+      //Log.debug(Log.pp(d));
+      pT_assertEquals(5,d.a[2].anobj);
+      d.a[2].anobj=7;
+      pT_assertEquals(5,s.a[2].anobj);
+      pT_assertEquals(7,d.a[2].anobj);
+   },
+
+#ifdef NO
    // Test our mock variable resolver
    test_ffM_rv_found: function() {
       pT_assertEquals("toto", ffM_rv({titi: "toto"})("titi"));
@@ -382,7 +429,7 @@ var ffM_allTests = {
      // pT_assertEquals("string",guiParameters.targetFileNameCompiledTemplate);
    },
 
-
+#endif
 
 
 }
