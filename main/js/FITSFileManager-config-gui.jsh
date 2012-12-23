@@ -235,25 +235,42 @@ var makeTabBox = function(parent, boxes) {
 
 
 // ---------------------------------------------------------------------------------------------------------
-
-function ManagedList_Box(parent, initialListModel, elementFactory, toolTip, selectionCallback) {
+// Create a list selection box, possibly with editing capability
+//    parent: UI COntrol
+//    modeldescription: An array of element model descriptions (one for each column),
+//         each description is an object with the properties:
+//            propertyName: name of the propery to use in the element model for the corresponding column
+//   intialListModel: A (usually empty) initial list model (an array of object with the properties described by modelDescription)
+//                    Usually the model is specified by the modelListChange call (including for initial populate)
+//   elementFactory: A function() that return a new element model (called when new is created)
+//   toolTip: The tool tip text
+//   selectionCallBack: a function(elementModel) that return the element model currently selected. an be null if
+//                      no element is selected (for example last one is deleted).
+function ManagedList_Box(parent, modelDescription, initialListModel, elementFactory, toolTip, selectionCallback) {
    this.__base__ = Control;
    this.__base__(parent);
 
+   var i;
+
+
+   // -- Model
    var listModel = [];
 
 
-   // nodeMode is {node, description}
+   // -- Support methods
+   // Create a node based on the model described in modelDescription
    var makeNode = function(treeBox, nodeModel, index) {
+      //Log.debug('ManagedList_Box: makeNode -',Log.pp(nodeModel),Log.pp(modelDescription));
       var node = new TreeBoxNode( treeBox, index);
-      node.setText( 0, nodeModel.name );
-      node.setText( 1, nodeModel.description );
+      for (var i=0; i<modelDescription.length;i++){
+         node.setText(i, nodeModel[modelDescription[i].propertyName].toString());
+      }
       return node;
    }
 
 
 
-   var i;
+   // -- UI
 
    this.sizer = new VerticalSizer;
 
@@ -270,10 +287,11 @@ function ManagedList_Box(parent, initialListModel, elementFactory, toolTip, sele
    treeBox.toolTip = toolTip;
 
 
-   // -- Model update action
+   // -- Model update methods
+   // A new model must be used for the listModel
    this.modelListChanged = function(newModelList) {
 
-      // Cleanr current list
+      // Clear current list display
       var i;
       var nmbNodes = treeBox.numberOfChildren;
       for (i=nmbNodes; i>0; i--) {
@@ -289,6 +307,20 @@ function ManagedList_Box(parent, initialListModel, elementFactory, toolTip, sele
       }
    }
    this.modelListChanged(initialListModel);
+
+   // The current values of the current row model changed
+   this.currentModelElementChanged = function() {
+      if (treeBox.selectedNodes.length>0) {
+         var selectedNode = treeBox.selectedNodes[0];
+         var selectedIndex = treeBox.childIndex(selectedNode);
+         if (selectedIndex>=0 && selectedIndex<listModel.length) {
+            for (var i=0; i<modelDescription.length;i++){
+               selectedNode.setText(i, listModel[selectedIndex][modelDescription[i].propertyName].toString());
+            }
+          }
+      }
+    }
+
 
    // -- Internal actions
    var upAction = function() {
@@ -360,8 +392,8 @@ function ManagedList_Box(parent, initialListModel, elementFactory, toolTip, sele
          var selectedIndex = treeBox.childIndex(selectedNode);
          if (selectedIndex>=0 && selectedIndex<listModel.length) {
             selectionCallback(listModel[selectedIndex]);
-         }
-      }
+          }
+       }
    }
 
 
@@ -494,7 +526,7 @@ var makeRuleSetSelection_ComboBox = function(parent, ruleSetNames, ruleSetSelect
 }
 
 // Utility pane - A Label - Labelled text field of a property of an object
-function TextEntryRow(parent, minLabelWidth, name, property) {
+function TextEntryRow(parent, minLabelWidth, minDataWidth,name, property, valueChangedCallback) {
    this.__base__ = Control;
    this.__base__(parent);
    var that = this;
@@ -513,15 +545,19 @@ function TextEntryRow(parent, minLabelWidth, name, property) {
    the_Label.text = name + ": ";
 
    var name_Edit = new Edit(this);
+   name_Edit.minWidth = minDataWidth;
    this.sizer.add(name_Edit)
 
    name_Edit.onTextUpdated = function() {
       if (that.target !== null) {
-         Log.debug("TextEntryRow: onTextUpdated:",property,this.text);
+         //Log.debug("TextEntryRow: onTextUpdated:",property,this.text);
          that.target[property] = this.text;
+         if (valueChangedCallback != null) {
+            valueChangedCallback();
+         }
       }
    }
-
+   // Define the target object (that must have the property defined originally), null disables input
    this.updateTarget = function(target) {
       that.target = target;
       if (target === null) {
@@ -553,6 +589,7 @@ var makeResolverSelection_ComboBox = function(parent, mappingNames, mappingSelec
       comboBox.addItem(mappingNames[i]);
    }
    comboBox.currentItem = 0;
+   comboBox.enabled = false;
 
    comboBox.onItemSelected = function() {
       if (this.currentItem>=0) {
@@ -561,10 +598,15 @@ var makeResolverSelection_ComboBox = function(parent, mappingNames, mappingSelec
    }
 
    comboBox.selectResolver = function(name) {
-   for (i=0; i<mappingNames.length;i++) {
-         if (name === mappingNames[i]) {
-            comboBox.currentItem = i;
-            break;
+      if (name == null) {
+            comboBox.enabled = false;
+      } else {
+         for (i=0; i<mappingNames.length;i++) {
+            if (name === mappingNames[i]) {
+               comboBox.currentItem = i;
+               comboBox.enabled = true;
+               break;
+            }
          }
       }
    }
@@ -572,19 +614,55 @@ var makeResolverSelection_ComboBox = function(parent, mappingNames, mappingSelec
    return comboBox;
 }
 
+function ResolverSelectionRow(parent, minLabelWidth, minDataWidth, name, mappingNames, mappingSelectionCallback) {
+   this.__base__ = Control;
+   this.__base__(parent);
+   var that=this;
+
+   this.sizer = new HorizontalSizer;
+   this.sizer.margin = 2;
+   this.sizer.spacing = 2;
+
+   var the_Label = new Label( this );
+   this.sizer.add(the_Label);
+   the_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
+   the_Label.minWidth = minLabelWidth;
+   the_Label.text = name + ": ";
+
+   var resolver_ComboBox = makeResolverSelection_ComboBox (parent, mappingNames, mappingSelectionCallback);
+   resolver_ComboBox.minWidth = minDataWidth;
+   this.sizer.add(resolver_ComboBox);
+
+   this.selectResolver = function(name) {
+      resolver_ComboBox.selectResolver(name);
+   }
+}
+ResolverSelectionRow.prototype = new Control;
+
+
 // -- Controls for resolver
 
-function MapFirstRegExpControl(parent, resolverName, labelWidth) {
+function MapFirstRegExpControl(parent, resolverName, labelWidth, dataWidth) {
    this.__base__ = Control;
    this.__base__(parent);
 
    this.sizer = new VerticalSizer;
 
-   var variableNameRow = new TextEntryRow(this, labelWidth, "key", "key");
-   this.sizer.add(variableNameRow);
+   var transformationDefinitionFactory = function() {
+   }
+   var transformationSelectionCallback = function() {
+   }
 
-   var formatRow = new TextEntryRow(this, labelWidth, "format", "format");
-   this.sizer.add(formatRow);
+   var regExpListSelection_Box = new ffM_GUI_support.ManagedList_Box(
+         this,
+         [{propertyName: 'regexp'},{propertyName: 'replacement'}],
+         [], // Its model will be initialized dynamically
+         transformationDefinitionFactory,
+         "Transformation",
+         transformationSelectionCallback
+   );
+   this.sizer.add(regExpListSelection_Box);
+
 
    this.initialize = function(variableDefinition) {
       if (!variableDefinition.parameters.hasOwnProperty(resolverName)) {
@@ -595,20 +673,20 @@ function MapFirstRegExpControl(parent, resolverName, labelWidth) {
    this.populate = function(variableDefinition) {
       // Should probably be somewhere else
       this.initialize(variableDefinition);
-      variableNameRow.updateTarget(variableDefinition.parameters[resolverName]);
-      formatRow.updateTarget(variableDefinition.parameters[resolverName]);
+//      variableNameRow.updateTarget(variableDefinition.parameters[resolverName]);
+//      formatRow.updateTarget(variableDefinition.parameters[resolverName]);
    }
 }
 MapFirstRegExpControl.prototype = new Control;
 
 
 
-function ConstantValueResolverControl(parent, resolverName, labelWidth) {
+function ConstantValueResolverControl(parent, resolverName, labelWidth, dataWidth) {
    this.__base__ = Control;
    this.__base__(parent);
 
    this.sizer = new VerticalSizer;
-   var constantValueRow = new TextEntryRow(this, labelWidth, "value", "value");
+   var constantValueRow = new TextEntryRow(this, labelWidth, dataWidth, "value", "value", null);
    this.sizer.add(constantValueRow);
 
    this.initialize = function(variableDefinition) {
@@ -648,6 +726,7 @@ function VariableUIControl(parent, variableDefinitionFactory ) {
    this.sizer.spacing = 4;
 
    var labelWidth = this.font.width( "MMMMMMMMMMMM: " );
+   var dataWidth = this.font.width( "MMMMMMMMMMMMMMMMMMMMMMM" );
 
    // -- GUI action callbacks
    // Variable selected in current rule, forward to the model handling later in this object
@@ -668,7 +747,8 @@ function VariableUIControl(parent, variableDefinitionFactory ) {
 
    var variableListSelection_Box = new ffM_GUI_support.ManagedList_Box(
          variableListSelection_GroupBox,
-         [], // Its model will be initialized dynamically
+        [{propertyName: 'name'},{propertyName: 'description'}],
+        [], // Its model will be initialized dynamically
          variableDefinitionFactory,
          "Variable definitions",
          variableSelectionCallback
@@ -689,24 +769,28 @@ function VariableUIControl(parent, variableDefinitionFactory ) {
 
    variableDetails_GroupBox.sizer = new VerticalSizer;
 
-   this.resolverSelection_GroupBox =  makeResolverSelection_ComboBox(this, resolverNames, resolverSelectionCallback);
-   variableDetails_GroupBox.sizer.add(this.resolverSelection_GroupBox);
 
-   this.variableNameRow = new TextEntryRow(this, labelWidth, "name","name");
+
+   //this.resolverSelection_GroupBox =  makeResolverSelection_ComboBox(this, resolverNames, resolverSelectionCallback);
+   this.resolverSelectionRow =  new ResolverSelectionRow(this, labelWidth, dataWidth, "type", resolverNames, resolverSelectionCallback);
+   variableDetails_GroupBox.sizer.add(this.resolverSelectionRow);
+
+   this.variableNameRow = new TextEntryRow(this, labelWidth, dataWidth, "name","name", function() {variableListSelection_Box.currentModelElementChanged()});
    variableDetails_GroupBox.sizer.add(this.variableNameRow);
-   this.descriptionRow = new TextEntryRow(this, labelWidth, "description","description");
+   this.descriptionRow = new TextEntryRow(this, labelWidth, dataWidth, "description","description", function() {variableListSelection_Box.currentModelElementChanged()});
    variableDetails_GroupBox.sizer.add(this.descriptionRow);
 
    // Make all resolver controls, only the selected one will be shown
-   var resolverRegExpList = new MapFirstRegExpControl(variableDetails_GroupBox,'RegExpList', labelWidth);
+   var resolverConstantValue = new ConstantValueResolverControl(variableDetails_GroupBox, 'Constant', labelWidth, dataWidth);
+   variableDetails_GroupBox.sizer.add(resolverConstantValue);
+   resolverByName('Constant').control = resolverConstantValue;
+   resolverConstantValue.hide();
+
+   var resolverRegExpList = new MapFirstRegExpControl(variableDetails_GroupBox,'RegExpList', labelWidth, dataWidth);
    variableDetails_GroupBox.sizer.add(resolverRegExpList);
    resolverByName('RegExpList').control = resolverRegExpList;
    resolverRegExpList.hide();
 
-   var resolverConstantValue = new ConstantValueResolverControl(variableDetails_GroupBox, 'Constant', labelWidth);
-   variableDetails_GroupBox.sizer.add(resolverConstantValue);
-   resolverByName('Constant').control = resolverConstantValue;
-   resolverConstantValue.hide();
 
    variableDetails_GroupBox.sizer.addStretch();
 
@@ -725,12 +809,14 @@ function VariableUIControl(parent, variableDefinitionFactory ) {
          if (resolver === null) {
             throw "Invalid resolver '" + resolverName + "' for variable '"+ variableDefinition.name+"'";
          }
-         // record the new resolver
-         that.currentVariableDefinition.resolver = resolverName;
-         // Populate and show it
-         that.currentResolver = resolver;
-         resolver.control.populate(that.currentVariableDefinition );
-         resolver.control.show();
+         if (that.currentVariableDefinition !== null) {
+            // record the new resolver
+            that.currentVariableDefinition.resolver = resolverName;
+            // Populate and show it
+            that.currentResolver = resolver;
+            resolver.control.populate(that.currentVariableDefinition );
+            resolver.control.show();
+         }
       }
    }
 
@@ -750,7 +836,7 @@ function VariableUIControl(parent, variableDefinitionFactory ) {
       that.updateResolver(resolverName);
 
       // Update the UI
-      this.resolverSelection_GroupBox.selectResolver(resolverName);
+      this.resolverSelectionRow.selectResolver(resolverName);
     }
 
    // The list of variables was changed externally (initial or change or rule set)
