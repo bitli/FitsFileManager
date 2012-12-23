@@ -70,8 +70,8 @@ var ffM_RuleSet_Model = (function(){
    // First RegExp match value
    var makeFirstRegExpMapping = function(aFITSKey) {
       return {
-         key: aFITSKey,
-         mappings: [],
+         regexp: /.*/,
+         replacement: '',
       }
    }
 
@@ -104,24 +104,6 @@ var ffM_RuleSet_Model = (function(){
 
    }
 
-   // The type consist of a name and type specific parameters.
-   // Each type may have another UI matching its parameters
-
-   var defaultTypes = [
-      {name: 'Type', parameters: {key:'?'}},
-      {name: 'Filter', parameters: {key:'?'}},
-      {name: 'Exposure', parameters: {key:'?'}},
-      {name: 'Temperature', parameters: {key:'?'}},
-      {name: 'Binning', parameters: {key:'?'}},
-      {name: 'Night', parameters: {key:'?'}},
-      {name: 'FileName', parameters: {key:'?'}},
-      {name: 'Extension', parameters: {key:'?'}},
-   ]
-
-   var typeMapping = {};
-   for (var i in defaultTypes) {
-      typeMapping[defaultTypes[i].name] = defaultTypes[i];
-   }
 
    // --------------------------
    // Default definition for test
@@ -246,12 +228,12 @@ var makeTabBox = function(parent, boxes) {
 //   toolTip: The tool tip text
 //   selectionCallBack: a function(elementModel) that return the element model currently selected. an be null if
 //                      no element is selected (for example last one is deleted).
-function ManagedList_Box(parent, modelDescription, initialListModel, elementFactory, toolTip, selectionCallback) {
+function ManagedList_Box(parent, modelDescription, initialListModel, elementFactory, toolTip, selectionCallback, sorted) {
    this.__base__ = Control;
    this.__base__(parent);
 
    var i;
-
+   typeof sorted === 'undefined' && (sorted = false);
 
    // -- Model
    var listModel = [];
@@ -282,8 +264,14 @@ function ManagedList_Box(parent, modelDescription, initialListModel, elementFact
    treeBox.multipleSelection = false;
    treeBox.headerVisible = false;
    treeBox.headerSorting = false;
-   treeBox.sort(0,true);
+
+   treeBox.sort(0,sorted); // DO NOT SEEMS TO WORK
+
    //treeBox.setMinSize( 700, 200 );
+   // DO not seem to have any effect
+   //treeBox.lineWidth = 1;
+   treeBox.style = Frame.FrameStyleSunken;
+
    treeBox.toolTip = toolTip;
 
 
@@ -567,7 +555,7 @@ function TextEntryRow(parent, minLabelWidth, minDataWidth,name, property, valueC
          if (! target.hasOwnProperty(property)) {
             throw "Entry '" + name + "' does not have property '" + property + "': " + Log.pp(target);
          }
-         name_Edit.text = target[property];
+         name_Edit.text = target[property].toString();
          name_Edit.enabled = true;
       }
    }
@@ -640,18 +628,30 @@ function ResolverSelectionRow(parent, minLabelWidth, minDataWidth, name, mapping
 ResolverSelectionRow.prototype = new Control;
 
 
+// ..............................................................................................
 // -- Controls for resolver
+// ..............................................................................................
 
 function MapFirstRegExpControl(parent, resolverName, labelWidth, dataWidth) {
    this.__base__ = Control;
    this.__base__(parent);
+   var that = this;
 
    this.sizer = new VerticalSizer;
 
+   // FITS Key
+   var keyRow = new TextEntryRow(this, labelWidth, dataWidth, "key", "key", null);
+   this.sizer.add(keyRow);
+
+
    var transformationDefinitionFactory = function() {
+      return {regexp: /.*/, replacement: ''}
    }
-   var transformationSelectionCallback = function() {
+
+   var transformationSelectionCallback = function(transformationModel) {
+      that.selectTransformationToEdit(transformationModel);
    }
+
 
    var regExpListSelection_Box = new ffM_GUI_support.ManagedList_Box(
          this,
@@ -659,27 +659,41 @@ function MapFirstRegExpControl(parent, resolverName, labelWidth, dataWidth) {
          [], // Its model will be initialized dynamically
          transformationDefinitionFactory,
          "Transformation",
-         transformationSelectionCallback
+         transformationSelectionCallback,
+         false // Keep in order
    );
    this.sizer.add(regExpListSelection_Box);
 
 
+   var currentRegExpRow = new TextEntryRow(this, labelWidth, dataWidth, "regexp", "regexp",
+      function() {regExpListSelection_Box.currentModelElementChanged()});
+   this.sizer.add(currentRegExpRow);
+   var currentReplacementRow = new TextEntryRow(this, labelWidth, dataWidth, "replacement", "replacement",
+      function() {regExpListSelection_Box.currentModelElementChanged()});
+   this.sizer.add(currentReplacementRow);
+
+
+   this.selectTransformationToEdit = function(transformationModel) {
+      currentRegExpRow.updateTarget(transformationModel);
+      currentReplacementRow.updateTarget(transformationModel);
+   }
+
    this.initialize = function(variableDefinition) {
       if (!variableDefinition.parameters.hasOwnProperty(resolverName)) {
-         variableDefinition.parameters[resolverName] = {key: '', format: ''};
+         variableDefinition.parameters[resolverName] = {key: '', reChecks: [{regexp: /.*/, replacement: ''}]};
       }
    }
 
    this.populate = function(variableDefinition) {
       // Should probably be somewhere else
       this.initialize(variableDefinition);
-//      variableNameRow.updateTarget(variableDefinition.parameters[resolverName]);
-//      formatRow.updateTarget(variableDefinition.parameters[resolverName]);
+      keyRow.updateTarget(variableDefinition.parameters[resolverName]);
+      regExpListSelection_Box.modelListChanged(variableDefinition.parameters[resolverName].reChecks);
    }
 }
 MapFirstRegExpControl.prototype = new Control;
 
-
+// ..............................................................................................
 
 function ConstantValueResolverControl(parent, resolverName, labelWidth, dataWidth) {
    this.__base__ = Control;
@@ -706,6 +720,7 @@ ConstantValueResolverControl.prototype = new Control;
 
 
 
+// ..............................................................................................
 
 
 // -- Middle pane - Variable definitions (two panes: add/remove variables and edit selected variables)
@@ -751,7 +766,8 @@ function VariableUIControl(parent, variableDefinitionFactory ) {
         [], // Its model will be initialized dynamically
          variableDefinitionFactory,
          "Variable definitions",
-         variableSelectionCallback
+         variableSelectionCallback,
+         true // Sort by variable name
    );
    variableListSelection_GroupBox.sizer.add(variableListSelection_Box);
 

@@ -59,13 +59,14 @@ var Log = (function() {
    var newline = false
    var spacer = function(depth) { var spaces = ""; for (var i=0;i<depth;i++) { spaces += "  "}; return spaces }
    var pretty = ""
-   if (      typeof(object) == "undefined" ) { pretty += "undefined" }
-   else if ( typeof(object) == "boolean" ||
-             typeof(object) == "number" ) {    pretty += object.toString() }
-   else if ( typeof(object) == "string" ) {    pretty +=  quote(object) }
+   if (      typeof(object) === "undefined" ) { pretty += "undefined" }
+   else if ( typeof(object) === "boolean" ||
+             typeof(object) === "number" ) {    pretty += object.toString() }
+   else if ( typeof(object) === "string" ) {    pretty +=  quote(object) }
    // Avoid error if a function is part of an object
-   else if ( typeof(object) == "function" ) {    pretty +=  "function ... (" + object.length + ")" }
-   else if (        object  == null) {         pretty += "null" }
+   else if ( typeof(object) === "object" && object.constructor.name === "RegExp") {    pretty +=  object.toString() }
+   else if ( typeof(object) === "function" ) {    pretty +=  "function ... (" + object.length + ")" }
+   else if (        object  === null) {         pretty += "null" }
    else if ( object instanceof(Array) ) {
       if ( object.length > 0 ) {
          if (embedded) { newline = true }
