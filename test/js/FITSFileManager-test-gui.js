@@ -50,8 +50,8 @@
 
 var ffM_TestConfigUi = (function(){
 
-   var addVariable = ffM_RuleSet_Model.addVariable;
-   var defineVariable = ffM_RuleSet_Model.defineVariable;
+   var addVariable = ffM_ConfigurationSet_Model.addVariable;
+   var defineVariable = ffM_ConfigurationSet_Model.defineVariable;
 
 
    // Model object wrap data object and behavior
@@ -153,7 +153,7 @@ function vP_testGuiRuleSet()
    for (var i=0; i<ruleSet.length; i++) {
       names.push(ruleSet[i].name);
    }
-   var dialog =  ffM_GUI_RuleSet.makeDialog(null, names);
+   var dialog =  ffM_GUI_config.makeDialog(null, names);
    dialog.configure(ruleSet, ruleSet[0].name);
    for ( ;; )
    {

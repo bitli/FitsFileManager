@@ -449,7 +449,7 @@ function MainDialog(engine, guiParameters) {
    this.configuration_Button.text = "Configure" //Text.T.LOADSAVE_BUTTON_TEXT;
    //this.configure_Button.toolTip = Text.H.LOADSAVE_BUTTON_TOOLTIP;
    this.configuration_Button.enabled = true;
-   this.configurationDialog = ffM_GUI_RuleSet.makeDialog(this, ffM_Configuration.configurationList);
+   this.configurationDialog = ffM_GUI_config.makeDialog(this, ffM_Configuration.configurationList);
    this.configuration_Button.onClick = function() {
       var configurationName = ffM_Configuration.configurationList[guiParameters.currentConfigurationIndex];
       this.dialog.configurationDialog.configure(ffM_Configuration.configurationTable, configurationName);

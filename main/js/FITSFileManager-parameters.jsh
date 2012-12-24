@@ -58,7 +58,7 @@
 
 
 
-var ffM_RuleSet_Model = (function(){
+var ffM_ConfigurationSet_Model = (function(){
 
 
    // -- RuleSet support functions
@@ -113,7 +113,9 @@ var ffM_RuleSet_Model = (function(){
 
 
 var ffM_Configuration = (function() {
-   // This module is a singleton that supports 'named configuration' data objects,
+
+#ifdef NO
+// This module is a singleton that supports 'named configuration' data objects,
    // and the set of all named configurations known to FITSFileManager.
 
    // A named configuration is a named set of parameters that can be selected as a whole,
@@ -228,7 +230,7 @@ var ffM_Configuration = (function() {
      defaultShownKeywords: defaultShownKeywords_CAHA,
    };
 
-
+#endif
 
 
 // --------------------------------------------------------------------------------------------------
@@ -372,7 +374,7 @@ var defaultRuleSet =
    var configurationTable = defaultRuleSet;
 
    // array of names
-   var configurationList = ffM_RuleSet_Model.ruleNames(configurationTable);
+   var configurationList = ffM_ConfigurationSet_Model.ruleNames(configurationTable);
 
    // --- method implementations ----------------------------------------------
    function addConfiguration(configuration) {
@@ -381,7 +383,7 @@ var defaultRuleSet =
    }
 
    function getConfigurationByName(name) {
-      return ffM_RuleSet_Model.ruleByName(configurationTable,name);
+      return ffM_ConfigurationSet_Model.ruleByName(configurationTable,name);
    }
    function getConfigurationByIndex(index) {
       return configurationTable[index];
