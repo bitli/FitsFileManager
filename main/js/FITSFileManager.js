@@ -188,6 +188,21 @@
 #include "FITSFileManager-helpers.jsh"
 #include "FITSFileManager-engine.jsh"
 #include "FITSFileManager-text.jsh"
+
+#include <pjsr/Sizer.jsh>
+//#include <pjsr/FrameStyle.jsh>
+#include <pjsr/TextAlign.jsh>
+#include <pjsr/StdIcon.jsh>
+#include <pjsr/StdCursor.jsh>
+#include <pjsr/StdButton.jsh>
+#include <pjsr/FrameStyle.jsh>
+#include <pjsr/Color.jsh>
+
+#include <pjsr/ButtonCodes.jsh>
+#include <pjsr/FocusStyle.jsh>
+
+
+#include "FITSFileManager-config-gui.jsh"
 #include "FITSFileManager-gui.jsh"
 
 

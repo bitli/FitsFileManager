@@ -848,8 +848,8 @@ VariableUIControl.prototype = new Control;
 // The rule set may be modified or not, at the end the caller must get
 // the ruleset and current rule set name properties from the dialog to get the current
 // state.
-
-function ConfigurationDialog( parentDialog, originalRuleSet, currentRuleSetName) {
+// The list of ruleset does not currently change
+function ConfigurationDialog( parentDialog, ruleSetNames) {
    this.__base__ = Dialog;
    this.__base__();
    var that = this;
@@ -857,11 +857,9 @@ function ConfigurationDialog( parentDialog, originalRuleSet, currentRuleSetName)
    // Model -
    // Keeps track of rule set and current rule set selected
    // in a copy, so in case of cancel nothing is changed
-   this.ruleSet = deepCopyData(originalRuleSet);
-   this.currentRuleSetName = currentRuleSetName;
-
-   // For the selection of the current rule set
-   var ruleSetNames = ffM_RuleSet_Model.ruleNames(this.ruleSet);
+   // Done in 'configure'
+   this.ruleSet = null;
+   this.currentRuleSetName = null;
 
    this.newVariableCounter = 0;
 
@@ -870,6 +868,15 @@ function ConfigurationDialog( parentDialog, originalRuleSet, currentRuleSetName)
    this.sizer = new VerticalSizer;
    this.sizer.margin = 6;
    this.sizer.spacing = 4;
+
+   // Configure for current
+   this.configure = function configure(originalRuleSet, currentRuleSetName) {
+      this.ruleSet = deepCopyData(originalRuleSet);
+      this.currentRuleSetName = currentRuleSetName;
+      // Initialize content
+      ruleSetSelectedCallback(currentRuleSetName);
+   }
+
 
    // -- GUI actions callbacks
    // Rule set changed (also used in initialization)
@@ -911,8 +918,6 @@ function ConfigurationDialog( parentDialog, originalRuleSet, currentRuleSetName)
    //this.adjustToContents();
 
 
-   // Initialize content
-   ruleSetSelectedCallback(currentRuleSetName);
 }
 ConfigurationDialog.prototype = new Dialog;
 

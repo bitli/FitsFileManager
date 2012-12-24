@@ -408,6 +408,8 @@ for (var i=0; i<shownVariablesNumber; i++) {
    // TODO For curernt config
       syntheticVariableNames: syntheticVariableNames,
       syntheticVariableComments: syntheticVariableComments,
+      // Temp
+      configurationTable: configurationTable,
 
    };
 }) ();

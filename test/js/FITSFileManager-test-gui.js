@@ -149,7 +149,12 @@ function vP_testGuiRuleSet()
    // Noe: this log takes forever...
    //Console.writeln("Initiale ruleset:\n" + Log.pp(ruleSet));
 
-   var dialog =  ffM_GUI_RuleSet.makeDialog(null, ruleSet, ruleSet[0].name);
+   var names=[];
+   for (var i=0; i<ruleSet.length; i++) {
+      names.push(ruleSet[i].name);
+   }
+   var dialog =  ffM_GUI_RuleSet.makeDialog(null, names);
+   dialog.configure(ruleSet, ruleSet[0].name);
    for ( ;; )
    {
       var result = dialog.execute();
