@@ -5,114 +5,6 @@
 
 
 
-// ========================================================================================================================
-// Model
-// ========================================================================================================================
-
-// There is a 'pure data' representation of the rules (so they can be serialized)
-// and the Model complement this representation with convenience methods
-
-// RuleSet data (ordered list of rules, the order does not matter for the semantic)
-//    [rule]
-
-// Rule data (the variables is an ordered list)
-//    {name: aString, description: aString, variableList: []}
-
-// Variable: (the parameters dictionary depends on the resolver, the parameters of a resolver
-//            are qualified by the resolver name allowing multiple resolvers at the same
-//            time while in memory)
-//    {name: aString, description: aString, resolver: aName, parameters: {resolverName: {}}}
-
-
-
-var ffM_RuleSet_Model = (function(){
-
-// The resolvers are fixed, they are defined as:
-//   {name: aString, description: aString, control: aControl}
-// (more information may be added later).
-// The resolver control manage its parameters, it has a 'populate()' method
-
-   var i;
-
-   // Describe the resolver types
-   // The initial value will be deep copied to the parameter
-   // The control will be populated when they are created
-   var resolvers = [
-      {name: 'RegExpList', description: 'Type of image (flat, bias, ...)',
-            initial:{key: '?', reChecks: [{regexp: /.*/, replacement: '?'}]},  control: null},
-      {name: 'Constant', description: 'Constant value',
-            initial:{value: ''}, control: null},
-      {name: 'Integer', description: 'Integer value',
-            initial:{key: '?', format:'%4.4d'}, control: null},
-      {name: 'IntegerPair', description: 'Pair of integers (binning)',
-            initial:{key1: '?', key2: '?', format:'%dx%d'}, control: null}
-   ];
-
-   var resolverByName = function(name) {
-      for (var i=0; i<resolvers.length; i++) {
-         if (resolvers[i].name === name) return resolvers[i];
-      }
-      return null;
-   }
-   var resolverNames = [];
-   for ( i=0; i<resolvers.length; i++) {
-      resolverNames.push(resolvers[i].name);
-   }
-
-   // -- RuleSet support functions
-   // Get the names of the rules
-   var ruleNames = function(ruleSet) {
-      var names = [];
-      for (var i=0; i<ruleSet.length; i++) {
-         names.push(ruleSet[i].name);
-      }
-      return names;
-   }
-
-   // Get the rule by name
-   var ruleByName = function(ruleSet, name) {
-      for (var i=0; i<ruleSet.length; i++) {
-         if (ruleSet[i].name === name) return ruleSet[i];
-      }
-      return null;
-   }
-
-
-   // Model of variable - define a new variable
-   var defineVariable = function(name, description, resolver) {
-      var initialValues = deepCopyData(resolverByName(resolver).initial);
-      var initialParameters = {};
-      initialParameters[resolver] = initialValues;
-      return {
-         name: name,
-         description: description,
-         resolver: resolver,
-         parameters: initialParameters,
-      }
-   }
-
-   // Get the rule by name
-   var variableByName = function(variableList, name) {
-      for (var i=0; i<variableList.length; i++) {
-         if (variableList[i].name === name) return variableList[i];
-      }
-      return null;
-   }
-
-
-   return {
-      ruleNames: ruleNames,
-      ruleByName: ruleByName,
-      defineVariable: defineVariable,
-
-      resolverNames: resolverNames,
-      resolverByName: resolverByName,
-      resolvers: resolvers,
-
-   }
-}) ();
-
-
 
 
 // ========================================================================================================================
@@ -378,8 +270,6 @@ var ffM_GUI_RuleSet = (function (){
 
 
 
-
-
 function makeOKCancel(parentDialog) {
    var cancel_Button, ok_Button;
 
@@ -641,7 +531,7 @@ function MapFirstRegExpControl(parent, resolverName, rowStyle) {
 
    this.initialize = function(variableDefinition) {
       if (!variableDefinition.parameters.hasOwnProperty(resolverName)) {
-         variableDefinition.parameters[resolverName] = deepCopyData(ffM_RuleSet_Model.resolverByName(resolverName).initial);
+         variableDefinition.parameters[resolverName] = deepCopyData(ffM_Resolver.resolverByName(resolverName).initial);
       }
    }
 
@@ -668,7 +558,7 @@ function ConstantValueResolverControl(parent, resolverName, rowStyle) {
 
    this.initialize = function(variableDefinition) {
       if (!variableDefinition.parameters.hasOwnProperty(resolverName)) {
-         variableDefinition.parameters[resolverName] = deepCopyData(ffM_RuleSet_Model.resolverByName(resolverName).initial);
+         variableDefinition.parameters[resolverName] = deepCopyData(ffM_Resolver.resolverByName(resolverName).initial);
       }
    }
 
@@ -699,7 +589,7 @@ function IntegerValueResolverControl(parent, resolverName, rowStyle) {
 
    this.initialize = function(variableDefinition) {
       if (!variableDefinition.parameters.hasOwnProperty(resolverName)) {
-         variableDefinition.parameters[resolverName] = deepCopyData(ffM_RuleSet_Model.resolverByName(resolverName).initial);
+         variableDefinition.parameters[resolverName] = deepCopyData(ffM_Resolver.resolverByName(resolverName).initial);
       }
    }
 
@@ -735,7 +625,7 @@ function IntegerPairValueResolverControl(parent, resolverName, rowStyle) {
 
    this.initialize = function(variableDefinition) {
       if (!variableDefinition.parameters.hasOwnProperty(resolverName)) {
-         variableDefinition.parameters[resolverName] = deepCopyData(ffM_RuleSet_Model.resolverByName(resolverName).initial);
+         variableDefinition.parameters[resolverName] = deepCopyData(ffM_Resolver.resolverByName(resolverName).initial);
       }
    }
 
@@ -824,7 +714,7 @@ function VariableUIControl(parent, variableDefinitionFactory ) {
 
 
    //this.resolverSelection_GroupBox =  makeResolverSelection_ComboBox(this, resolverNames, resolverSelectionCallback);
-   this.resolverSelectionRow =  new ResolverSelectionRow(this, rowStyle, "type", ffM_RuleSet_Model.resolverNames, resolverSelectionCallback);
+   this.resolverSelectionRow =  new ResolverSelectionRow(this, rowStyle, "type", ffM_Resolver.resolverNames, resolverSelectionCallback);
    variableDetails_GroupBox.sizer.add(this.resolverSelectionRow);
 
    this.variableNameRow = new TextEntryRow(this, rowStyle, "name","name",
@@ -838,7 +728,7 @@ function VariableUIControl(parent, variableDefinitionFactory ) {
 
    var addNewResolverControl = function(resolverControl){
       variableDetails_GroupBox.sizer.add(resolverControl);
-      ffM_RuleSet_Model.resolverByName(resolverControl.resolverName).control = resolverControl;
+      ffM_Resolver.resolverByName(resolverControl.resolverName).control = resolverControl;
       resolverControl.hide();
    }
 
@@ -865,7 +755,7 @@ function VariableUIControl(parent, variableDefinitionFactory ) {
          that.currentResolver =null;
       }
       if (resolverName != null) {
-         var resolver = ffM_RuleSet_Model.resolverByName(resolverName);
+         var resolver = ffM_Resolver.resolverByName(resolverName);
          if (resolver === null) {
             throw "Invalid resolver '" + resolverName + "' for variable '"+ variableDefinition.name+"'";
          }
@@ -988,7 +878,8 @@ ConfigurationDialog.prototype = new Dialog;
 
 return {
    makeDialog: function(parent, ruleSet, ruleSetName) {
-      return new ConfigurationDialog(parent, ruleSet, ruleSetName);
+      throw 'Not Implemented';
+      // return new ConfigurationDialog(parent, ruleSet, ruleSetName);
    }
 
 }

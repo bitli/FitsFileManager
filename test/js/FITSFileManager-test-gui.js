@@ -1,6 +1,5 @@
 "use strict";
 
-"use strict";
 
 // FITSFileManager-test-gui
 
@@ -21,6 +20,7 @@
 #include "../../main/js/PJSR-logging.jsh"
 
 #include "../../main/js/FITSFileManager-helpers.jsh"
+#include "../../main/js/FITSFileManager-parameters.jsh"
 #include "../../main/js/FITSFileManager-text.jsh"
 
 
@@ -35,6 +35,7 @@
 
 #include <pjsr/ButtonCodes.jsh>
 #include <pjsr/FocusStyle.jsh>
+
 
 
 #include "../../main/js/FITSFileManager-config-gui.jsh"
@@ -156,8 +157,10 @@ function vP_testGuiRuleSet()
 
       if (result) {
 
+         // Writing to the console takes forever... be patient
          Console.writeln("vP_testGuiRuleSet: currentRuleSetName: " + Log.pp(dialog.currentRuleSetName,0,true));
          Console.writeln(Log.pp(dialog.ruleSet));
+         Console.flush();
        }
        if (!result) break;
 

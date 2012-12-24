@@ -6,6 +6,8 @@
 
 // ------------------------------------------------------------------------------------------------------------------------
 // Engine
+// Own and manage the file lists, their variables and the generation of the target file names.
+// Own the current 'compiled' configuration, the rules currently active with prepared parsers and lookup methods
 // ------------------------------------------------------------------------------------------------------------------------
 
 function FFM_Engine(guiParameters) {
@@ -16,10 +18,7 @@ function FFM_Engine(guiParameters) {
    this.outputDirectory = "C:/temp";
 #endif
 
-   // Will be initialiezd by setConfiguration but must not be cleared by a reset() (unless it is immediately reconfigured)
-   this.filterConverter = function() {throw "configuration not set - filterConverter"};
-   this.typeConverter =  function() {throw "configuration not set - typeConverter"};
-   this.remappedFITSkeywords = null;
+   this.currentConfiguration = null;
 
 
    // Variables that can be reset (when doing clear all)
@@ -33,8 +32,9 @@ function FFM_Engine(guiParameters) {
       this.keywordsSet = ffM_FITS_Keywords.makeKeywordsSet();   // array of names of all accumulated FITS keywords from all files
       this.shownFITSKeyNames = {}; // A FITSKeyWord is shown in the source file table if its name is a key of this object
       this.shownSyntheticKeyNames = {}; // A synthethic variable is shown in the source file table if its name is a key of this object
+      this.currentConfiguration = null;
 
-       this.resetTarget();
+      this.resetTarget();
     };
 
     this.resetTarget = function () {
@@ -53,28 +53,35 @@ function FFM_Engine(guiParameters) {
       this.nmbFilesSkipped = 0;
     };
 
-   // Set the rules to laod variables from images and context information
+
+
+   // -- Set the rules to load variables from images and context information
    // Called at initialization and in case of change
     this.setConfiguration = function(configuration) {
 #ifdef DEBUG
       debug("FFM_Engine.setConfiguration - " + configuration.name);
 #endif
-      this.filterConverter = ffM_LookupConverter.makeLookupConverter(configuration.filterConversions);
-      this.typeConverter = ffM_LookupConverter.makeLookupConverter(configuration.typeConversions);
-      this.remappedFITSkeywords = configuration.keywordMappingTable;
+      this.currentConfiguration = deepCopyData(configuration);
+
+      ffM_variables.installParsers(this.currentConfiguration);
 
       // We add default keywords, we do not remove old ones
       // Set 'is visible' for the list of default keywords
-      var defaultShownKeywords = configuration.defaultShownKeywords;
-      for (var i = 0; i < configuration.defaultShownKeywords.length; ++i) {
-         var name = configuration.defaultShownKeywords[i];
+      var defaultShownKeywords = ["IMAGETYP","FILTER","OBJECT"]; // TODO configuration.defaultShownKeywords;
+      for (var i = 0; i < defaultShownKeywords.length; ++i) {
+         var name = defaultShownKeywords[i];
          this.shownFITSKeyNames[name] = true;
       }
       // Currently all synthetic variables are visible by default
-      for (var i = 0; i<ffM_variables.syntheticVariableNames.length;i++) {
-         var name = ffM_variables.syntheticVariableNames[i];
+      var vl = this.currentConfiguration.variableList;
+      for (var i = 0; i<vl.length;i++) {
+         var name = vl[i].name;
          this.shownSyntheticKeyNames[name] = true;
       }
+
+#ifdef DEBUG
+      // debug("FFM_Engine.setConfiguration - " + Log.pp(this.currentConfiguration));
+#endif
 
     }
 
@@ -99,8 +106,7 @@ function FFM_Engine(guiParameters) {
             this.inputFITSKeywords.push(imageKeywords);
             // Create the synthethic variables using the desired rules
             var variables = ffM_variables.makeSynthethicVariables(fileNames[i], imageKeywords,
-                this.remappedFITSkeywords,
-                this.filterConverter, this.typeConverter);
+                this.currentConfiguration.variableList);
 
             this.inputVariables.push(variables);
             nmbFilesAdded++;

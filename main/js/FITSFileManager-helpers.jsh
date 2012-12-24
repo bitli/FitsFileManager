@@ -197,7 +197,7 @@ function loadSaveFile( sourceFilePath, targetFilePath ) {
 //=========================================================================================================================
 // Conversion support
 // ------------------------------------------------------------------------------------------------------------------------
-var ffM_LookupConverter = function() {
+var ffM_LookupConverter = (function() {
 
    var backReferenceRegExp = /&[0-9]+;/;
    var allBackReferenceNumberRegExp = /&([0-9])+;/g;
@@ -218,7 +218,7 @@ var ffM_LookupConverter = function() {
 
    // Create a lookup converter
    // Parameters:
-   //      conversionTable: Array  of 2 elements array: patter, replacement
+   //      conversionTable: Array  of 2 elements array: pattern, replacement
    // Return: A converter object that convert a string according to the rules.
    return {
       makeLookupConverter: function makeLookupConverter (conversionTable) {
@@ -276,11 +276,49 @@ var ffM_LookupConverter = function() {
          return c;
       }
    }
-} ();
+}) ();
 
 
 
 
+// TEMPORARY LOCATION
+
+// Global object containing the resolver definitions
+// These definitions are complemented by the modules when they are loaded
+var ffM_Resolver = (function(){
+
+   var i;
+
+   // Describe the resolver types
+   // The 'initial' property value will be deep copied to the parameter property when a new definition is created
+   // The 'control' property will be populatedby the GUI when they are created
+   var resolvers = [
+      {name: 'RegExpList', description: 'Type of image (flat, bias, ...)',
+            initial:{key: '?', reChecks: [{regexp: /.*/, replacement: '?'}]},  control: null, parser:null},
+      {name: 'Constant', description: 'Constant value',
+            initial:{value: ''}, control: null, parser:null},
+      {name: 'Integer', description: 'Integer value',
+            initial:{key: '?', format:'%4.4d'}, control: null, parser:null},
+      {name: 'IntegerPair', description: 'Pair of integers (binning)',
+            initial:{key1: '?', key2: '?', format:'%dx%d'}, control: null, parser:null}
+   ];
+
+   var resolverByName = function(name) {
+      for (var i=0; i<resolvers.length; i++) {
+         if (resolvers[i].name === name) return resolvers[i];
+      }
+      return null;
+   }
+   var resolverNames = [];
+   for ( i=0; i<resolvers.length; i++) {
+      resolverNames.push(resolvers[i].name);
+   }
+   return {
+      resolverNames: resolverNames,
+      resolverByName: resolverByName,
+      resolvers: resolvers,
+   }
+}) ();
 
 
 
@@ -449,32 +487,79 @@ var ffM_template = (function() {
 // Variable definition and lookup module
 // ====================================================================================================================
 
+
+
+
 var ffM_variables = (function() {
 
-
-
-   //   &binning     Binning from XBINNING and YBINNING formated as a pair of integers, like 2x2.
-   function binningParser(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords) {
-      var xBinning = parseInt(imageKeywords.getValue(remappedFITSkeywords['BinningX']));
-      var yBinning = parseInt(imageKeywords.getValue(remappedFITSkeywords['BinningY']));
-      if (isNaN(xBinning) || isNaN(yBinning)) {
-         return null;
-      } else {
-         return xBinning.toFixed(0)+"x"+yBinning.toFixed(0);
+   // Install all the parsers in the current configuration
+   var installParsers = function(rule) {
+      var variableList = rule.variableList;
+      for (var i=0; i<variableList.length; i++) {
+         var variableDefinition = variableList[i];
+         var resolverImpl = ffM_Resolver.resolverByName(variableDefinition.resolver);
+         var parameters = variableDefinition.parameters[variableDefinition.resolver];
+         variableDefinition.parser = resolverImpl.parserFactory(rule, parameters);
       }
    }
 
-   //   &exposure;   The exposure from EXPOSURE, formatted as an integer (assume seconds)
-   function exposureParser(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords) {
-      var exposure = imageKeywords.getValue(remappedFITSkeywords['Exposure']);
-      var exposureF =  parseFloat(exposure);
-      if (isNaN(exposureF)) {
-         return null;
-      } else {
-         return exposureF.toFixed(0);
-      }
+   // All parsing rules have the own rule parameters object as argument
+   // the fits values and the variables parsed to far
+
+   ffM_Resolver.resolverByName('Integer').parserFactory = function(rule, parameters){
+     return (
+         function parseInteger(ruleParameters,imageKeywords,imageVariables,inputFile) {
+            var valueString = imageKeywords.getValue(ruleParameters.key);
+            // Accept float also
+            var valueF =  parseFloat(valueString);
+            if (isNaN(valueF)) {
+               return null;
+            } else {
+               return format(ruleParameters.format, Math.round( valueF));
+            }
+         }
+      )
    }
 
+
+   ffM_Resolver.resolverByName('IntegerPair').parserFactory = function(rule, parameters){
+     return (
+         function parseIntegerPair(ruleParameters,imageKeywords,imageVariables,inputFile) {
+            var valueString1 = imageKeywords.getValue(ruleParameters.key1);
+         var valueString2 = imageKeywords.getValue(ruleParameters.key2);
+            // Accept float also
+            var valueF1 =  parseFloat(valueString1);
+            var valueF2 =  parseFloat(valueString2);
+            if (isNaN(valueF1) || isNaN(valueF2)) {
+               return null;
+            } else {
+               return format(ruleParameters.format, Math.round( valueF1), Math.round( valueF2));
+            }
+         }
+      )
+   }
+
+   ffM_Resolver.resolverByName('Constant').parserFactory = function(rule, parameters){
+     return (
+         function parseConstant(ruleParameters,imageKeywords,imageVariables,inputFile) {
+            return ruleParameters.value;
+         }
+      )
+   }
+
+   ffM_Resolver.resolverByName('RegExpList').parserFactory = function(rule, parameters) {
+      return (
+         function parseRegExpList(ruleParameters,imageKeywords,imageVariables,inputFile) {
+            var value = imageKeywords.getUnquotedValue(ruleParameters.key);
+            if (value === null) return null;
+
+            return 'TODOCONCERT';
+         }
+      )
+   }
+
+
+#ifdef NO
    //   &extension;   The extension of the source file (with the dot)
    function extensionParser(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords, inputFile) {
       return  File.extractExtension(inputFile);
@@ -483,29 +568,6 @@ var ffM_variables = (function() {
    //   &filename;   The file name part of the source file
    function filenameParser(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords, inputFile) {
        return  File.extractName(inputFile);
-   }
-
-   //   &filter:     The filter name from FILTER as lower case trimmed normalized name.
-   function filterParser(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords) {
-      var filter = imageKeywords.getUnquotedValue(remappedFITSkeywords['Filter']);
-      return filterConverter.convert(filter);
-   }
-
-   //   &temp;       The SET-TEMP temperature in C as an integer
-   function tempParser(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords) {
-      var temp = imageKeywords.getValue(remappedFITSkeywords['Temp']);
-      var tempF = parseFloat(temp);
-      if (isNaN(tempF)) {
-         return null;
-      } else {
-         return tempF.toFixed(0);
-      }
-   }
-
-   //   &type:       The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'
-   function typeParser(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords) {
-      var imageType = imageKeywords.getUnquotedValue(remappedFITSkeywords['Type']);
-      return typeConverter.convert(imageType);
    }
 
 
@@ -523,43 +585,8 @@ var ffM_variables = (function() {
          return null;
       }
    }
+#endif
 
-
-
-
-   // Variable definitions
-   // Each definiton has a name and a factory method
-   // All definitions are in an array (ordered)
-   var variableDefinitions = [];
-   function defineVariable(name, description, method) {
-      return {
-         name: name,
-         description: description,
-         method: method,
-      }
-   }
-
-
-   variableDefinitions.push(defineVariable('type','Type of image (flat, bias, ...)',typeParser));
-   variableDefinitions.push(defineVariable('filter','Filter (clear, red, ...)',filterParser));
-   variableDefinitions.push(defineVariable('exposure','Exposure in seconds',exposureParser));
-   variableDefinitions.push(defineVariable('temp','Temperature in C',tempParser));
-   variableDefinitions.push(defineVariable('binning','Binning as 1x1, 2x2, ...',binningParser));
-   variableDefinitions.push(defineVariable('night','night (experimental)',nightParser));
-   var shownVariablesNumber = variableDefinitions.length;
-   variableDefinitions.push(defineVariable('filename','Input file name',filenameParser));
-   variableDefinitions.push(defineVariable('extension','Input file extension',extensionParser));
-
-
-   // --- List of all synthethic variables and their comments (2 parallel arrays)
-   //     All synthethic variables are currently added to the columns of the file TreeBox
-   // TODO Should directly access definitions
-   var syntheticVariableNames = [];
-   var syntheticVariableComments = [];
-   for (var i=0; i<shownVariablesNumber; i++) {
-      syntheticVariableNames.push(variableDefinitions[i].name);
-      syntheticVariableComments.push(variableDefinitions[i].description);
-   }
 
 
 
@@ -571,18 +598,17 @@ var ffM_variables = (function() {
    // Parameters:
    //    inputFile: Full path of input file (to extract file anme etc...)
    //    imageKeywords: A FitsFileManager imageKeyword object (all FITS keywords of the image)
-   //    remappedFITSKeywords: Map from logical to real keywords
-   //    filterConverter: The method to convert filter values
-   //    typeConverter: The method to convert type values
-   function makeSynthethicVariables(inputFile, imageKeywords, remappedFITSkeywords, filterConverter, typeConverter) {
+   //    variableList: The variable definitions of the current rule
+    function makeSynthethicVariables(inputFile, imageKeywords, variableList) {
 
       var inputFileName =  File.extractName(inputFile);
 
-      var variables = [];
+      var variables = {};
 
-      for (var i=0; i<variableDefinitions.length; i++) {
-         var vd = variableDefinitions[i];
-         variables[vd.name] = vd.method(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords, inputFileName);
+      for (var i=0; i<variableList.length; i++) {
+         var variableDefinition = variableList[i];
+         var parameters = variableDefinition.parameters[variableDefinition.resolver];
+         variables[variableDefinition.name] = variableDefinition.parser(parameters,imageKeywords, variables, inputFileName);
       }
 
 #ifdef DEBUG
@@ -592,6 +618,7 @@ var ffM_variables = (function() {
       return variables;
 
    }
+
 
 
 
@@ -663,11 +690,14 @@ var ffM_variables = (function() {
       makeSynthethicVariables: makeSynthethicVariables,
       filterFITSValue: filterFITSValue,
       filterViewId: filterViewId,
-      syntheticVariableNames: syntheticVariableNames,
-      syntheticVariableComments: syntheticVariableComments,
+      installParsers: installParsers,
    }
 
 }) ();
+
+
+
+
 
 
 

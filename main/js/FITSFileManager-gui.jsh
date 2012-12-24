@@ -460,12 +460,13 @@ function MainDialog(engine, guiParameters) {
    this.configuration_Button.text = "Configure" //Text.T.LOADSAVE_BUTTON_TEXT;
    //this.configure_Button.toolTip = Text.H.LOADSAVE_BUTTON_TOOLTIP;
    this.configuration_Button.enabled = true;
+#ifdef TODO
    this.configurationDialog = new ConfigurationDialog(this, engine, guiParameters);
    this.configuration_Button.onClick = function() {
       this.dialog.configurationDialog.execute();
       this.dialog.configurationName_Label.text		=  ffM_Configuration.configurationList[guiParameters.currentConfigurationIndex];
    }
-
+#endif
 
 
    // Target template --------------------------------------------------------------------------------------
@@ -1041,12 +1042,12 @@ function MainDialog(engine, guiParameters) {
    this.showOrHideFITSkey = function () {
       var allFITSKeyNames = this.engine.keywordsSet.allValueKeywordNameList;
       // +1 as the file name is always visible
-      for (var i = 0; i<ffM_variables.syntheticVariableNames.length;i++) {
+      for (var i = 0; i<ffM_Configuration.syntheticVariableNames.length;i++) {
          var c = i + 1;
-         this.filesTreeBox.showColumn( c, this.engine.shownSyntheticKeyNames.hasOwnProperty(ffM_variables.syntheticVariableNames[i]));
+         this.filesTreeBox.showColumn( c, this.engine.shownSyntheticKeyNames.hasOwnProperty(ffM_Configuration.syntheticVariableNames[i]));
       }
       for (var i = 0; i<allFITSKeyNames.length;i++) {
-         var c = i + 1 + ffM_variables.syntheticVariableNames.length;
+         var c = i + 1 + ffM_Configuration.syntheticVariableNames.length;
          this.filesTreeBox.showColumn( c, this.engine.shownFITSKeyNames.hasOwnProperty(allFITSKeyNames[i]));
       }
    }
@@ -1066,8 +1067,8 @@ function MainDialog(engine, guiParameters) {
       this.engine.keywordsSet = ffM_FITS_Keywords.makeKeywordsSet(); // clear
 
       // Add the synthetic keys columns
-      for (var iSynthKey = 0; iSynthKey<ffM_variables.syntheticVariableNames.length; iSynthKey++) {
-         var name = ffM_variables.syntheticVariableNames[iSynthKey];
+      for (var iSynthKey = 0; iSynthKey<ffM_Configuration.syntheticVariableNames.length; iSynthKey++) {
+         var name = ffM_Configuration.syntheticVariableNames[iSynthKey];
          this.filesTreeBox.numberOfColumns++;// add new column
          this.filesTreeBox.setHeaderText(this.filesTreeBox.numberOfColumns-1, name);//set name of new column
 #ifdef DEBUG
@@ -1112,13 +1113,13 @@ function MainDialog(engine, guiParameters) {
 #ifdef DEBUG
          debug("rebuildFilesTreeBox: adding " + Object.keys(syntheticKeywords) + " synthetics keys, " + keys.length + " FITS keys to row " + i);
 #endif
-         for (var iSynthKey = 0; iSynthKey<ffM_variables.syntheticVariableNames.length; iSynthKey++) {
-            var name = ffM_variables.syntheticVariableNames[iSynthKey];
+         for (var iSynthKey = 0; iSynthKey<ffM_Configuration.syntheticVariableNames.length; iSynthKey++) {
+            var name = ffM_Configuration.syntheticVariableNames[iSynthKey];
             var textSynthKey = syntheticKeywords[name];
             node.setText(iSynthKey+colOffset, textSynthKey ? textSynthKey : "");
          }
          // Skip next columns
-         colOffset += ffM_variables.syntheticVariableNames.length;
+         colOffset += ffM_Configuration.syntheticVariableNames.length;
 
          // Adding FITS keyword columns (based on FITS keywords in current file and map of keywords to column index)
 #ifdef DEBUG
@@ -1448,7 +1449,8 @@ CompletionDialog.prototype = new Dialog;
 // Configuration dialog
 // ========================================================================================================================
 // ---------------------------------------------------------------------------------------------------------
-function ConfigurationDialog( parentDialog, engine, guiParameters) {
+#ifdef NO
+ function ConfigurationDialog( parentDialog, engine, guiParameters) {
    this.__base__ = Dialog;
    this.__base__();
    this.engine = engine;
@@ -1545,9 +1547,9 @@ function ConfigurationDialog( parentDialog, engine, guiParameters) {
    mappingRules_ComboBox.currentItem = guiParameters.currentConfigurationIndex;
 
    mappingRules_ComboBox.onItemSelected = function() {
-#ifdef DEBUG
+ ifdef DEBUG
       debug("mappingRules_ComboBox: onItemSelected " + this.currentItem );
-#endif
+ endif
        if (this.currentItem >= mappingList.length) {
           return; // Protect against CR in input field
        }
@@ -1644,7 +1646,7 @@ function ConfigurationDialog( parentDialog, engine, guiParameters) {
 
 }
 ConfigurationDialog.prototype = new Dialog;
-
+#endif
 
 // ========================================================================================================================
 // FITS and synthetic keys dialog
@@ -1718,9 +1720,9 @@ function FITSKeysDialog( parentDialog, engine) {
       }
       var variableRoootNode = this.parent.keyword_TreeBox.child(0);
       engine.shownSyntheticKeyNames = {};
-      for (var i = 0; i< ffM_variables.syntheticVariableNames.length; i++) {
+      for (var i = 0; i< ffM_Configuration.syntheticVariableNames.length; i++) {
          var checked = variableRoootNode.child(i).checked; // List and rows are in same order
-         var name = ffM_variables.syntheticVariableNames[i];
+         var name = ffM_Configuration.syntheticVariableNames[i];
          if (checked) {
              engine.shownSyntheticKeyNames[name] = true;
          }
@@ -1795,10 +1797,10 @@ function FITSKeysDialog( parentDialog, engine) {
 
 
       // Fill the name column form a fixed list of synthetic keywords names
-      for (var i =0; i<ffM_variables.syntheticVariableNames.length; i++) {
+      for (var i =0; i<ffM_Configuration.syntheticVariableNames.length; i++) {
          var node = new TreeBoxNode(synthRootNode);
-         node.setText( 0, ffM_variables.syntheticVariableNames[i] );
-         node.checked = engine.shownSyntheticKeyNames.hasOwnProperty(ffM_variables.syntheticVariableNames[i]);;
+         node.setText( 0, ffM_Configuration.syntheticVariableNames[i] );
+         node.checked = engine.shownSyntheticKeyNames.hasOwnProperty(ffM_Configuration.syntheticVariableNames[i]);;
       }
 
       // Create list of FITS keywords used as variables as a second subtree
@@ -1847,8 +1849,8 @@ function FITSKeysDialog( parentDialog, engine) {
       // Update the values of the synthethic keywords from a predefined list and engine values
       var synthRootNode = this.keyword_TreeBox.child(0);
 
-      for (var i =0; i<ffM_variables.syntheticVariableNames.length; i++) {
-         var keyName = ffM_variables.syntheticVariableNames[i];
+      for (var i =0; i<ffM_Configuration.syntheticVariableNames.length; i++) {
+         var keyName = ffM_Configuration.syntheticVariableNames[i];
          var variables = engine.inputVariables[index];
          var variable = variables[keyName];
          if (variable !== null) {
@@ -1860,7 +1862,7 @@ function FITSKeysDialog( parentDialog, engine) {
 
             synthRootNode.child(i).setText(1,variable);
             synthRootNode.child(i).setText(2,'');
-            synthRootNode.child(i).setText(3, ffM_variables.syntheticVariableComments[i]);
+            synthRootNode.child(i).setText(3, ffM_Configuration.syntheticVariableComments[i]);
          } else {
             synthRootNode.child(i).setTextColor(0,0x00FF0000);
             synthRootNode.child(i).setText(1,'');

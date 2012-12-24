@@ -145,7 +145,7 @@ var ffM_allTests = {
       pT_assertEquals(7,d.a[2].anobj);
    },
 
-#ifdef NO
+
    // Test our mock variable resolver
    test_ffM_rv_found: function() {
       pT_assertEquals("toto", ffM_rv({titi: "toto"})("titi"));
@@ -489,7 +489,7 @@ var ffM_allTests = {
      // pT_assertEquals("string",guiParameters.targetFileNameCompiledTemplate);
    },
 
-#endif
+
 
 
 }
