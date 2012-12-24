@@ -4,7 +4,7 @@
 
 
 // This file contains tww modules:
-//    ffM_GUI_support - General utility controls
+//    ffM_GUI_support - General utility controls (currently used in this file only)
 //    ffM_GUI_config  - Dialog to manage configuration sets
 
 
@@ -267,67 +267,90 @@ var ffM_GUI_support = (function (){
 // ========================================================================================================================
 // ffM_GUI_config - Configuration dialog
 //    The Dialog used to update a ConfigurationSet
-// A factory method is exposed to create the Dialgo,
-// the dialog expose the methods to configure its data and get the result
+// Usage:
+//    A factory method is exposed to create the Dialog
+//    Before being executed it must be configured with the ConfigurationSet and the name of the configuration
+//       to select at start.
+//    The dialog will make a local copy of the Configuration object and update it in place. It will leave
+//    data for all resolvers selected for a variable, so in case a resolver is changed and then changed back to
+//    the initial value, the original data is recovered.  It is exepected that this redundant data will be
+//    removed before export.
+//    The dialog expose properties to get the updated ConfigurationSet and currently edited set,
+//    the caller should use them in case of successful return (and ignored them in case of cancel).
 // ========================================================================================================================
 
 var ffM_GUI_config = (function (){
 
    // -- Private methods
-  function makeOKCancel(parentDialog) {
-     var cancel_Button, ok_Button;
+   function makeOKCancel(parentDialog) {
+      var cancel_Button, ok_Button;
 
-     // TODO Add container first
-     var c = new Control(parentDialog);
-     c.sizer = new HorizontalSizer;
-     c.sizer.margin = 6;
-     c.sizer.spacing = 4;
+      // TODO Add container first
+      var c = new Control(parentDialog);
+      c.sizer = new HorizontalSizer;
+      c.sizer.margin = 6;
+      c.sizer.spacing = 4;
 
-     cancel_Button = new PushButton( c );
-     cancel_Button.text = "Cancel";
-     cancel_Button.enabled = true;
-     cancel_Button.onClick = function() {
-        debug("cancel");
-        parentDialog.cancel();
-     }
-     ok_Button = new PushButton( c );
-     ok_Button.text = "OK";
-     ok_Button.enabled = true;
-     ok_Button.onClick = function() {
-        debug("ok");
-        parentDialog.ok();
-     }
+      cancel_Button = new PushButton( c );
+      cancel_Button.text = "Cancel";
+      cancel_Button.enabled = true;
+      cancel_Button.onClick = function() {
+         debug("cancel");
+         parentDialog.cancel();
+      }
+      ok_Button = new PushButton( c );
+      ok_Button.text = "OK";
+      ok_Button.enabled = true;
+      ok_Button.onClick = function() {
+         debug("ok");
+         parentDialog.ok();
+      }
 
-     c.sizer.addStretch();
-     c.sizer.add(cancel_Button);
-     c.sizer.add(ok_Button);
+      c.sizer.addStretch();
+      c.sizer.add(cancel_Button);
+      c.sizer.add(ok_Button);
 
-     return c;
+      return c;
 
   }
 
   // ---------------------------------------------------------------------------------------------------------
 
   // Top pane - Selection of configuration
-  var makeConfigurationSelection_ComboBox = function(parent, configurationSetNames, configurationSelectedCallback) {
-     var i;
-     var comboBox = new ComboBox( parent );
-     comboBox.toolTip = Text.H.GROUP_TEMPLATE_TOOLTIP;
-     comboBox.enabled = true;
-     comboBox.editEnabled = false;
-     for (i=0; i<configurationSetNames.length;i++) {
-        comboBox.addItem(configurationSetNames[i]);
-     }
-     comboBox.currentItem = 0;
+  function ConfigurationSelection_ComboBox (parent, initialNames, configurationSelectedCallback) {
+      this.__base__ = ComboBox;
+      this.__base__(parent);
 
-     comboBox.onItemSelected = function() {
-        if (this.currentItem>=0) {
-           configurationSelectedCallback(configurationSetNames[this.currentItem]);
-        }
-     }
+      this.configurationNames = initialNames;
 
-     return comboBox;
+      var i;
+      this.toolTip = Text.H.GROUP_TEMPLATE_TOOLTIP;
+      this.enabled = true;
+      this.editEnabled = false;
+      for (i=0; i<initialNames.length;i++) {
+         this.addItem(initialNames[i]);
+      }
+      if (this.configurationNames.length>0) {
+         this.currentItem = 0;
+      }
+
+      this.onItemSelected = function() {
+         if (this.currentItem>=0 && this.currentItems<this.configurationNames.length) {
+            configurationSelectedCallback(initialNames[this.configurationNames]);
+         }
+      }
+
+      this.configure = function(names, selectedName) {
+         //this.clear();
+         for (i=0; i<names.length;i++) {
+            this.addItem(names[i]);
+            if (selectedName === names[i]) {
+               this.currentItem = i;
+            }
+         }
+      }
   }
+  ConfigurationSelection_ComboBox.prototype = new ComboBox;
 
 
 
@@ -853,7 +876,7 @@ var ffM_GUI_config = (function (){
   // the configurationSet and new current configuration name properties from the dialog to get the current
   // state.
   // There is currently no way to add, delete or rename configurations
-  function ConfigurationDialog( parentDialog, configurationSetNames) {
+  function ConfigurationDialog( parentDialog) {
      this.__base__ = Dialog;
      this.__base__();
      var that = this;
@@ -873,25 +896,17 @@ var ffM_GUI_config = (function (){
      this.sizer.margin = 6;
      this.sizer.spacing = 4;
 
-     // Configure for current
-     this.configure = function configure(originalConfigurationSet, currentConfigurationName) {
-        this.configurationSet = deepCopyData(originalConfigurationSet);
-        this.currentConfigurationName = currentConfigurationName;
-        // Initialize content
-        configurationSetSelectedCallback(currentConfigurationName);
-     }
-
 
      // -- GUI actions callbacks
      // configuration changed (also used in initialization)
-     var configurationSetSelectedCallback = function(configurationSetName) {
-        Log.debug("ConfigurationDialog: configurationSetSelectedCallback - ConfigurationSet selected:",configurationSetName);
-        var selectedConfiguration = ffM_ConfigurationSet_Model.ruleByName(that.configurationSet, configurationSetName);
+     var configurationSelectedCallback = function(configurationName) {
+        Log.debug("ConfigurationDialog: configurationSelectedCallback - ConfigurationSet selected:",configurationName);
+        var selectedConfiguration = ffM_ConfigurationSet_Model.ruleByName(that.configurationSet, configurationName);
         if (selectedConfiguration == null) {
-           throw "Invalid configuration set name '" + configurationSetName +"'";
+           throw "PROGRAM ERROR - Invalid configuration set name '" + configurationName +"'";
         }
         // Update model
-        that.currentConfigurationName = configurationSetName;
+        that.currentConfigurationName = configurationName;
         // Update UI
         that.variableUI.updateVariableList(selectedConfiguration.variableList);
      }
@@ -907,8 +922,8 @@ var ffM_GUI_config = (function (){
      // -- Build the top level pane
 
      // Top pane - select configuration to operate upon
-     var configurationSelection_ComboBox = makeConfigurationSelection_ComboBox(this, configurationSetNames, configurationSetSelectedCallback);
-     this.sizer.add(configurationSelection_ComboBox);
+     this.configurationSelection_ComboBox = new ConfigurationSelection_ComboBox(this, [], configurationSelectedCallback);
+     this.sizer.add(this.configurationSelection_ComboBox);
 
      // Middle pane - define variables, their resolvers and the resolver's parameters
      this.variableUI = new VariableUIControl(this, variableDefinitionFactory);
@@ -921,6 +936,17 @@ var ffM_GUI_config = (function (){
      this.setVariableSize();
      //this.adjustToContents();
 
+     // -- Configure before executing
+     this.configure = function configure(originalConfigurationSet, configurationName) {
+        this.configurationSet = deepCopyData(originalConfigurationSet);
+        this.currentConfigurationName = configurationName;
+        var configurationNames = ffM_ConfigurationSet_Model.ruleNames(this.configurationSet);
+        // Initialize content
+        this.configurationSelection_ComboBox.configure(configurationNames, this.currentConfigurationName);
+        configurationSelectedCallback(this.currentConfigurationName);
+     }
+
+
 
   }
   ConfigurationDialog.prototype = new Dialog;
@@ -928,8 +954,8 @@ var ffM_GUI_config = (function (){
 
 
   return {
-     makeDialog: function(parent, configurationSet, configurationSetName) {
-        return new ConfigurationDialog(parent, configurationSet, configurationSetName);
+     makeDialog: function(parent, configurationSet, configurationName) {
+        return new ConfigurationDialog(parent, configurationSet, configurationName);
      }
 
   }
