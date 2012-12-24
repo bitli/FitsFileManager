@@ -545,7 +545,7 @@ function MainDialog(engine, guiParameters) {
 #endif
       } else {
          try {
-            guiParameters.sourceFileNameRegExp = RegExp(re);
+            guiParameters.sourceFileNameRegExp = regExpFromUserString(re);
             this.textColor = 0x000000;
 #ifdef DEBUG
             debug("sourceTemplate_Edit: onTextUpdated: regexp: " + guiParameters.sourceFileNameRegExp);

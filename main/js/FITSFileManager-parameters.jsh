@@ -550,7 +550,7 @@ FFM_GUIParameters.prototype.loadSettings = function() {
          };
          if ( (o = load( "sourceFileNameRegExp",    DataType_String )) !== null ) {
             try {
-               this.sourceFileNameRegExp = RegExp(o);
+               this.sourceFileNameRegExp = RegExpFromString(o);
             } catch (err) {
                // Default in case of error in load
                this.sourceFileNameRegExp = FFM_DEFAULT_SOURCE_FILENAME_REGEXP;
