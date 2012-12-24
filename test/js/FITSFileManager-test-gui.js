@@ -85,9 +85,9 @@ var ffM_TestConfigUi = (function(){
    .addVariable(defineVariable('exposure','Exposure in seconds','Integer'))
    .addVariable(defineVariable('temp','Temperature in C','Integer'))
    .addVariable(defineVariable('binning','Binning as 1x1, 2x2, ...','IntegerPair'))
-   .addVariable(defineVariable('night','night (experimental)','Constant'))
-   .addVariable(defineVariable('filename','Input file name','Constant'))
-   .addVariable(defineVariable('extension','Input file extension','Constant'))
+   .addVariable(defineVariable('night','night (experimental)','Night'))
+   .addVariable(defineVariable('filename','Input file name','FileName'))
+   .addVariable(defineVariable('extension','Input file extension','FileExtension'))
    .build();
 
 #ifdef TESTRULESETS

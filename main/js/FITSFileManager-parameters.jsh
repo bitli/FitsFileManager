@@ -244,25 +244,25 @@ var defaultRuleSet =
             { RegExpList:
                 { key: "IMAGETYP",
                   reChecks:
-                    [ { regexp: /flat/i,
+                    [ { regexp: '/flat/i',
                         replacement: "flat"
                       },
-                      { regexp: /bias/i,
+                      { regexp: '/bias/i',
                         replacement: "bias"
                       },
-                      { regexp: /offset/i,
+                      { regexp: '/offset/i',
                         replacement: "boas"
                       },
-                      { regexp: /dark/i,
+                      { regexp: '/dark/i',
                         replacement: "dark"
                       },
-                      { regexp: /light/i,
+                      { regexp: '/light/i',
                         replacement: "light"
                       },
-                      { regexp: /science/i,
+                      { regexp: '/science/i',
                         replacement: "light"
                       },
-                      { regexp: /.*/,
+                      { regexp: '/.*/',
                         replacement: "&0;"
                       },
                     ]
@@ -276,22 +276,22 @@ var defaultRuleSet =
             { RegExpList:
                 { key: "FILTER",
                   reChecks:
-                    [ { regexp: /green/i,
+                    [ { regexp: '/green/i',
                         replacement: "green"
                       },
-                      { regexp: /blue/i,
+                      { regexp: '/blue/i',
                         replacement: "blue"
                       },
-                      { regexp: /red/i,
+                      { regexp: '/red/i',
                         replacement: "red"
                       },
-                      { regexp: /clear/i,
-                        replacement: "celar"
+                      { regexp: '/clear/i',
+                        replacement: "clear"
                       },
-                      { regexp: /luminance/i,
+                      { regexp: '/luminance/i',
                         replacement: "luminance"
                       },
-                      { regexp: /.*/,
+                      { regexp: '/.*/',
                         replacement: "&0"
                       }
                     ]
@@ -336,28 +336,29 @@ var defaultRuleSet =
 
         { name: "night",
           description: "night (experimental)",
-          resolver: "Constant",
+          resolver: "Night",
           parameters:
-            { Constant:
-                { value: ""
+            { Night:
+                { keyLongObs: "LONG-OBS",
+                  keyJD: "JD"
                 }
             }
         },
         { name: "filename",
           description: "Input file name",
-          resolver: "Constant",
+          resolver: "FileName",
           parameters:
-            { Constant:
-                { value: ""
+            { FileName:
+                {
                 }
             }
         },
         { name: "extension",
           description: "Input file extension",
-          resolver: "Constant",
+          resolver: "FileExtension",
           parameters:
-            { Constant:
-                { value: ""
+            { FileExtension:
+                {
                 }
             }
         }

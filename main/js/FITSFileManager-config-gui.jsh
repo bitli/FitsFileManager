@@ -327,7 +327,9 @@ var makeRuleSetSelection_ComboBox = function(parent, ruleSetNames, ruleSetSelect
 
 
 
-
+// Hellper to validate and normalize input files,
+// There is no real conversion, as we keep all information in text format
+// the toString() is just to avoid crash and help debug in case a non string object is received
 var propertyTypes = {
    FREE_TEXT: {
       name: "FREE_TEXT",
@@ -336,8 +338,8 @@ var propertyTypes = {
    },
    REG_EXP: {
       name: "REG_EXP",
-      propertyToText: function(value) {return regExpToString(value)},
-      textToProperty: function(text) {return regExpFromUserString(text)},
+      propertyToText: function(value) {return value.toString()},
+      textToProperty: function(text) {return regExpToString(regExpFromUserString(text))},
    }
 }
 
@@ -639,6 +641,38 @@ function IntegerPairValueResolverControl(parent, resolverName, rowStyle) {
 }
 IntegerPairValueResolverControl.prototype = new Control;
 
+// ..............................................................................................
+
+function NightResolverControl(parent, resolverName, rowStyle) {
+   this.__base__ = Control;
+   this.__base__(parent);
+
+   this.resolverName = resolverName;
+
+   this.sizer = new VerticalSizer;
+
+   var key1Row = new TextEntryRow(this, rowStyle, "LONG_OBS key", "keyLongObs", propertyTypes.FREE_TEXT, null);
+   this.sizer.add(key1Row);
+
+   var key2Row = new TextEntryRow(this, rowStyle, "JD key", "keyJD", propertyTypes.FREE_TEXT, null);
+   this.sizer.add(key2Row);
+
+
+   this.initialize = function(variableDefinition) {
+      if (!variableDefinition.parameters.hasOwnProperty(resolverName)) {
+         variableDefinition.parameters[resolverName] = deepCopyData(ffM_Resolver.resolverByName(resolverName).initial);
+      }
+   }
+
+   this.populate = function(variableDefinition) {
+      // Should probably be somewhere else
+      this.initialize(variableDefinition);
+      key1Row.updateTarget(variableDefinition.parameters[resolverName]);
+      key2Row.updateTarget(variableDefinition.parameters[resolverName]);
+   }
+}
+NightResolverControl.prototype = new Control;
+
 
 
 
@@ -741,6 +775,11 @@ function VariableUIControl(parent, variableDefinitionFactory ) {
 
    addNewResolverControl(new MapFirstRegExpControl(variableDetails_GroupBox,'RegExpList', rowStyle));
 
+   addNewResolverControl(new NightResolverControl(variableDetails_GroupBox,'Night', rowStyle));
+
+   // FileName and FileExtension have no parameter
+   ffM_Resolver.resolverByName('FileName').control = null
+   ffM_Resolver.resolverByName('FileExtension').control = null
 
    variableDetails_GroupBox.sizer.addStretch();
 
@@ -750,10 +789,11 @@ function VariableUIControl(parent, variableDefinitionFactory ) {
    // The resolver name was updated (by select box, by changing variable or initially)
    // null if no resolver (like an empty variable list)
    this.updateResolver = function(resolverName) {
-      if (that.currentResolver != null) {
+      // There could be no controller if there is no parameter
+      if (that.currentResolver != null && that.currentResolver.control !== null) {
          that.currentResolver.control.hide();
-         that.currentResolver =null;
       }
+      that.currentResolver =null;
       if (resolverName != null) {
          var resolver = ffM_Resolver.resolverByName(resolverName);
          if (resolver === null) {
@@ -764,8 +804,10 @@ function VariableUIControl(parent, variableDefinitionFactory ) {
             that.currentVariableDefinition.resolver = resolverName;
             // Populate and show it
             that.currentResolver = resolver;
-            resolver.control.populate(that.currentVariableDefinition );
-            resolver.control.show();
+            if (resolver.control !== null) {
+               resolver.control.populate(that.currentVariableDefinition );
+               resolver.control.show();
+            }
          }
       }
    }
@@ -878,8 +920,7 @@ ConfigurationDialog.prototype = new Dialog;
 
 return {
    makeDialog: function(parent, ruleSet, ruleSetName) {
-      throw 'Not Implemented';
-      // return new ConfigurationDialog(parent, ruleSet, ruleSetName);
+      return new ConfigurationDialog(parent, ruleSet, ruleSetName);
    }
 
 }

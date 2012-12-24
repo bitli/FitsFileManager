@@ -218,7 +218,7 @@ var ffM_LookupConverter = (function() {
 
    // Create a lookup converter
    // Parameters:
-   //      conversionTable: Array  of {regexp:, replacement:}
+   //      conversionTable: Array  of {regexp:, replacement:}, teh regexp is a string
    // Return: A converter object that convert a string according to the rules.
    return {
       makeLookupConverter: function makeLookupConverter (conversionTable) {
@@ -232,7 +232,7 @@ var ffM_LookupConverter = (function() {
          var compiledConversionTable = [];
          for (var i=0; i<conversionTable.length; i++) {
             var conversionEntry = conversionTable[i];
-            var conversionRegExp = conversionEntry.regexp;
+            var conversionRegExp = regExpFromString(conversionEntry.regexp);
             var conversionResultTemplate = conversionEntry.replacement;
             var conversionResultFunction;
             if (conversionResultTemplate==="&0;") {
@@ -294,13 +294,19 @@ var ffM_Resolver = (function(){
    // The 'control' property will be populatedby the GUI when they are created
    var resolvers = [
       {name: 'RegExpList', description: 'Type of image (flat, bias, ...)',
-            initial:{key: '?', reChecks: [{regexp: /.*/, replacement: '?'}]},  control: null, parser:null},
+            initial:{key: '?', reChecks: [{regexp: /.*/, replacement: '?'}]},  control: null, parserFactory:null},
       {name: 'Constant', description: 'Constant value',
-            initial:{value: ''}, control: null, parser:null},
+            initial:{value: ''}, control: null, parserFactory:null},
       {name: 'Integer', description: 'Integer value',
-            initial:{key: '?', format:'%4.4d'}, control: null, parser:null},
+            initial:{key: '?', format:'%4.4d'}, control: null, parserFactory:null},
       {name: 'IntegerPair', description: 'Pair of integers (binning)',
-            initial:{key1: '?', key2: '?', format:'%dx%d'}, control: null, parser:null}
+            initial:{key1: '?', key2: '?', format:'%dx%d'}, control: null, parserFactory:null},
+      {name: 'FileName', description: 'Source file name',
+            initial:{}, control: null, parserFactory:null},
+      {name: 'FileExtension', description: 'Source file extension',
+            initial:{}, control: null, parserFactory:null},
+      {name: 'Night', description: 'Night (experimental)',
+            initial:{keyLongObs: 'LONG-OBS', keyJD: 'JD'}, control: null, parserFactory:null}
    ];
 
    var resolverByName = function(name) {
@@ -560,35 +566,39 @@ var ffM_variables = (function() {
       )
    }
 
-
-#ifdef NO
-   //   &extension;   The extension of the source file (with the dot)
-   function extensionParser(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords, inputFile) {
-      return  File.extractExtension(inputFile);
+   ffM_Resolver.resolverByName('FileName').parserFactory = function(rule, parameters){
+     return (
+         function parseFileName(ruleParameters,imageKeywords,imageVariables,inputFile) {
+            return  File.extractName(inputFile);
+         }
+      )
    }
 
-   //   &filename;   The file name part of the source file
-   function filenameParser(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords, inputFile) {
-       return  File.extractName(inputFile);
+   ffM_Resolver.resolverByName('FileExtension').parserFactory = function(rule, parameters){
+     return (
+         function parseFileExtension(ruleParameters,imageKeywords,imageVariables,inputFile) {
+            return  File.extractExtension(inputFile);
+         }
+      )
    }
 
-
-   //  &night;     EXPERIMENTAL
-   function nightParser(remappedFITSkeywords, typeConverter, filterConverter, imageKeywords) {
-      var longObs = imageKeywords.getValue(remappedFITSkeywords['NightLongObs']); // East in degree
-      // longObs = -110;
-      // TODO Support default longObs
-      var jd = imageKeywords.getValue(remappedFITSkeywords['NightJD']);
-      if (longObs && jd) {
-         var jdLocal = Number(jd) + (Number(longObs) / 360.0) ;
-         var nightText = (Math.floor(jdLocal) % 1000).toString();
-         return nightText;
-      } else {
-         return null;
-      }
+   ffM_Resolver.resolverByName('Night').parserFactory = function(rule, parameters){
+     return (
+         function parseNight(ruleParameters,imageKeywords,imageVariables,inputFile) {
+            var longObs = imageKeywords.getValue(ruleParameters.keyLongObs); // East in degree
+            // longObs = -110;
+            // TODO Support default longObs
+            var jd = imageKeywords.getValue(ruleParameters.keyJD);
+            if (longObs && jd) {
+               var jdLocal = Number(jd) + (Number(longObs) / 360.0) ;
+               var nightText = (Math.floor(jdLocal) % 1000).toString();
+               return nightText;
+            } else {
+               return null;
+            }
+         }
+      )
    }
-#endif
-
 
 
 
