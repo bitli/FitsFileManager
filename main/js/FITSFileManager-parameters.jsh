@@ -115,86 +115,6 @@ var ffM_ConfigurationSet_Model = (function(){
 var ffM_Configuration = (function() {
 
 #ifdef NO
-// This module is a singleton that supports 'named configuration' data objects,
-   // and the set of all named configurations known to FITSFileManager.
-
-   // A named configuration is a named set of parameters that can be selected as a whole,
-   // typically the configuration suitable for an observatory, an instrument and a user.
-   // NOT ALL ELEMENTS OF A CONFIGURATION CAN YET BE EDITED INTERACTIVELY.
-
-   // --- constants (predefined configuration elements)  ----------------------
-
-   // --- Mapping of 'logical' FITS keywords (referenced in the code) to actual FITS keywords
-   //     The logical keyword is by convention a 'PascalCased' name of the variable using
-   //     the keyword and some differentiating suffix if multiple keywords are required.
-   //     This does not really matter, just more mnemotecnic than random text
-   // TODO Support optional and multiple keywords (as EXPOSURE and EXPTIME) and default value
-   var keywordMapping_DEFAULT = {
-       // Commonly used
-      "BinningX": "XBINNING",
-      "BinningY": "YBINNING",
-      "Exposure": "EXPOSURE", // Could also be EXPTIME
-      "Filter"  : "FILTER",
-      "Temp"    : "SET-TEMP", // Also CCDTEMP and CCD-TEMP
-      "Type"    : "IMAGETYP",
-      // For experimental keyword
-      "NightLongObs" : "LONG-OBS",
-      // We should really use DATE-OBS and convert
-      "NightJD"      : "JD",
-   };
-
-   var keywordMapping_CAHA = {
-      // Commonly used
-      "BinningX": "CDELT1",
-      "BinningY": "CDELT2",
-      "Exposure": "EXPTIME",
-      "Filter"  : "INSFLNAM",
-      "Temp"    : "CCDTEMP",
-      "Type"    : "IMAGETYP",
-      // For experimental keyword
-      "NightLongObs": "CAHA TEL GEOLON",
-      // We should really used DATE-OBS (if available) and convert
-      "NightJD"     : "JUL-DATE",
-   };
-
-   // -- Rules of conversion
-   // Array of 2 element arrays,
-   // regexp to match source value, followed by replacement string
-   // Back reference using the &<number>; syntac is allowed
-   // CURRENTLY USED ONLY AT INITIALIZATION TIME OF ENGINE
-
-   var filterConversions_DEFAULT = [
-      [/green/i,     'green'],
-      [/red/i,       'red'],
-      [/blue/i,      'blue'],
-      [/clear/i,     'clear'],
-      [/luminance/i, 'luminance'],
-      [/.*/i,        '&0;'],
-   ];
-   var filterConversions_CAHA = [
-      [/.*/i,        '&0;'],
-   ];
-
-
-   var typeConversions_DEFAULT = [
-      [/flat/i,     'flat'],
-      [/bias/i,     'bias'],
-      [/offset/i,   'bias'],
-      [/dark/i,     'dark'],
-      [/light/i,    'light'],
-      [/science/i,  'light'],
-      [/.*/i,       '&0;'],
-   ];
-
-   var typeConversions_CAHA = [
-      [/flat/i,     'flat'],
-      [/bias/i,     'bias'],
-      [/offset/i,   'bias'],
-      [/dark/i,     'dark'],
-      [/light/i,    'light'],
-      [/science/i,  'light'],
-      [/.*/i,       '&0;'],
-   ];
 
    // List of FITS keywords shown by default (even if not present in any image) in the input files TreeBox
    var defaultShownKeywords_DEFAULT = [
@@ -206,168 +126,261 @@ var ffM_Configuration = (function() {
       //"SET-TEMP","EXPOSURE","IMAGETYP","FILTER","XBINNING","YBINNING","OBJECT"
    ];
 
-   // -- Define the predefined named configurations
-   // The configuration is a map with the following entries:
-   //    name - its name (used to save in settings)
-   //    description - A one line description of the configuration (shown in UI)
-   //    keywordMappingTable - The map of logical name to FITS key names
-   //    filterConversion - The list of filter conversion operations
-   //    typeConversion - The list of filter conversion operations
-   var configuration_DEFAULT = {
-     name: "DEFAULT",
-     description: "Common and Star Arizona mappings",
-     keywordMappingTable: keywordMapping_DEFAULT,
-     filterConversions: filterConversions_DEFAULT,
-     typeConversions: typeConversions_DEFAULT,
-     defaultShownKeywords: defaultShownKeywords_DEFAULT,
-   };
-   var configuration_CAHA = {
-     name: "CAHA",
-     description: "CAHA mapping",
-     keywordMappingTable: keywordMapping_CAHA,
-     filterConversions: filterConversions_CAHA,
-     typeConversions: typeConversions_CAHA,
-     defaultShownKeywords: defaultShownKeywords_CAHA,
-   };
+
 
 #endif
 
 
-// --------------------------------------------------------------------------------------------------
+   // --------------------------------------------------------------------------------------------------
 
-var defaultRuleSet =
-[ { name: "Default",
-    description: "Common FITS rules",
-    variableList:
-      [ { name: "type",
-          description: "Type of image (flat, bias, ...)",
-          resolver: "RegExpList",
-          parameters:
-            { RegExpList:
-                { key: "IMAGETYP",
-                  reChecks:
-                    [ { regexp: '/flat/i',
-                        replacement: "flat"
-                      },
-                      { regexp: '/bias/i',
-                        replacement: "bias"
-                      },
-                      { regexp: '/offset/i',
-                        replacement: "boas"
-                      },
-                      { regexp: '/dark/i',
-                        replacement: "dark"
-                      },
-                      { regexp: '/light/i',
-                        replacement: "light"
-                      },
-                      { regexp: '/science/i',
-                        replacement: "light"
-                      },
-                      { regexp: '/.*/',
-                        replacement: "&0;"
-                      },
-                    ]
-                }
-            }
-        },
-        { name: "filter",
-          description: "Filter (clear, red, ...)",
-          resolver: "RegExpList",
-          parameters:
-            { RegExpList:
-                { key: "FILTER",
-                  reChecks:
-                    [ { regexp: '/green/i',
-                        replacement: "green"
-                      },
-                      { regexp: '/blue/i',
-                        replacement: "blue"
-                      },
-                      { regexp: '/red/i',
-                        replacement: "red"
-                      },
-                      { regexp: '/clear/i',
-                        replacement: "clear"
-                      },
-                      { regexp: '/luminance/i',
-                        replacement: "luminance"
-                      },
-                      { regexp: '/.*/',
-                        replacement: "&0"
-                      }
-                    ]
-                    ,
-                }
-            }
-        },
-        { name: "exposure",
-          description: "Exposure in seconds",
-          resolver: "Integer",
-          parameters:
-            { Integer:
-                { key: "EXPTIME", // also EXPOSURE
-                  format: "%4.4d"
-                }
-            }
-        },
-        { name: "temp",
-          description: "Temperature in C",
-          resolver: "Integer",
-          parameters:
-            { Integer:
-                { key: "SET-TEMP", // Also CCDTEMP and CCD-TEMP",
-                  format: "%4.4d"
-                }
-            }
-        },
-        { name: "binning",
-          description: "Binning as 1x1, 2x2, ...",
-          resolver: "IntegerPair",
-          parameters:
-            { IntegerPair:
-                { key1: "XBINNING",
-                  key2: "YBINNING",
-                  format: "%dx%d"
-                }
-            }
-        },
-       //      "NightLongObs" : "LONG-OBS",
-      // We should really use DATE-OBS and convert
-     // "NightJD"      : "JD",
+   var defaultRuleSet =
+   [
+      { name: "Default",
+       description: "Common FITS rules",
+       variableList:
+         [ { name: "type",
+             description: "Type of image (flat, bias, ...)",
+             resolver: "RegExpList",
+             parameters:
+               { RegExpList:
+                   { key: "IMAGETYP",
+                     reChecks:
+                       [ { regexp: '/flat/i',
+                           replacement: "flat"
+                         },
+                         { regexp: '/bias/i',
+                           replacement: "bias"
+                         },
+                         { regexp: '/offset/i',
+                           replacement: "boas"
+                         },
+                         { regexp: '/dark/i',
+                           replacement: "dark"
+                         },
+                         { regexp: '/light/i',
+                           replacement: "light"
+                         },
+                         { regexp: '/science/i',
+                           replacement: "light"
+                         },
+                         { regexp: '/.*/',
+                           replacement: "&0;"
+                         },
+                       ]
+                   }
+               }
+           },
+           { name: "filter",
+             description: "Filter (clear, red, ...)",
+             resolver: "RegExpList",
+             parameters:
+               { RegExpList:
+                   { key: "FILTER",
+                     reChecks:
+                       [ { regexp: '/green/i',
+                           replacement: "green"
+                         },
+                         { regexp: '/blue/i',
+                           replacement: "blue"
+                         },
+                         { regexp: '/red/i',
+                           replacement: "red"
+                         },
+                         { regexp: '/clear/i',
+                           replacement: "clear"
+                         },
+                         { regexp: '/luminance/i',
+                           replacement: "luminance"
+                         },
+                         { regexp: '/.*/',
+                           replacement: "&0"
+                         }
+                       ]
+                       ,
+                   }
+               }
+           },
+           { name: "exposure",
+             description: "Exposure in seconds",
+             resolver: "Integer",
+             parameters:
+               { Integer:
+                   { key: "EXPTIME", // also EXPOSURE
+                     format: "%4.4d"
+                   }
+               }
+           },
+           { name: "temp",
+             description: "Temperature in C",
+             resolver: "Integer",
+             parameters:
+               { Integer:
+                   { key: "SET-TEMP", // Also CCDTEMP and CCD-TEMP",
+                     format: "%4.4d"
+                   }
+               }
+           },
+           { name: "binning",
+             description: "Binning as 1x1, 2x2, ...",
+             resolver: "IntegerPair",
+             parameters:
+               { IntegerPair:
+                   { key1: "XBINNING",
+                     key2: "YBINNING",
+                     format: "%dx%d"
+                   }
+               }
+           },
+          //      "NightLongObs" : "LONG-OBS",
+         // We should really use DATE-OBS and convert
+        // "NightJD"      : "JD",
 
-        { name: "night",
-          description: "night (experimental)",
-          resolver: "Night",
-          parameters:
-            { Night:
-                { keyLongObs: "LONG-OBS",
-                  keyJD: "JD"
-                }
-            }
-        },
-        { name: "filename",
-          description: "Input file name",
-          resolver: "FileName",
-          parameters:
-            { FileName:
-                {
-                }
-            }
-        },
-        { name: "extension",
-          description: "Input file extension",
-          resolver: "FileExtension",
-          parameters:
-            { FileExtension:
-                {
-                }
-            }
-        }
-      ]
-  }
-]
-;
+           { name: "night",
+             description: "night (experimental)",
+             resolver: "Night",
+             parameters:
+               { Night:
+                   { keyLongObs: "LONG-OBS",
+                     keyJD: "JD"
+                   }
+               }
+           },
+           { name: "filename",
+             description: "Input file name",
+             resolver: "FileName",
+             parameters:
+               { FileName:
+                   {
+                   }
+               }
+           },
+           { name: "extension",
+             description: "Input file extension",
+             resolver: "FileExtension",
+             parameters:
+               { FileExtension:
+                   {
+                   }
+               }
+           }
+         ]
+     },
+
+
+      { name: "User 1",
+       description: "User FITS rules",
+       variableList:
+         [ { name: "type",
+             description: "Type of image (flat, bias, ...)",
+             resolver: "RegExpList",
+             parameters:
+               { RegExpList:
+                   { key: "IMAGETYP",
+                     reChecks:
+                       [ { regexp: '/flat/i',
+                           replacement: "flat"
+                         },
+                         { regexp: '/bias/i',
+                           replacement: "bias"
+                         },
+                         { regexp: '/offset/i',
+                           replacement: "boas"
+                         },
+                         { regexp: '/dark/i',
+                           replacement: "dark"
+                         },
+                         { regexp: '/light/i',
+                           replacement: "light"
+                         },
+                         { regexp: '/science/i',
+                           replacement: "light"
+                         },
+                         { regexp: '/.*/',
+                           replacement: "&0;"
+                         },
+                       ]
+                   }
+               }
+           },
+           { name: "filter",
+             description: "Filter (clear, red, ...)",
+             resolver: "RegExpList",
+             parameters:
+               { RegExpList:
+                   { key: "INSFLNAM",
+                     reChecks:
+                       [ { regexp: '/.*/i',
+                           replacement: "&0;"
+                         }
+                       ]
+                   }
+
+               }
+           },
+           { name: "exposure",
+             description: "Exposure in seconds",
+             resolver: "Integer",
+             parameters:
+               { Integer:
+                   { key: "EXPTIME", // also EXPOSURE
+                     format: "%4.4d"
+                   }
+               }
+           },
+           { name: "temp",
+             description: "Temperature in C",
+             resolver: "Integer",
+             parameters:
+               { Integer:
+                   { key: "CCDTEMP", // Also CCDTEMP and CCD-TEMP",
+                     format: "%4.4d"
+                   }
+               }
+           },
+           { name: "binning",
+             description: "Binning as 1x1, 2x2, ...",
+             resolver: "IntegerPair",
+             parameters:
+               { IntegerPair:
+                   { key1: "CDELT1",
+                     key2: "CDELT2",
+                     format: "%dx%d"
+                   }
+               }
+           },
+           { name: "night",
+             description: "night (experimental)",
+             resolver: "Night",
+             parameters:
+               { Night:
+                   { keyLongObs: "CAHA TEL GEOLON",
+                   // We should really used DATE-OBS (if available) and convert
+                    keyJD: "JUL-DATE"
+                   }
+               }
+           },
+           { name: "filename",
+             description: "Input file name",
+             resolver: "FileName",
+             parameters:
+               { FileName:
+                   {
+                   }
+               }
+           },
+           { name: "extension",
+             description: "Input file extension",
+             resolver: "FileExtension",
+             parameters:
+               { FileExtension:
+                   {
+                   }
+               }
+           }
+         ]
+     }
+
+   ];
 
    // --- private variables ---------------------------------------------------
    // name string -> configuration

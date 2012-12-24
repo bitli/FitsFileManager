@@ -30,7 +30,7 @@
 
 
 var ffM_allTests_filePath = #__FILE__ ;
-var ffM_allTests_baseDirectory = File.extractDrive(filePath) + File.extractDirectory(filePath) + "/../images";
+var ffM_allTests_baseDirectory = File.extractDrive(ffM_allTests_filePath) + File.extractDirectory(ffM_allTests_filePath) + "/../images";
 
 var ffM_allTests = {
 

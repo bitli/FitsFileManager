@@ -335,7 +335,7 @@ var ffM_GUI_config = (function (){
       }
 
       this.onItemSelected = function() {
-         if (this.currentItem>=0 && this.currentItems<this.configurationNames.length) {
+         if (this.currentItem>=0 && this.currentItem<this.configurationNames.length) {
             configurationSelectedCallback(initialNames[this.configurationNames]);
          }
       }
