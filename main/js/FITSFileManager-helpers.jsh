@@ -218,7 +218,7 @@ var ffM_LookupConverter = (function() {
 
    // Create a lookup converter
    // Parameters:
-   //      conversionTable: Array  of 2 elements array: pattern, replacement
+   //      conversionTable: Array  of {regexp:, replacement:}
    // Return: A converter object that convert a string according to the rules.
    return {
       makeLookupConverter: function makeLookupConverter (conversionTable) {
@@ -232,8 +232,8 @@ var ffM_LookupConverter = (function() {
          var compiledConversionTable = [];
          for (var i=0; i<conversionTable.length; i++) {
             var conversionEntry = conversionTable[i];
-            var conversionRegExp = conversionEntry[0];
-            var conversionResultTemplate = conversionEntry[1];
+            var conversionRegExp = conversionEntry.regexp;
+            var conversionResultTemplate = conversionEntry.replacement;
             var conversionResultFunction;
             if (conversionResultTemplate==="&0;") {
                // Assumed frequent case of copying input
@@ -548,12 +548,14 @@ var ffM_variables = (function() {
    }
 
    ffM_Resolver.resolverByName('RegExpList').parserFactory = function(rule, parameters) {
+      // Prepare lookup converter
+      var lookupConverter = ffM_LookupConverter.makeLookupConverter(parameters.reChecks);
       return (
          function parseRegExpList(ruleParameters,imageKeywords,imageVariables,inputFile) {
             var value = imageKeywords.getUnquotedValue(ruleParameters.key);
             if (value === null) return null;
 
-            return 'TODOCONCERT';
+            return lookupConverter.convert(value);
          }
       )
    }
