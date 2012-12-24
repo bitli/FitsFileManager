@@ -40,6 +40,15 @@ var ffM_rv = function(obj) {
    });
 }
 
+function makeLookupConverter(aa) {
+   var oa = [];
+   for (var i=0; i<aa.length; i++) {
+      var a = aa[i];
+      oa.push({regexp: regExpToString(a[0]), replacement: a[1]});
+   }
+   return ffM_LookupConverter.makeLookupConverter(oa);
+}
+
 
 var ffM_allTests = {
 
@@ -160,19 +169,21 @@ var ffM_allTests = {
    // then replace by the conversion result, doing pattern replacement ON THE CONVERSION RESULT
    // not on the string received
    // ---------------------------------------------------------------------------------------------------------
+   // Convert array of array of regexp,replacement to the object format and submit to real converter
+
    testConverter_empty: function () {
-      var c = ffM_LookupConverter.makeLookupConverter([]);
+      var c = makeLookupConverter([]);
       pT_assertNull(c.convert("thereIsNoConversionDefined"));
    },
    testConverter_single_conversion: function () {
-      var c = ffM_LookupConverter.makeLookupConverter([
+      var c = makeLookupConverter([
             [ /abc/, "matched"]
          ]);
       pT_assertNull(c.convert("nomatch"));
       pT_assertEquals("matched",c.convert("abc"));
    },
    testConverter_valid_second_conversion: function () {
-      var c = ffM_LookupConverter.makeLookupConverter([
+      var c = makeLookupConverter([
             [ /first/, "match1"],
             [ /second/, "match2" ],
          ]);
@@ -181,7 +192,7 @@ var ffM_allTests = {
       pT_assertEquals("match1",c.convert("first"));
    },
    testConverter_valid_last_conversion: function () {
-      var c = ffM_LookupConverter.makeLookupConverter([
+      var c = makeLookupConverter([
             [ /first/,  "match1"],
             [ /second/, "match2" ],
             [ /third/,  "match3" ]
@@ -192,20 +203,20 @@ var ffM_allTests = {
       pT_assertEquals("match1",c.convert("first"));
    },
    testConverter_detect_partial: function () {
-      var c = ffM_LookupConverter.makeLookupConverter([
+      var c = makeLookupConverter([
             [ /TEXT/, "matched"]
          ]);
       pT_assertNull(c.convert("nomatch"));
       pT_assertEquals("matched",c.convert("aTEXTinside"));
    },
    testConverter_obey_anchored: function () {
-      var c = ffM_LookupConverter.makeLookupConverter([
+      var c = makeLookupConverter([
             [ /^TEXT/, "matched"]
          ]);
       pT_assertNull(c.convert("aTEXTinside"));
    },
    testConverter_obey_ignore_case: function () {
-      var c = ffM_LookupConverter.makeLookupConverter([
+      var c = makeLookupConverter([
             [ /TEXT/i, "Matched"]
          ]);
          pT_assertEquals("Matched",c.convert("isText"));
@@ -216,7 +227,7 @@ var ffM_allTests = {
    // Last chance handler
    testConverter_sourceGroupReference_match_any_char: function () {
       // This case &0; is optimized
-      var c = ffM_LookupConverter.makeLookupConverter([
+      var c = makeLookupConverter([
             [ /TEXT/, "specificMatch"],
             [ /./, "&0;"] // Match any character
          ]);
@@ -225,7 +236,7 @@ var ffM_allTests = {
    },
    testConverter_sourceGroupReference_match_any: function () {
       // This case &0; is optimized
-      var c = ffM_LookupConverter.makeLookupConverter([
+      var c = makeLookupConverter([
             [ /TEXT/, "specificMatch"],
             [ /.*/, "&0;" ]
          ]);
@@ -234,34 +245,34 @@ var ffM_allTests = {
    },
 
    testConverter_sourceGroupReference_whole_inside: function () {
-      var c = ffM_LookupConverter.makeLookupConverter([
+      var c = makeLookupConverter([
             [ /.*/, "_&0;/"]
          ]);
       pT_assertEquals("_red/",c.convert("red"));
    },
    testConverter_sourceGroupReference_keep_case: function () {
-      var c = ffM_LookupConverter.makeLookupConverter([
+      var c = makeLookupConverter([
             [ /.*/, "&0;"]
          ]);
       pT_assertEquals("lowerUPPER",c.convert("lowerUPPER"));
    },
 
    testConverter_sourceGroupReference_remove_special_chars: function () {
-      var c = ffM_LookupConverter.makeLookupConverter([
+      var c = makeLookupConverter([
             [ /.*/, "&0;"]
          ]);
       pT_assertEquals("a_bunch_of_stuff",c.convert("^a bunch%of$stuff"));
    },
 
    testConverter_sourceGroupReference_remove_special_chars_in_groups: function () {
-      var c = ffM_LookupConverter.makeLookupConverter([
+      var c = makeLookupConverter([
             [ /(.*)-(.*)/, "_&1;*&2;/"]
          ]);
       pT_assertEquals("_a_lot_of*this_stuff/",c.convert("^a lot%of-this$stuff"));
    },
 
    testConverter_sourceGroupReference_subgroup: function () {
-      var c = ffM_LookupConverter.makeLookupConverter([
+      var c = makeLookupConverter([
             [ /TEXT/, "specificMatch"],
             [ /filter-(.*)/, "_&1;/"]
          ]);
@@ -269,7 +280,7 @@ var ffM_allTests = {
       pT_assertEquals("_red/",c.convert("filter-red"));
    },
    testConverter_multiple_back_references: function () {
-      var c = ffM_LookupConverter.makeLookupConverter([
+      var c = makeLookupConverter([
             [ /FIRST/, "&0;"],
             [ /SECOND/i, "&0;"],
             [ /THIRD/i, "&0;"],
@@ -282,14 +293,14 @@ var ffM_allTests = {
       pT_assertNull(c.convert("nomatchagain"));
    },
    testConverter_sourceGroupReference_multiple_ref: function () {
-      var c = ffM_LookupConverter.makeLookupConverter([
+      var c = makeLookupConverter([
             [ /([0-9]+)-filter-([a-z]+)/, "&2;_&1;/"],
          ]);
       pT_assertEquals("green_450/",c.convert("450-filter-green"));
    },
    // This may help discover subtle bugs with improper lexical scoping
    testConverter_sourceGroupReference_multiple_ref_and_tests: function () {
-      var c = ffM_LookupConverter.makeLookupConverter([
+      var c = makeLookupConverter([
             [ /BEFORE/, "specificMatchBefore"],
             [ /([0-9]+)-filter-([a-z]+)/, "&2;_&1;/"],
             [ /AFTER/, "specificMatchAfter"],
@@ -301,11 +312,11 @@ var ffM_allTests = {
    },
    // This may help discover subtle bugs with improper lexical scoping
    testConverter_twoOfThem: function () {
-      var c1 = ffM_LookupConverter.makeLookupConverter([
+      var c1 = makeLookupConverter([
             [ /abc/,   "toto"],
             [ /def/,   "ti&0;ti"]
          ]);
-      var c2 = ffM_LookupConverter.makeLookupConverter([
+      var c2 = makeLookupConverter([
             [ /123/, "NUMBER"]
          ]);
       pT_assertNull(c1.convert("123"));

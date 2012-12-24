@@ -43,7 +43,7 @@ function regExpFromString(reString) {
       return null;
    }
    if (typeof reString !=='string') {
-      throw "PROGRAMMING ERROR - Invalid regexp string"
+      throw "PROGRAMMING ERROR - Invalid regexp string, got " + typeof reString;
    }
 
    if (reString.length===0) {

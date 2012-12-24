@@ -41,7 +41,7 @@
 #include "../../main/js/FITSFileManager-config-gui.jsh"
 
 
-//#define TESTRULESETS
+#define TESTRULESETS
 
 //
 
@@ -55,8 +55,8 @@ var ffM_TestConfigUi = (function(){
 
 
    // Model object wrap data object and behavior
-   var newRuleData = function(name, description) {
-      var rule = {
+   var newConfigurationData = function(name, description) {
+      var configuration = {
          name: name,
          description: description,
          variableList: [],
@@ -64,11 +64,11 @@ var ffM_TestConfigUi = (function(){
       var builder = {
          // Operations on the variable list
          addVariable: function(variable) {
-            rule.variableList.push(variable);
+            configuration.variableList.push(variable);
             return builder;
          },
          build: function() {
-            return rule;
+            return configuration;
          },
       }
 
@@ -79,7 +79,7 @@ var ffM_TestConfigUi = (function(){
 
    // --------------------------
    // Default definition for test
-   var defaultRule = newRuleData('Default', 'Common FITS rules')
+   var defaultRule = newConfigurationData('Default', 'Common FITS rules')
    .addVariable(defineVariable('type','Type of image (flat, bias, ...)','RegExpList'))
    .addVariable(defineVariable('filter','Filter (clear, red, ...)','RegExpList'))
    .addVariable(defineVariable('exposure','Exposure in seconds','Integer'))
@@ -91,13 +91,13 @@ var ffM_TestConfigUi = (function(){
    .build();
 
 #ifdef TESTRULESETS
-   var testRule = newRuleData('Test', 'A test rule')
+   var testRule = newConfigurationData('Test', 'A test configuration')
    .addVariable(defineVariable('object','Object','Constant'))
    .build();
 
-   var emptyRule = newRuleData('Empty', 'An empty rule')
+   var emptyRule = newConfigurationData('Empty', 'An empty configuration')
    .build();
-   var largeRule = newRuleData('Large', 'Many variables')
+   var largeRule = newConfigurationData('Large', 'Many variables')
    .addVariable(defineVariable('object 1','Object','Constant'))
    .addVariable(defineVariable('object 2','Object','Constant'))
    .addVariable(defineVariable('object 3','Object','Constant'))
@@ -124,37 +124,37 @@ var ffM_TestConfigUi = (function(){
 
 
    // Test Rules
-   var testRules = [];
-   testRules.push(defaultRule);
+   var testConfigurations = [];
+   testConfigurations.push(defaultRule);
 #ifdef TESTRULESETS
-   testRules.push(testRule);
-   testRules.push(emptyRule);
-   testRules.push(largeRule);
+   testConfigurations.push(testRule);
+   testConfigurations.push(emptyRule);
+   testConfigurations.push(largeRule);
 #endif
 
    return {
       // For tests
-      testRules: testRules,
+      testConfigurations: testConfigurations,
    }
 }) ();
 
 
-function vP_testGuiRuleSet()
+function vP_testConfigurationGui()
 {
 
    Console.show();
    Console.writeln("FITSFileManager-test-gui - Actions on the GUI will be logged on the console");
 
-   var ruleSet = ffM_TestConfigUi.testRules;
+   var configurationSet = ffM_TestConfigUi.testConfigurations;
    // Noe: this log takes forever...
-   //Console.writeln("Initiale ruleset:\n" + Log.pp(ruleSet));
+   //Console.writeln("Initiale ruleset:\n" + Log.pp(configurationSet));
 
    var names=[];
-   for (var i=0; i<ruleSet.length; i++) {
-      names.push(ruleSet[i].name);
+   for (var i=0; i<configurationSet.length; i++) {
+      names.push(configurationSet[i].name);
    }
    var dialog =  ffM_GUI_config.makeDialog(null, names);
-   dialog.configure(ruleSet, ruleSet[0].name);
+   dialog.configure(configurationSet, configurationSet[0].name);
    for ( ;; )
    {
       var result = dialog.execute();
@@ -163,8 +163,8 @@ function vP_testGuiRuleSet()
       if (result) {
 
          // Writing to the console takes forever... be patient
-         Console.writeln("vP_testGuiRuleSet: currentRuleSetName: " + Log.pp(dialog.currentRuleSetName,0,true));
-         Console.writeln(Log.pp(dialog.ruleSet));
+         Console.writeln("vP_testGuiRuleSet: currentConfigurationName: " + Log.pp(dialog.currentConfigurationName,0,true));
+         Console.writeln(Log.pp(dialog.configurationSet));
          Console.flush();
        }
        if (!result) break;
@@ -176,4 +176,4 @@ function vP_testGuiRuleSet()
 }
 
 
-vP_testGuiRuleSet();
+vP_testConfigurationGui();

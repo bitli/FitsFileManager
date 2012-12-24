@@ -309,7 +309,7 @@ var ffM_GUI_config = (function (){
   // ---------------------------------------------------------------------------------------------------------
 
   // Top pane - Selection of configuration
-  var makeConfigurationSelection_ComboBox = function(parent, configurationSetNames, configuratioSelectedCallback) {
+  var makeConfigurationSelection_ComboBox = function(parent, configurationSetNames, configurationSelectedCallback) {
      var i;
      var comboBox = new ComboBox( parent );
      comboBox.toolTip = Text.H.GROUP_TEMPLATE_TOOLTIP;
@@ -322,7 +322,7 @@ var ffM_GUI_config = (function (){
 
      comboBox.onItemSelected = function() {
         if (this.currentItem>=0) {
-           configurationSetSelectedCallback(configurationSetNames[this.currentItem]);
+           configurationSelectedCallback(configurationSetNames[this.currentItem]);
         }
      }
 
@@ -863,7 +863,7 @@ var ffM_GUI_config = (function (){
      // in a copy, so in case of cancel nothing is changed
      // Done in 'configure'
      this.configurationSet = null;
-     this.currentConfigurationSetName = null;
+     this.currentConfigurationName = null;
 
      this.newVariableCounter = 0;
 
@@ -874,11 +874,11 @@ var ffM_GUI_config = (function (){
      this.sizer.spacing = 4;
 
      // Configure for current
-     this.configure = function configure(originalConfigurationSet, currentConfigurationSetName) {
+     this.configure = function configure(originalConfigurationSet, currentConfigurationName) {
         this.configurationSet = deepCopyData(originalConfigurationSet);
-        this.currentConfigurationSetName = currentConfigurationSetName;
+        this.currentConfigurationName = currentConfigurationName;
         // Initialize content
-        configurationSetSelectedCallback(currentConfigurationSetName);
+        configurationSetSelectedCallback(currentConfigurationName);
      }
 
 
@@ -891,7 +891,7 @@ var ffM_GUI_config = (function (){
            throw "Invalid configuration set name '" + configurationSetName +"'";
         }
         // Update model
-        that.currentConfigurationSetName = configurationSetName;
+        that.currentConfigurationName = configurationSetName;
         // Update UI
         that.variableUI.updateVariableList(selectedConfiguration.variableList);
      }
