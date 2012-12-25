@@ -61,7 +61,7 @@ function FFM_Engine(guiParameters) {
 #ifdef DEBUG
       debug("FFM_Engine.setConfiguration - " + configuration.name);
 #endif
-      this.currentConfiguration = deepCopyData(configuration);
+      this.currentConfiguration = configuration; //deepCopyData(configuration);
 
       ffM_variables.installParsers(this.currentConfiguration);
 
@@ -85,6 +85,20 @@ function FFM_Engine(guiParameters) {
 
     }
 
+   // Rebuild after change of configuration  (GUI ,ust also refresh itself))
+   this.rebuildAll = function() {
+      for (var i=0; i<this.inputFiles.length; i++) {
+         var fileName = this.inputFiles[i];
+         this.inputFITSKeywords[i] = ffM_FITS_Keywords.makeImageKeywordsfromFile(fileName);
+         // Create the synthethic variables using the desired rules
+         this.inputVariables[i] = ffM_variables.makeSyntheticVariables(this.inputFiles[i],
+            this.inputFITSKeywords[i],
+             this.currentConfiguration.variableList)
+       }
+   }
+
+
+
 
    // -- Add a list of files
    this.addFiles = function (fileNames) {
@@ -105,7 +119,7 @@ function FFM_Engine(guiParameters) {
             this.inputFiles.push(fileNames[i]);
             this.inputFITSKeywords.push(imageKeywords);
             // Create the synthethic variables using the desired rules
-            var variables = ffM_variables.makeSynthethicVariables(fileNames[i], imageKeywords,
+            var variables = ffM_variables.makeSyntheticVariables(fileNames[i], imageKeywords,
                 this.currentConfiguration.variableList);
 
             this.inputVariables.push(variables);

@@ -498,21 +498,30 @@ var ffM_template = (function() {
 
 var ffM_variables = (function() {
 
-   // Install all the parsers in the current configuration
-   var installParsers = function(rule) {
-      var variableList = rule.variableList;
+   // -- Install all the parsers in the  configuration (must be called once only on a configuration copy)
+   var installParsers = function(configuration) {
+#ifdef DEBUG
+      debug("ffM_variables.installParsers: for",configuration.name);
+#endif
+      var variableList = configuration.variableList;
       for (var i=0; i<variableList.length; i++) {
          var variableDefinition = variableList[i];
          var resolverImpl = ffM_Resolver.resolverByName(variableDefinition.resolver);
          var parameters = variableDefinition.parameters[variableDefinition.resolver];
-         variableDefinition.parser = resolverImpl.parserFactory(rule, parameters);
+         variableDefinition.parser = resolverImpl.parserFactory(configuration, parameters);
       }
+#ifdef DEBUG
+      debug("ffM_variables.installParsers: nmb parsers installed:",variableList.length);
+#endif
    }
 
-   // All parsing rules have the own rule parameters object as argument
+   // All parsing rules have the own configuration parameters object as argument
    // the fits values and the variables parsed to far
 
-   ffM_Resolver.resolverByName('Integer').parserFactory = function(rule, parameters){
+   ffM_Resolver.resolverByName('Integer').parserFactory = function(configuration, parameters){
+#ifdef DEBUG
+      debug("resolver factory Integer for :",Log.pp(parameters));
+#endif
      return (
          function parseInteger(ruleParameters,imageKeywords,imageVariables,inputFile) {
             var valueString = imageKeywords.getValue(ruleParameters.key);
@@ -528,7 +537,10 @@ var ffM_variables = (function() {
    }
 
 
-   ffM_Resolver.resolverByName('IntegerPair').parserFactory = function(rule, parameters){
+   ffM_Resolver.resolverByName('IntegerPair').parserFactory = function(configuration, parameters){
+#ifdef DEBUG
+      debug("resolver factory IntegerPair for :",Log.pp(parameters));
+#endif
      return (
          function parseIntegerPair(ruleParameters,imageKeywords,imageVariables,inputFile) {
             var valueString1 = imageKeywords.getValue(ruleParameters.key1);
@@ -545,7 +557,10 @@ var ffM_variables = (function() {
       )
    }
 
-   ffM_Resolver.resolverByName('Constant').parserFactory = function(rule, parameters){
+   ffM_Resolver.resolverByName('Constant').parserFactory = function(configuration, parameters){
+#ifdef DEBUG
+      debug("resolver factory Constant for :",Log.pp(parameters));
+#endif
      return (
          function parseConstant(ruleParameters,imageKeywords,imageVariables,inputFile) {
             return ruleParameters.value;
@@ -553,9 +568,12 @@ var ffM_variables = (function() {
       )
    }
 
-   ffM_Resolver.resolverByName('RegExpList').parserFactory = function(rule, parameters) {
+   ffM_Resolver.resolverByName('RegExpList').parserFactory = function(configuration, parameters) {
       // Prepare lookup converter
       var lookupConverter = ffM_LookupConverter.makeLookupConverter(parameters.reChecks);
+#ifdef DEBUG
+      debug("resolver factory RegExpList for :",Log.pp(parameters));
+#endif
       return (
          function parseRegExpList(ruleParameters,imageKeywords,imageVariables,inputFile) {
             var value = imageKeywords.getUnquotedValue(ruleParameters.key);
@@ -566,7 +584,10 @@ var ffM_variables = (function() {
       )
    }
 
-   ffM_Resolver.resolverByName('FileName').parserFactory = function(rule, parameters){
+   ffM_Resolver.resolverByName('FileName').parserFactory = function(configuration, parameters){
+#ifdef DEBUG
+     debug("resolver factory FileName for :",Log.pp(parameters));
+#endif
      return (
          function parseFileName(ruleParameters,imageKeywords,imageVariables,inputFile) {
             return  File.extractName(inputFile);
@@ -574,7 +595,10 @@ var ffM_variables = (function() {
       )
    }
 
-   ffM_Resolver.resolverByName('FileExtension').parserFactory = function(rule, parameters){
+   ffM_Resolver.resolverByName('FileExtension').parserFactory = function(configuration, parameters){
+#ifdef DEBUG
+      debug("resolver factory FileExtension for :",Log.pp(parameters));
+#endif
      return (
          function parseFileExtension(ruleParameters,imageKeywords,imageVariables,inputFile) {
             return  File.extractExtension(inputFile);
@@ -582,7 +606,10 @@ var ffM_variables = (function() {
       )
    }
 
-   ffM_Resolver.resolverByName('Night').parserFactory = function(rule, parameters){
+   ffM_Resolver.resolverByName('Night').parserFactory = function(configuration, parameters){
+#ifdef DEBUG
+      debug("resolver factory Night for :",Log.pp(parameters));
+#endif
      return (
          function parseNight(ruleParameters,imageKeywords,imageVariables,inputFile) {
             var longObs = imageKeywords.getValue(ruleParameters.keyLongObs); // East in degree
@@ -610,7 +637,7 @@ var ffM_variables = (function() {
    //    inputFile: Full path of input file (to extract file anme etc...)
    //    imageKeywords: A FitsFileManager imageKeyword object (all FITS keywords of the image)
    //    variableList: The variable definitions of the current rule
-    function makeSynthethicVariables(inputFile, imageKeywords, variableList) {
+    function makeSyntheticVariables(inputFile, imageKeywords, variableList) {
 
       var inputFileName =  File.extractName(inputFile);
 
@@ -623,7 +650,7 @@ var ffM_variables = (function() {
       }
 
 #ifdef DEBUG
-      debug("makeSynthethicVariables: made " + Object.keys(variables).length + " synthetics keys for file " + inputFileName);
+      debug("makeSyntheticVariables: made " + Object.keys(variables).length + " synthetics keys for file " + inputFileName);
 #endif
 
       return variables;
@@ -698,7 +725,7 @@ var ffM_variables = (function() {
 
    // --- public properties and methods ---------------------------------------
    return {
-      makeSynthethicVariables: makeSynthethicVariables,
+      makeSyntheticVariables: makeSyntheticVariables,
       filterFITSValue: filterFITSValue,
       filterViewId: filterViewId,
       installParsers: installParsers,

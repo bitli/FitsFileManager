@@ -459,10 +459,16 @@ function MainDialog(engine, guiParameters) {
       if (result) {
          ffM_Configuration.replaceConfigurationTable(configurationDialog.editedConfigurationSet,configurationDialog.currentConfigurationName)
          var newActiveConfiguration = ffM_Configuration.getActiveConfiguration();
-         engine.setConfiguration(newActiveConfiguration);
          this.dialog.configurationName_Label.text	=  newActiveConfiguration.name;
-         this.dialog.refreshTargetFiles();
 
+         engine.setConfiguration(newActiveConfiguration);
+         engine.rebuildAll();
+
+         // TODO - Merge with action on add files
+         //this.dialog.rebuildFilesTreeBox();
+         this.dialog.updateButtonState();
+         this.dialog.updateTotal();
+         this.dialog.refreshTargetFiles();
       }
    }
 

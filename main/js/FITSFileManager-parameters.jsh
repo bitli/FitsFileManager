@@ -377,6 +377,9 @@ var ffM_Configuration = (function() {
    // the calling code must re-initialize the GUI
    var activateConfiguration = function (aConfiguration) {
       activeConfiguration = deepCopyData(aConfiguration);
+#ifdef DEBUG
+      Log.debug("Configuration activated: ", activeConfiguration.name);
+#endif
 
       // TODO Should be moved
       for (var i=0; i<aConfiguration.variableList.length; i++) {
