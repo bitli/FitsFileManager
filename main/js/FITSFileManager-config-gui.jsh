@@ -336,12 +336,13 @@ var ffM_GUI_config = (function (){
 
       this.onItemSelected = function() {
          if (this.currentItem>=0 && this.currentItem<this.configurationNames.length) {
-            configurationSelectedCallback(initialNames[this.configurationNames]);
+            configurationSelectedCallback(this.configurationNames[this.currentItem]);
          }
       }
 
       this.configure = function(names, selectedName) {
-         //this.clear();
+         this.configurationNames = names;
+         this.clear();
          for (i=0; i<names.length;i++) {
             this.addItem(names[i]);
             if (selectedName === names[i]) {
@@ -885,7 +886,7 @@ var ffM_GUI_config = (function (){
      // Keeps track of configurationSet and current configuration selected
      // in a copy, so in case of cancel nothing is changed
      // Done in 'configure'
-     this.configurationSet = null;
+     this.editedConfigurationSet = null;
      this.currentConfigurationName = null;
 
      this.newVariableCounter = 0;
@@ -901,7 +902,7 @@ var ffM_GUI_config = (function (){
      // configuration changed (also used in initialization)
      var configurationSelectedCallback = function(configurationName) {
         Log.debug("ConfigurationDialog: configurationSelectedCallback - ConfigurationSet selected:",configurationName);
-        var selectedConfiguration = ffM_Configuration.getConfigurationByName(that.configurationSet, configurationName);
+        var selectedConfiguration = ffM_Configuration.getConfigurationByName(that.editedConfigurationSet, configurationName);
         if (selectedConfiguration == null) {
            throw "PROGRAM ERROR - Invalid configuration set name '" + configurationName +"'";
         }
@@ -937,10 +938,10 @@ var ffM_GUI_config = (function (){
      //this.adjustToContents();
 
      // -- Configure before executing
-     this.configure = function configure(originalConfigurationSet, configurationName) {
-        this.configurationSet = deepCopyData(originalConfigurationSet);
-        this.currentConfigurationName = configurationName;
-        var configurationNames = ffM_Configuration.getAllConfigurationNames(this.configurationSet);
+     this.configure = function configure(originalConfigurationSet, configurationNameToEdit) {
+        this.editedConfigurationSet = deepCopyData(originalConfigurationSet);
+        this.currentConfigurationName = configurationNameToEdit;
+        var configurationNames = ffM_Configuration.getAllConfigurationNames(this.editedConfigurationSet);
         // Initialize content
         this.configurationSelection_ComboBox.configure(configurationNames, this.currentConfigurationName);
         configurationSelectedCallback(this.currentConfigurationName);
@@ -954,8 +955,8 @@ var ffM_GUI_config = (function (){
 
 
   return {
-     makeDialog: function(parent, configurationSet, configurationName) {
-        return new ConfigurationDialog(parent, configurationSet, configurationName);
+     makeDialog: function(parent, configurationSet, configurationNameToEdit) {
+        return new ConfigurationDialog(parent, configurationSet, configurationNameToEdit);
      }
 
   }

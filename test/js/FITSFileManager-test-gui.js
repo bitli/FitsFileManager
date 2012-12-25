@@ -165,7 +165,7 @@ function vP_testConfigurationGui()
 
          // Writing to the console takes forever... be patient
          Console.writeln("vP_testGuiRuleSet: currentConfigurationName: " + Log.pp(dialog.currentConfigurationName,0,true));
-         Console.writeln(Log.pp(dialog.configurationSet));
+         Console.writeln(Log.pp(dialog.editedConfigurationSet));
          Console.flush();
        }
        if (!result) break;

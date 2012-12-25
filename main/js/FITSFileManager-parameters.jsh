@@ -363,9 +363,6 @@ var ffM_Configuration = (function() {
       return null;
    }
 
-   function getConfigurationByIndex(index) {
-      return configurationTable[index];
-   }
 
 
    // --- List of all synthethic variables and their comments (2 parallel arrays)
@@ -406,6 +403,19 @@ var ffM_Configuration = (function() {
       }
    }
 
+   var getConfigurationTable = function() {
+      return configurationTable;
+   }
+   var getActiveConfiguration = function() {
+      return activeConfiguration;
+   }
+
+   var replaceConfigurationTable = function(newConfigurationTable, nameOfNewActiveConfiguration) {
+      configurationTable = newConfigurationTable;
+      var selectedConfiguration = getConfigurationByName(configurationTable,nameOfNewActiveConfiguration);
+      activateConfiguration(selectedConfiguration);
+   }
+
 
 
 #ifdef NO
@@ -431,19 +441,20 @@ var ffM_Configuration = (function() {
    return {
 
       // The public singletons
-      configurationTable: configurationTable,
-      activeConfiguration: activeConfiguration,
+      getConfigurationTable: getConfigurationTable,
+      getActiveConfiguration: getActiveConfiguration,
+      replaceConfigurationTable: replaceConfigurationTable,
 
       // Methods on a configuration set
       getAllConfigurationNames: getAllConfigurationNames,
       getConfigurationByName: getConfigurationByName,
-      getConfigurationByIndex: getConfigurationByIndex,
+      activateConfiguration: activateConfiguration,
 
       // Support for variables
       defineVariable: defineVariable,
 
    // TODO Should probably be in the engine or variable handling,
-       syntheticVariableNames: syntheticVariableNames,
+      syntheticVariableNames: syntheticVariableNames,
       syntheticVariableComments: syntheticVariableComments,
 
 
@@ -665,11 +676,6 @@ FFM_GUIParameters.prototype.saveSettings = function()
 //   save( "mappingName",                DataType_String, ffM_Configuration.configurationList[this.currentConfigurationIndex ]);
 
 }
-
-FFM_GUIParameters.prototype.getCurrentConfiguration =
-   function getCurrentConfiguration() {
-      return ffM_Configuration.getConfigurationByIndex(this.currentConfigurationIndex);
-   };
 
 
 FFM_GUIParameters.prototype.targetTemplateSelection =  [

@@ -439,10 +439,10 @@ function MainDialog(engine, guiParameters) {
    // -- Configuration section
    //----------------------------------------------------------------------------------
 
-   // Define configuration
+   // Select current configuration
 
    this.configurationName_Label = new Label();
-   this.configurationName_Label.text =  ffM_Configuration.activeConfiguration.name;
+   this.configurationName_Label.text =  ffM_Configuration.getActiveConfiguration().name;
    this.configurationName_Label.textAlignment	= TextAlign_Left | TextAlign_VertCenter;
 
    this.configuration_Button = new PushButton( this );
@@ -452,10 +452,18 @@ function MainDialog(engine, guiParameters) {
    this.configurationDialog = ffM_GUI_config.makeDialog(this);
 
    this.configuration_Button.onClick = function() {
-      var configurationName = ffM_Configuration.activeConfiguration.name;
-      this.dialog.configurationDialog.configure(ffM_Configuration.configurationTable, configurationName);
-      this.dialog.configurationDialog.execute();
-      this.dialog.configurationName_Label.text	=  ffM_Configuration.activeConfiguration.name;
+      var configurationName = ffM_Configuration.getActiveConfiguration().name;
+      var configurationDialog = this.dialog.configurationDialog;
+      configurationDialog.configure(ffM_Configuration.getConfigurationTable(), configurationName);
+      var result =  configurationDialog.execute();
+      if (result) {
+         ffM_Configuration.replaceConfigurationTable(configurationDialog.editedConfigurationSet,configurationDialog.currentConfigurationName)
+         var newActiveConfiguration = ffM_Configuration.getActiveConfiguration();
+         engine.setConfiguration(newActiveConfiguration);
+         this.dialog.configurationName_Label.text	=  newActiveConfiguration.name;
+         this.dialog.refreshTargetFiles();
+
+      }
    }
 
 
@@ -1435,12 +1443,6 @@ CompletionDialog.prototype = new Dialog;
 
 
 
-
-
-// ========================================================================================================================
-// Configuration dialog
-// ========================================================================================================================
-// ---------------------------------------------------------------------------------------------------------
 
 
 // ========================================================================================================================
