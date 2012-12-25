@@ -35,105 +35,54 @@
 
 
 // ====================================================================================================================
-// Configuration support module
+// Configuration module
 // ====================================================================================================================
 
-// ========================================================================================================================
-// Model
-// ========================================================================================================================
 
-// There is a 'pure data' representation of the rules (so they can be serialized)
-// and the Model complement this representation with convenience methods
-
-// RuleSet data (ordered list of rules, the order does not matter for the semantic)
-//    [rule]
-
-// Rule data (the variables is an ordered list)
-//    {name: aString, description: aString, variableList: []}
-
-// Variable: (the parameters dictionary depends on the resolver, the parameters of a resolver
-//            are qualified by the resolver name allowing multiple resolvers at the same
-//            time while in memory)
-//    {name: aString, description: aString, resolver: aName, parameters: {resolverName: {}}}
-
-
-
-var ffM_ConfigurationSet_Model = (function(){
+// ---------------------------------------------------------------------------------------------------------------------
+// Definition of ConfigurationSet data
+// ---------------------------------------------------------------------------------------------------------------------
+// The configuration is a set of rules that define how to parse a FITS file to
+// generate the synthetic variables.
+// The configurations are named and grouped in a ConfigurationSet. Only one Configuration
+// is active at a time.
+// The coniguration object is a 'pure data' representation of the rules (so they can be serialized),
+// it contains only strings, numbers, objects and arrays (regexp are represented as strings!).
+// Some utility methods in this module support common functions, but it is expected that the
+// methods directly operate on the configuration data.
+// The ConfigurationSet is a singleton read/writen by the parameters module. A copy is manipulated by the
+// Configuration Dialog and replace the singleton if the Dialog exit woth OK.
+// One configuration is the 'current' configuration. It is a copy if the selected configuration
+// and can be complemented by data used for processing (typcially the implementation of the resolvers).
+// That copy is not modified by the ConfigurationDialog or saved as parameter. If a new current configuration
+// is selected, a copy of the new configuration will replace the 'current configuration' and all derived
+// data will be recalculated.
 
 
-   // -- RuleSet support functions
-   // Get the names of the rules
-   var ruleNames = function(ruleSet) {
-      var names = [];
-      for (var i=0; i<ruleSet.length; i++) {
-         names.push(ruleSet[i].name);
-      }
-      return names;
-   }
-
-   // Get the rule by name
-   var ruleByName = function(ruleSet, name) {
-      for (var i=0; i<ruleSet.length; i++) {
-         if (ruleSet[i].name === name) return ruleSet[i];
-      }
-      return null;
-   }
-
-
-   // Model of variable - define a new variable
-   var defineVariable = function(name, description, resolver) {
-      var initialValues = deepCopyData(ffM_Resolver.resolverByName(resolver).initial);
-      var initialParameters = {};
-      initialParameters[resolver] = initialValues;
-      return {
-         name: name,
-         description: description,
-         resolver: resolver,
-         parameters: initialParameters,
-      }
-   }
-
-   // Get the rule by name
-   var variableByName = function(variableList, name) {
-      for (var i=0; i<variableList.length; i++) {
-         if (variableList[i].name === name) return variableList[i];
-      }
-      return null;
-   }
-
-
-
-   return {
-      ruleNames: ruleNames,
-      ruleByName: ruleByName,
-      defineVariable: defineVariable,
-   }
-}) ();
 
 
 
 var ffM_Configuration = (function() {
 
-#ifdef NO
+//var ffM_ConfigurationSet_Model = (function(){
 
-   // List of FITS keywords shown by default (even if not present in any image) in the input files TreeBox
-   var defaultShownKeywords_DEFAULT = [
-      "IMAGETYP","FILTER","OBJECT"
-      //"SET-TEMP","EXPOSURE","IMAGETYP","FILTER","XBINNING","YBINNING","OBJECT"
-   ];
-   var defaultShownKeywords_CAHA = [
-      "IMAGETYP","INSFLNAM","OBJECT"
-      //"SET-TEMP","EXPOSURE","IMAGETYP","FILTER","XBINNING","YBINNING","OBJECT"
-   ];
-
-
-
-#endif
+   // Default ConfigurationSet, serve also as example of the structure.
 
 
    // --------------------------------------------------------------------------------------------------
+   // configurationSet data (ordered list of configurations, the order does not matter for the semantic)
+   //    [cpnfiguration]
 
-   var defaultRuleSet =
+   // configuration data (the variables is an ordered list)
+   //    {name: aString, description: aString, variableList: [variables]}
+
+   // variable:
+   //    {name: aString, description: aString, resolver: aName, parameters: {resolverName: {}}}
+   // (the content of the 'parameters' object depends on the resolver, it has own key which is the
+   //  name of the resolver, allowing to keep data for inactive resolvers)
+   // ---------------------------------------------------------------------------------------------------------------------
+
+   var defaultConfigurationSet =
    [
       { name: "Default",
        description: "Common FITS rules",
@@ -382,22 +331,38 @@ var ffM_Configuration = (function() {
 
    ];
 
-   // --- private variables ---------------------------------------------------
-   // name string -> configuration
-   var configurationTable = defaultRuleSet;
 
-   // array of names
-   var configurationList = ffM_ConfigurationSet_Model.ruleNames(configurationTable);
+   // --- singletons variables ---------------------------------------------------
+   // The configuration set (a table of configurations)
+   // Used only by the parameters and the DialogConfiguration handler
+   var configurationTable = defaultConfigurationSet;
 
-   // --- method implementations ----------------------------------------------
-   function addConfiguration(configuration) {
-      configurationTable[configuration.name] = configuration;
-      configurationList.push(configuration.name);
+   // The active configuration (a copy of a configuration in the configurationTable)
+   // Set by the method activateConfiguration() by the parameter  loader or the DialogConfiguration handler,
+   // accessed by the engine and variables processing (low level methods should receive it as parameters
+   // rather than access the global variable).
+   var activeConfiguration = null;
+
+
+   // Methods used to extract commonly needed information from the ConfigurationSet
+
+   // Get the names of the all the configurations
+   var getAllConfigurationNames = function(aConfigurationTable) {
+      var names = [];
+      for (var i=0; i<aConfigurationTable.length; i++) {
+         names.push(aConfigurationTable[i].name);
+      }
+      return names;
    }
 
-   function getConfigurationByName(name) {
-      return ffM_ConfigurationSet_Model.ruleByName(configurationTable,name);
+   // Get the rule by name
+   var getConfigurationByName = function(aConfigurationTable, name) {
+      for (var i=0; i<aConfigurationTable.length; i++) {
+         if (aConfigurationTable[i].name === name) return aConfigurationTable[i];
+      }
+      return null;
    }
+
    function getConfigurationByIndex(index) {
       return configurationTable[index];
    }
@@ -405,26 +370,83 @@ var ffM_Configuration = (function() {
 
    // --- List of all synthethic variables and their comments (2 parallel arrays)
    //     All synthethic variables are currently added to the columns of the file TreeBox
-   // TODO Should directly access definitions
+   // Currently just add all variables of the current resolver
+   // TODO Handle non resolver variables, move somewhere else
    var syntheticVariableNames = [];
    var syntheticVariableComments = [];
-#ifdef NO
-for (var i=0; i<shownVariablesNumber; i++) {
-      syntheticVariableNames.push(variableDefinitions[i].name);
-      syntheticVariableComments.push(variableDefinitions[i].description);
+
+
+   // This creates the activation copy of the configuration,
+   // the calling code must re-initialize the GUI
+   var activateConfiguration = function (aConfiguration) {
+      activeConfiguration = deepCopyData(aConfiguration);
+
+      // TODO Should be moved
+      for (var i=0; i<aConfiguration.variableList.length; i++) {
+         var aVar = aConfiguration.variableList[i];
+         syntheticVariableNames.push(aVar.name);
+         syntheticVariableComments.push(aVar.description);
+      }
    }
+
+
+
+   // -- Support for variable handling
+
+   // Model of variable - define a new variable
+   var defineVariable = function(name, description, resolver) {
+      var initialValues = deepCopyData(ffM_Resolver.resolverByName(resolver).initial);
+      var initialParameters = {};
+      initialParameters[resolver] = initialValues;
+      return {
+         name: name,
+         description: description,
+         resolver: resolver,
+         parameters: initialParameters,
+      }
+   }
+
+
+
+#ifdef NO
+
+   // List of FITS keywords shown by default (even if not present in any image) in the input files TreeBox
+   var defaultShownKeywords_DEFAULT = [
+      "IMAGETYP","FILTER","OBJECT"
+      //"SET-TEMP","EXPOSURE","IMAGETYP","FILTER","XBINNING","YBINNING","OBJECT"
+   ];
+   var defaultShownKeywords_CAHA = [
+      "IMAGETYP","INSFLNAM","OBJECT"
+      //"SET-TEMP","EXPOSURE","IMAGETYP","FILTER","XBINNING","YBINNING","OBJECT"
+   ];
+
 #endif
+
+
+
+   // Activate some default configuration
+   activateConfiguration(configurationTable[0]);
 
    // --- public properties and methods ---------------------------------------
    return {
-       configurationList: configurationList, // Consider readonly
-       getConfigurationByName: getConfigurationByName,
-       getConfigurationByIndex: getConfigurationByIndex,
-   // TODO For curernt config
-      syntheticVariableNames: syntheticVariableNames,
-      syntheticVariableComments: syntheticVariableComments,
-      // Temp
+
+      // The public singletons
       configurationTable: configurationTable,
+      activeConfiguration: activeConfiguration,
+
+      // Methods on a configuration set
+      getAllConfigurationNames: getAllConfigurationNames,
+      getConfigurationByName: getConfigurationByName,
+      getConfigurationByIndex: getConfigurationByIndex,
+
+      // Support for variables
+      defineVariable: defineVariable,
+
+   // TODO Should probably be in the engine or variable handling,
+       syntheticVariableNames: syntheticVariableNames,
+      syntheticVariableComments: syntheticVariableComments,
+
+
 
    };
 }) ();
@@ -594,7 +616,8 @@ FFM_GUIParameters.prototype.loadSettings = function() {
          this.targetFileItemListText[0] = this.targetFileNameCompiledTemplate.templateString;
 
          // After 0.7
-         if (parameterVersion>0.7) {
+#ifdef NO
+   if (parameterVersion>0.7) {
             if ( (o = load( "mappingName",          DataType_String )) !== null ) {
                ki = ffM_Configuration.configurationList.indexOf(o);
                if(ki>=0) {
@@ -606,7 +629,9 @@ FFM_GUIParameters.prototype.loadSettings = function() {
                }
             }
          }
+#endif
       }
+
    } else {
       Console.show();
       Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' do not have a 'version' key, settings ignored");
@@ -637,7 +662,7 @@ FFM_GUIParameters.prototype.saveSettings = function()
    save( "sourceFileNameRegExp",       DataType_String, regExpToString(this.sourceFileNameRegExp) );
    save( "orderBy",                    DataType_String, this.orderBy );
    save( "groupByTemplate",            DataType_String, this.groupByCompiledTemplate.templateString );
-   save( "mappingName",                DataType_String, ffM_Configuration.configurationList[this.currentConfigurationIndex ]);
+//   save( "mappingName",                DataType_String, ffM_Configuration.configurationList[this.currentConfigurationIndex ]);
 
 }
 

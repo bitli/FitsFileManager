@@ -51,8 +51,8 @@
 
 var ffM_TestConfigUi = (function(){
 
-   var addVariable = ffM_ConfigurationSet_Model.addVariable;
-   var defineVariable = ffM_ConfigurationSet_Model.defineVariable;
+   var addVariable = ffM_Configuration.addVariable;
+   var defineVariable = ffM_Configuration.defineVariable;
 
 
    // Model object wrap data object and behavior

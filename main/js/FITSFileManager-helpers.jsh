@@ -88,7 +88,7 @@ function regExpFromUserString(reString) {
 //=========================================================================================================================
 // Object data support
 // ------------------------------------------------------------------------------------------------------------------------
-// Deep copy an object (with object, array, basic types and RegExp only)
+// Deep copy an object (with object, array, basic types and RegExp only, Date and RegExp are in general not used
 function deepCopyData(object) {
    var i;
    var result;
@@ -606,7 +606,6 @@ var ffM_variables = (function() {
 
    // Extract the variables to form group names and file names from the file name and the FITS keywords
    // They act as 'synthethic' keywords (the purpose is to normalize their representation for ease of use)
-   // The list of all synthethic keywords must be in the global array syntheticVariableNames in FITSFileManager-gui.js
    // Parameters:
    //    inputFile: Full path of input file (to extract file anme etc...)
    //    imageKeywords: A FitsFileManager imageKeyword object (all FITS keywords of the image)

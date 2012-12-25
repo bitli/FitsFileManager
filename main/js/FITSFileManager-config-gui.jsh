@@ -901,7 +901,7 @@ var ffM_GUI_config = (function (){
      // configuration changed (also used in initialization)
      var configurationSelectedCallback = function(configurationName) {
         Log.debug("ConfigurationDialog: configurationSelectedCallback - ConfigurationSet selected:",configurationName);
-        var selectedConfiguration = ffM_ConfigurationSet_Model.ruleByName(that.configurationSet, configurationName);
+        var selectedConfiguration = ffM_Configuration.getConfigurationByName(that.configurationSet, configurationName);
         if (selectedConfiguration == null) {
            throw "PROGRAM ERROR - Invalid configuration set name '" + configurationName +"'";
         }
@@ -916,7 +916,7 @@ var ffM_GUI_config = (function (){
      var variableDefinitionFactory = function() {
           Log.debug("ConfigurationDialog: variableDefinitionFactory - create new variable");
           that.newVariableCounter++;
-          return ffM_ConfigurationSet_Model.defineVariable("new_" + that.newVariableCounter,'','Constant');
+          return ffM_Configuration.defineVariable("new_" + that.newVariableCounter,'','Constant');
      }
 
      // -- Build the top level pane
@@ -940,7 +940,7 @@ var ffM_GUI_config = (function (){
      this.configure = function configure(originalConfigurationSet, configurationName) {
         this.configurationSet = deepCopyData(originalConfigurationSet);
         this.currentConfigurationName = configurationName;
-        var configurationNames = ffM_ConfigurationSet_Model.ruleNames(this.configurationSet);
+        var configurationNames = ffM_Configuration.getAllConfigurationNames(this.configurationSet);
         // Initialize content
         this.configurationSelection_ComboBox.configure(configurationNames, this.currentConfigurationName);
         configurationSelectedCallback(this.currentConfigurationName);

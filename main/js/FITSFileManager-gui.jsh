@@ -436,13 +436,13 @@ function MainDialog(engine, guiParameters) {
 
 
    //----------------------------------------------------------------------------------
-   // -- Rules section
+   // -- Configuration section
    //----------------------------------------------------------------------------------
 
-   // Define ruleset (configuration)
+   // Define configuration
 
    this.configurationName_Label = new Label();
-   this.configurationName_Label.text		=  ffM_Configuration.configurationList[guiParameters.currentConfigurationIndex];
+   this.configurationName_Label.text =  ffM_Configuration.activeConfiguration.name;
    this.configurationName_Label.textAlignment	= TextAlign_Left | TextAlign_VertCenter;
 
    this.configuration_Button = new PushButton( this );
@@ -452,10 +452,10 @@ function MainDialog(engine, guiParameters) {
    this.configurationDialog = ffM_GUI_config.makeDialog(this);
 
    this.configuration_Button.onClick = function() {
-      var configurationName = ffM_Configuration.configurationList[guiParameters.currentConfigurationIndex];
+      var configurationName = ffM_Configuration.activeConfiguration.name;
       this.dialog.configurationDialog.configure(ffM_Configuration.configurationTable, configurationName);
       this.dialog.configurationDialog.execute();
-      this.dialog.configurationName_Label.text	=  ffM_Configuration.configurationList[guiParameters.currentConfigurationIndex];
+      this.dialog.configurationName_Label.text	=  ffM_Configuration.activeConfiguration.name;
    }
 
 
@@ -1032,12 +1032,13 @@ function MainDialog(engine, guiParameters) {
    // -- Set visibility of synthetic and FITS keywords columns (called to apply changes)
    this.showOrHideFITSkey = function () {
       var allFITSKeyNames = this.engine.keywordsSet.allValueKeywordNameList;
-      // +1 as the file name is always visible
       for (var i = 0; i<ffM_Configuration.syntheticVariableNames.length;i++) {
+        // +1 as the file name column is always visible
          var c = i + 1;
          this.filesTreeBox.showColumn( c, this.engine.shownSyntheticKeyNames.hasOwnProperty(ffM_Configuration.syntheticVariableNames[i]));
       }
       for (var i = 0; i<allFITSKeyNames.length;i++) {
+        // + 1 to skip file name and then skip the synthetic variables columns (they are present even if not shown))
          var c = i + 1 + ffM_Configuration.syntheticVariableNames.length;
          this.filesTreeBox.showColumn( c, this.engine.shownFITSKeyNames.hasOwnProperty(allFITSKeyNames[i]));
       }
