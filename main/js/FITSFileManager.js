@@ -179,9 +179,7 @@
 
 #include "PJSR-logging.jsh"
 
-
-
-
+#include "FITSFileManager-json.jsh"
 
 #include "FITSFileManager-parameters.jsh"
 #include "FITSFileManager-fits.jsh"

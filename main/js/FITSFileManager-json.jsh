@@ -765,6 +765,9 @@ if (typeof JSON !== 'object') {
 // If the JSON object does not yet have a stringify method, give it one.
 
     if (typeof JSON.stringify !== 'function') {
+#ifdef DEBUG
+         Log.debug("Creating JSON.stringify");
+#endif
         JSON.stringify = function (value, replacer, space) {
 
 // The stringify method takes a value and an optional replacer, and an optional
@@ -807,14 +810,22 @@ if (typeof JSON !== 'object') {
             return str('', {'': value});
         };
     }
+#ifdef DEBUG
+     else {     Log.debug("Using builtin JSON.stringify"); }
+#endif
 
 
 // If the JSON object does not yet have a parse method, give it one.
 
     if (typeof JSON.parse !== 'function') {
+#ifdef DEBUG
+         Log.debug("Creating JSON.parse");
+#endif
         JSON.parse = json_parse;
    }
-
+#ifdef DEBUG
+     else {     Log.debug("Using builtin JSON.parse"); }
+#endif
 
 
 }());
