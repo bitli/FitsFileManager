@@ -15,6 +15,10 @@
 //                     but this should be fairly obvious.
 
 
+// Define a version for the PARAMETERS ( a double, independent of the script version)
+#define PARAMETERS_VERSION 1.0
+
+
 // TODO Should not be a global or define, but scoped variables
 
 // Default values of some parameters, used only on the first usage of the script (when the settings are not yet defined)
@@ -451,13 +455,15 @@ var ffM_Configuration = (function() {
       // The public singletons
       getConfigurationTable: getConfigurationTable,
       getActiveConfigurationName: getActiveConfigurationName,
+
+      // Manage active configurations
       createWorkingConfiguration: createWorkingConfiguration,
-      replaceConfigurationTable: replaceConfigurationTable,
+      setActiveConfigurationName: setActiveConfigurationName,
 
       // Methods on a configuration set
+      replaceConfigurationTable: replaceConfigurationTable,
       getAllConfigurationNames: getAllConfigurationNames,
       getConfigurationByName: getConfigurationByName,
-      setActiveConfigurationName: setActiveConfigurationName,
 
       // Support for variables
       defineVariable: defineVariable,
@@ -583,7 +589,12 @@ FFM_GUIParameters.prototype.loadSettings = function() {
    {
       var setting = Settings.read( FFM_SETTINGS_KEY_BASE + key, type );
 #ifdef DEBUG
-      debug("FFM_GUIParameters.load: "+ key+ ": "+ (setting===null ? 'null' : setting.toString()));
+      var text = (setting===null ? 'null' : setting.toString());
+      // To workaround slow console on 1.7
+      if (text.length > 100) {
+         text=text.substring(0,100) + "...";
+      }
+      debug("FFM_GUIParameters.load: "+ key+ ": "+ text + ", ok: " + Settings.lastReadOK);
 #endif
       return setting;
    }
@@ -593,11 +604,11 @@ FFM_GUIParameters.prototype.loadSettings = function() {
       return load( key + '_' + index.toString(), type );
    }
 
-   var o, t, parameterVersion, templateErrors, ki;
+   var o, t, parameterVersion, templateErrors, configurations, activeConfigurationName;
    if ( (parameterVersion = load( "version",    DataType_Double )) !== null ) {
-      if (parameterVersion > VERSION) {
+      if (parameterVersion > PARAMETERS_VERSION) {
          Console.show();
-         Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' have version ", parameterVersion, " later than script version ", VERSION, ", settings ignored");
+         Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' have paramter version ", parameterVersion, " later than script parameter version ", PARAMETERS_VERSION, ", settings ignored");
          Console.flush();
       } else {
          if ( (o = load( "targetFileNameTemplate",    DataType_String )) !== null ) {
@@ -635,22 +646,17 @@ FFM_GUIParameters.prototype.loadSettings = function() {
          this.groupItemListText[0] = this.groupByCompiledTemplate.templateString;
          this.targetFileItemListText[0] = this.targetFileNameCompiledTemplate.templateString;
 
-         // After 0.7
-#ifdef NO
-   if (parameterVersion>0.7) {
-            if ( (o = load( "mappingName",          DataType_String )) !== null ) {
-               ki = ffM_Configuration.configurationList.indexOf(o);
-               if(ki>=0) {
-                  this.currentConfigurationIndex = ki;
-               } else {
-                  Console.show();
-                  Console.writeln("Mapping rules '" + o + "' unknown, using '" + ffM_Configuration.configurationList[this.currentConfigurationIndex ] + "'");
-                  Console.flush();
-               }
+         // After 0.8
+   if (parameterVersion>0.8) {
+            if ( (o = load( "configurations",          DataType_String )) !== null ) {
+               configurations = JSON.parse(o);
             }
+            if ( (o = load( "activeConfiguration",          DataType_String )) !== null ) {
+               activeConfigurationName = o;
+            }
+            ffM_Configuration.replaceConfigurationTable(configurations, activeConfigurationName);
          }
-#endif
-      }
+  }
 
    } else {
       Console.show();
@@ -665,7 +671,12 @@ FFM_GUIParameters.prototype.saveSettings = function()
 {
    function save( key, type, value ) {
 #ifdef DEBUG
-      debug("saveSettings: key="+key+", type="+ type+ ", value=" +value.toString());
+      var text = value.toString();
+      // To workaround slow console on 1.7
+      if (text.length > 100) {
+         text=text.substring(0,100) + "...";
+      }
+      debug("saveSettings: key="+key+", type="+ type+ ", value=" +text);
 #endif
       Settings.write( FFM_SETTINGS_KEY_BASE + key, type, value );
    }
@@ -677,13 +688,13 @@ FFM_GUIParameters.prototype.saveSettings = function()
       save( key + '_' + index.toString(), type, value );
    }
 
-   save( "version",                    DataType_Double, parseFloat(VERSION) );
+   save( "version",                    DataType_Double, PARAMETERS_VERSION );
    save( "targetFileNameTemplate",     DataType_String, this.targetFileNameCompiledTemplate.templateString );
    save( "sourceFileNameRegExp",       DataType_String, regExpToString(this.sourceFileNameRegExp) );
    save( "orderBy",                    DataType_String, this.orderBy );
    save( "groupByTemplate",            DataType_String, this.groupByCompiledTemplate.templateString );
-//   save( "mappingName",                DataType_String, ffM_Configuration.configurationList[this.currentConfigurationIndex ]);
-
+   save( "configurations",             DataType_String, JSON.stringify(ffM_Configuration.getConfigurationTable() ));
+   save( "activeConfiguration",        DataType_String, ffM_Configuration.getActiveConfigurationName() );
 }
 
 

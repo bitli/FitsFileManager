@@ -458,10 +458,9 @@ function MainDialog(engine, guiParameters) {
       var result =  configurationDialog.execute();
       if (result) {
          ffM_Configuration.replaceConfigurationTable(configurationDialog.editedConfigurationSet,configurationDialog.currentConfigurationName)
-         var newActiveConfiguration = ffM_Configuration.getActiveConfiguration();
-         this.dialog.configurationName_Label.text	=  ffM_Configuration.getActiveConfigurationName();
+          this.dialog.configurationName_Label.text	=  ffM_Configuration.getActiveConfigurationName();
 
-         engine.setConfiguration(createWorkingActiveConfiguration());
+         engine.setConfiguration(ffM_Configuration.createWorkingConfiguration());
          engine.rebuildAll();
 
          // TODO - Merge with action on add files

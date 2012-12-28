@@ -760,6 +760,7 @@ if (typeof JSON !== 'object') {
             gap = mind;
             return v;
         }
+        throw "unexpected type " + typeof value; // To make suse strict happy
     }
 
 // If the JSON object does not yet have a stringify method, give it one.
