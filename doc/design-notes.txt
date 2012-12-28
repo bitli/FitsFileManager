@@ -1,0 +1,100 @@
+FITSFileManager - desgin-notes.txt
+
+1. Modules
+1.1 Main (production) sources
+FileFileManager  - main program
+  File                             Module             Description
+  PJSR-logging.jsh                 Log                For debugging 
+  FITSFileManager-json.jsh         JSON               Json support for PI 1.7
+  FITSFileManager-parameters.jsh   ffM_Configuration
+                                   FFM_GUIParameters
+  FITSFileManager-fits.jsh         ffM_FITS_Keywords   Load/save FITS keywords  
+  FITSFileManager-helpers.jsh                          Utility functions (String, File)
+                                   ffM_LookupConverter  Factory and resolver for regexp lookup resolver
+                                   ffM_Resolver         All resolvers definitions
+                                   ffM_template         Teamplate analyzer
+                                   ffM_variables        Support for variable generation (factories and execution))
+  FITSFileManager-engine.jsh       FFM_Engine object    Manage file lists, apply transformations
+  FITSFileManager-text.jsh         Text                 All larger texts for GUI
+  
+  (many UI include files)
+  FITSFileManager-config-gui.jsh   ffM_GUI_support      UI objects independent of FITSFileManager data
+                                   ffM_GUI_config       UI object for the Configuration Dialog
+  FITSFileManager-gui.jsh                              methods and objects for the main Dialog
+1.2 Tests
+See under test directory
+
+2. Main data structures
+The processing is driven by the so called parameters (entered in the main dialog),
+active configuration (the configurations are managed in teh configuration dialog) and
+various tables to define the variable resolvers and other handlers.
+
+The GUI paramters and configuration are saved to the settings (they could be consolidated).
+
+FFF_GUIParamters  - current template, source file, configuration, ...
+                    history or common templates, etc for GUI.
+                    Any addition to the list of files triggers the generation of
+                    synthetic variables for the new files.
+                    Any change to other parameters is immediately reported to the engine
+                    and trigger a recalculation of the transformations (this does 
+                    not require regenerating the synthetic variables).
+                    
+ffM_Configuration - The set of rules that define the supported synthetic variables and
+                    the current active set.
+                    The rule set is only changed in the configuration dialog,
+                    a change requires a recalculation of all synthetic variables and
+                    of all transformations.
+                    The configuration set data format is defined in FITSFileManager-parameters.jsh.
+                    The configuration dialog works on a copy of the configuration, to allow for
+                    'cancel'
+The following tables drive the processing
+ffM_Resolver      - Define the ID, description, default parameter values, UI control and
+                    parserFactory (or to resolve the corresponding variable) for each
+                    type of variables.  Th UI control and parserFactory part are added
+                    when the program is initialize.
+
+Key dynamic data:
+currentConfiguration: It is a copy of the configuration part of a configuration set,  
+                     with added values used at runtime, when the configuration is installed
+                     in the engine.
+                     The added value is the 'parser' returned by the parser factory.
+                     
+engine data:       The engine keeps track of the input files, their FITS keywords,
+                   their synthetic variable values and resulting transformation.
+                   The engine is called by the GUI when a recalculation is required.
+                   
+3. Main event handling
+Overview (details and UI events not shown)
+3.1 Initialization
+
+main       parameters       dialog           engine                    variables , templates
+  ->       load Settings
+           and define current config
+  
+  ->                                        makeEngine
+  ->                                        reset
+  ->                                        setConfiguration
+                                            ->                        install parsers
+                                            initialize variable to show
+  ->                         create dialog
+  ->                         execute dialog
+  
+3.2 Adding files
+                             add files
+                             ->              load files, load fits keywords
+                             ->                                        makeSyntheticVariables
+                            refreshTargetFiles                             
+                            ->               buildTargetFiles
+                            ->               makeListOfTransform
+                                             ->                            analyzeTemplate
+                                             expandTemplates                             
+3.2 Others
+The analyzeTemplate  is called when the GUI modified any parameters beyond adding files.
+
+                                         
+
+
+                    
+                  
+                  
+                  

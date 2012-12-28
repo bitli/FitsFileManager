@@ -442,7 +442,7 @@ function MainDialog(engine, guiParameters) {
    // Select current configuration
 
    this.configurationName_Label = new Label();
-   this.configurationName_Label.text =  ffM_Configuration.getActiveConfiguration().name;
+   this.configurationName_Label.text =  ffM_Configuration.getActiveConfigurationName();
    this.configurationName_Label.textAlignment	= TextAlign_Left | TextAlign_VertCenter;
 
    this.configuration_Button = new PushButton( this );
@@ -452,16 +452,16 @@ function MainDialog(engine, guiParameters) {
    this.configurationDialog = ffM_GUI_config.makeDialog(this);
 
    this.configuration_Button.onClick = function() {
-      var configurationName = ffM_Configuration.getActiveConfiguration().name;
+      var configurationName = ffM_Configuration.getActiveConfigurationName();
       var configurationDialog = this.dialog.configurationDialog;
       configurationDialog.configure(ffM_Configuration.getConfigurationTable(), configurationName);
       var result =  configurationDialog.execute();
       if (result) {
          ffM_Configuration.replaceConfigurationTable(configurationDialog.editedConfigurationSet,configurationDialog.currentConfigurationName)
          var newActiveConfiguration = ffM_Configuration.getActiveConfiguration();
-         this.dialog.configurationName_Label.text	=  newActiveConfiguration.name;
+         this.dialog.configurationName_Label.text	=  ffM_Configuration.getActiveConfigurationName();
 
-         engine.setConfiguration(newActiveConfiguration);
+         engine.setConfiguration(createWorkingActiveConfiguration());
          engine.rebuildAll();
 
          // TODO - Merge with action on add files

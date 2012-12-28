@@ -494,8 +494,6 @@ var ffM_template = (function() {
 // ====================================================================================================================
 
 
-
-
 var ffM_variables = (function() {
 
    // -- Install all the parsers in the  configuration (must be called once only on a configuration copy)

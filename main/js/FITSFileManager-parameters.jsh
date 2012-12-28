@@ -337,11 +337,9 @@ var ffM_Configuration = (function() {
    // Used only by the parameters and the DialogConfiguration handler
    var configurationTable = defaultConfigurationSet;
 
-   // The active configuration (a copy of a configuration in the configurationTable)
-   // Set by the method activateConfiguration() by the parameter  loader or the DialogConfiguration handler,
-   // accessed by the engine and variables processing (low level methods should receive it as parameters
-   // rather than access the global variable).
-   var activeConfiguration = null;
+   // The active configuration name
+   // The engine work on a COPY of the active configuration, this is why we keep the name only
+   var activeConfigurationName = null;
 
 
    // Methods used to extract commonly needed information from the ConfigurationSet
@@ -373,17 +371,17 @@ var ffM_Configuration = (function() {
    var syntheticVariableComments = [];
 
 
-   // This creates the activation copy of the configuration,
-   // the calling code must re-initialize the GUI
-   var activateConfiguration = function (aConfiguration) {
-      activeConfiguration = deepCopyData(aConfiguration);
+   // The calling code must re-configure the GUI and the engine after calling this function
+   var setActiveConfigurationName = function (nameOfNewActiveConfiguration) {
+      activeConfigurationName = nameOfNewActiveConfiguration;
 #ifdef DEBUG
-      Log.debug("Configuration activated: ", activeConfiguration.name);
+      Log.debug("Configuration activated: ", activeConfigurationName);
 #endif
 
       // TODO Should be moved
-      for (var i=0; i<aConfiguration.variableList.length; i++) {
-         var aVar = aConfiguration.variableList[i];
+      var activeConfiguration = getConfigurationByName(configurationTable,nameOfNewActiveConfiguration);
+      for (var i=0; i<activeConfiguration.variableList.length; i++) {
+         var aVar = activeConfiguration.variableList[i];
          syntheticVariableNames.push(aVar.name);
          syntheticVariableComments.push(aVar.description);
       }
@@ -409,14 +407,21 @@ var ffM_Configuration = (function() {
    var getConfigurationTable = function() {
       return configurationTable;
    }
-   var getActiveConfiguration = function() {
-      return activeConfiguration;
+   var getActiveConfigurationName = function() {
+      return activeConfigurationName;
    }
 
    var replaceConfigurationTable = function(newConfigurationTable, nameOfNewActiveConfiguration) {
       configurationTable = newConfigurationTable;
-      var selectedConfiguration = getConfigurationByName(configurationTable,nameOfNewActiveConfiguration);
-      activateConfiguration(selectedConfiguration);
+      setActiveConfigurationName(nameOfNewActiveConfiguration);
+   }
+
+   var createWorkingConfiguration = function() {
+      var configuration = getConfigurationByName(configurationTable,activeConfigurationName);
+      if (configuration == null) {
+         throw "FITSFileManager-parameters - Invalid configuration '"+ name + "'";
+      }
+      return deepCopyData(configuration);
    }
 
 
@@ -438,20 +443,21 @@ var ffM_Configuration = (function() {
 
 
    // Activate some default configuration
-   activateConfiguration(configurationTable[0]);
+   setActiveConfigurationName(configurationTable[0].name);
 
    // --- public properties and methods ---------------------------------------
    return {
 
       // The public singletons
       getConfigurationTable: getConfigurationTable,
-      getActiveConfiguration: getActiveConfiguration,
+      getActiveConfigurationName: getActiveConfigurationName,
+      createWorkingConfiguration: createWorkingConfiguration,
       replaceConfigurationTable: replaceConfigurationTable,
 
       // Methods on a configuration set
       getAllConfigurationNames: getAllConfigurationNames,
       getConfigurationByName: getConfigurationByName,
-      activateConfiguration: activateConfiguration,
+      setActiveConfigurationName: setActiveConfigurationName,
 
       // Support for variables
       defineVariable: defineVariable,

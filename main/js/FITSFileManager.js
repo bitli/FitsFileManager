@@ -215,7 +215,7 @@ function ffM_main() {
    guiParameters.loadSettings();
 
    var engine = new FFM_Engine(guiParameters);
-   engine.setConfiguration(ffM_Configuration.getActiveConfiguration());
+   engine.setConfiguration(ffM_Configuration.createWorkingConfiguration());
 
    var dialog = new MainDialog(engine, guiParameters);
    dialog.execute();
