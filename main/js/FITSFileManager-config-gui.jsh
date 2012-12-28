@@ -812,7 +812,7 @@ var ffM_GUI_config = (function (){
      this.resolverSelectionRow =  new ResolverSelectionRow(this, rowStyle, "Resolver", ffM_Resolver.resolverNames, resolverSelectionCallback);
      variableDetails_GroupBox.sizer.add(this.resolverSelectionRow);
 
-     this.variableNameRow = new TextEntryRow(this, rowStyle, "Name","name",
+     this.variableNameRow = new TextEntryRow(this, rowStyle, "Variable name","name",
         propertyTypes.FREE_TEXT,
         function() {variableListSelection_Box.currentModelElementChanged()});
      variableDetails_GroupBox.sizer.add(this.variableNameRow);
@@ -950,6 +950,7 @@ var ffM_GUI_config = (function (){
         that.currentConfigurationName = configurationName;
         // Update UI
         that.variableUI.updateVariableList(selectedConfiguration.variableList);
+        that.configurationComment_Edit.text = selectedConfiguration.description;
      }
 
      // -- Model call backs
@@ -963,8 +964,20 @@ var ffM_GUI_config = (function (){
      // -- Build the top level pane
 
      // Top pane - select configuration to operate upon
-     this.configurationSelection_ComboBox = new ConfigurationSelection_ComboBox(this, [], configurationSelectedCallback);
-     this.sizer.add(this.configurationSelection_ComboBox);
+     var configurationLayoutControl = new Control;
+     this.sizer.add(configurationLayoutControl);
+     configurationLayoutControl.sizer = new HorizontalSizer;
+     var configurationSelection_Label = new Label(configurationLayoutControl);
+     configurationLayoutControl.sizer.add(configurationSelection_Label);
+     configurationSelection_Label.text = "Configuration: ";
+     this.configurationSelection_ComboBox = new ConfigurationSelection_ComboBox(configurationLayoutControl, [], configurationSelectedCallback);
+     configurationLayoutControl.sizer.add(this.configurationSelection_ComboBox);
+     this.configurationComment_Edit = new Edit;
+     configurationLayoutControl.sizer.add(this.configurationComment_Edit);
+     this.configurationComment_Edit.onTextUpdated = function() {
+        ffM_Configuration. getConfigurationByName(that.editedConfigurationSet,ffM_Configuration.getActiveConfigurationName()).description = this.text;
+     }
+
 
      // Middle pane - define variables, their resolvers and the resolver's parameters
      this.variableUI = new VariableUIControl(this, variableDefinitionFactory);
