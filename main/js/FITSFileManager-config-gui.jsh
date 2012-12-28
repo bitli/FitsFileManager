@@ -128,6 +128,7 @@ var ffM_GUI_support = (function (){
             makeNode(treeBox, listModel[i], i);
          }
       }
+      // Create initial model
       this.modelListChanged(initialListModel);
 
      // The current values of the current row model changed
@@ -436,8 +437,8 @@ var ffM_GUI_config = (function (){
            name_Edit.enabled = true;
         }
      }
-     this.updateTarget(null);
 
+     this.updateTarget(null);
   }
   TextEntryRow.prototype = new Control;
 
@@ -531,9 +532,18 @@ var ffM_GUI_config = (function (){
         that.selectTransformationToEdit(transformationModel);
      }
 
+     var regExpListSelection_GroupBox = new GroupBox(this);
+     this.sizer.add(regExpListSelection_GroupBox);
+     regExpListSelection_GroupBox.title ="List of RegExp->value";
+     regExpListSelection_GroupBox.sizer = new VerticalSizer;
+
+     var selectionLayoutControl = new Control;
+     regExpListSelection_GroupBox.sizer.add(selectionLayoutControl);
+     selectionLayoutControl.sizer = new HorizontalSizer;
+     selectionLayoutControl.sizer.addStretch();
 
      var regExpListSelection_Box = new ffM_GUI_support.ManagedList_Box(
-           this,
+           selectionLayoutControl,
            [{propertyName: 'regexp'},{propertyName: 'replacement'}],
            [], // Its model will be initialized dynamically
            transformationDefinitionFactory,
@@ -541,22 +551,22 @@ var ffM_GUI_config = (function (){
            transformationSelectionCallback,
            false // Keep in order
      );
-     this.sizer.add(regExpListSelection_Box);
+     selectionLayoutControl.sizer.add(regExpListSelection_Box);
 
 
-     var currentRegExpRow = new TextEntryRow(this, rowStyle, "regexp", "regexp",
+     this.currentRegExpRow = new TextEntryRow(regExpListSelection_GroupBox, rowStyle, "Regexp", "regexp",
         propertyTypes.REG_EXP,
         function() {regExpListSelection_Box.currentModelElementChanged()});
-     this.sizer.add(currentRegExpRow);
-     var currentReplacementRow = new TextEntryRow(this,rowStyle, "replacement", "replacement",
+     regExpListSelection_GroupBox.sizer.add(this.currentRegExpRow);
+     this.currentReplacementRow = new TextEntryRow(regExpListSelection_GroupBox,rowStyle, "Replacement", "replacement",
         propertyTypes.FREE_TEXT,
         function() {regExpListSelection_Box.currentModelElementChanged()});
-     this.sizer.add(currentReplacementRow);
+     regExpListSelection_GroupBox.sizer.add(this.currentReplacementRow);
 
 
      this.selectTransformationToEdit = function(transformationModel) {
-        currentRegExpRow.updateTarget(transformationModel);
-        currentReplacementRow.updateTarget(transformationModel);
+        this.currentRegExpRow.updateTarget(transformationModel);
+        this.currentReplacementRow.updateTarget(transformationModel);
      }
 
      this.initialize = function(variableDefinition) {
@@ -566,10 +576,20 @@ var ffM_GUI_config = (function (){
      }
 
      this.populate = function(variableDefinition) {
-        // Should probably be somewhere else
+        // initialize should probably be somewhere else
         this.initialize(variableDefinition);
         keyRow.updateTarget(variableDefinition.parameters[resolverName]);
         regExpListSelection_Box.modelListChanged(variableDefinition.parameters[resolverName].reChecks);
+        // Workaround:
+        // The modelListChanged above seem to generate callbacks events that update the regexp
+        // and replacement row, but we want them to be disabled until the user explicitely select one.
+        this.currentRegExpRow.updateTarget(null);
+        this.currentReplacementRow.updateTarget(null);
+     }
+
+     this.leave = function() {
+        this.currentRegExpRow.updateTarget(null);
+        this.currentReplacementRow.updateTarget(null);
      }
   }
   MapFirstRegExpControl.prototype = new Control;
@@ -596,6 +616,9 @@ var ffM_GUI_config = (function (){
         // Should probably be somewhere else
         this.initialize(variableDefinition);
         constantValueRow.updateTarget(variableDefinition.parameters[resolverName]);
+     }
+     this.leave = function() {
+        // Nothing the clean
      }
   }
   ConstantValueResolverControl.prototype = new Control;
@@ -628,6 +651,9 @@ var ffM_GUI_config = (function (){
         this.initialize(variableDefinition);
         keyRow.updateTarget(variableDefinition.parameters[resolverName]);
         formatRow.updateTarget(variableDefinition.parameters[resolverName]);
+     }
+     this.leave = function() {
+        // Nothing the clean
      }
   }
   IntegerValueResolverControl.prototype = new Control;
@@ -666,6 +692,9 @@ var ffM_GUI_config = (function (){
         key2Row.updateTarget(variableDefinition.parameters[resolverName]);
         formatRow.updateTarget(variableDefinition.parameters[resolverName]);
      }
+     this.leave = function() {
+        // Nothing the clean
+     }
   }
   IntegerPairValueResolverControl.prototype = new Control;
 
@@ -697,6 +726,9 @@ var ffM_GUI_config = (function (){
         this.initialize(variableDefinition);
         key1Row.updateTarget(variableDefinition.parameters[resolverName]);
         key2Row.updateTarget(variableDefinition.parameters[resolverName]);
+     }
+     this.leave = function() {
+        // Nothing the clean
      }
   }
   NightResolverControl.prototype = new Control;
@@ -730,6 +762,7 @@ var ffM_GUI_config = (function (){
         minLabelWidth: labelWidth,
         minDataWidth: dataWidth,
      }
+
 
      // -- GUI action callbacks
      // Variable selected in current configuration, forward to the model handling later in this object
@@ -811,14 +844,20 @@ var ffM_GUI_config = (function (){
 
      variableDetails_GroupBox.sizer.addStretch();
 
+     // TRICK - void growing when more proeprties are added to the right pane, the dialg can grow,
+     // so it is possible to avoid this minimum size, but the effect is likely uggly.
+     variableDetails_GroupBox.setMinHeight(20 * this.font.lineSpacing + 2*this.sizer.margin);
+
 
 
      // -- Update the model
      // The resolver name was updated (by select box, by changing variable or initially)
      // null if no resolver (like an empty variable list)
      this.updateResolver = function(resolverName) {
+        //Log.debug(" updateResolver",resolverName,that.currentResolver);
         // There could be no controller if there is no parameter
         if (that.currentResolver != null && that.currentResolver.control !== null) {
+           that.currentResolver.control.leave();
            that.currentResolver.control.hide();
         }
         that.currentResolver =null;
@@ -842,7 +881,7 @@ var ffM_GUI_config = (function (){
 
      // The variable to edit was selected
      this.selectVariable = function(variableDefinition) {
-        //Log.debug("VariableUIControl: selectVariable - Variable selected ",variableDefinition.name );
+        Log.debug("VariableUIControl: selectVariable - Variable selected ",variableDefinition.name );
         var resolverName;
 
         that.currentVariableDefinition = variableDefinition;
@@ -855,7 +894,7 @@ var ffM_GUI_config = (function (){
         resolverName = that.currentVariableDefinition.resolver;
         that.updateResolver(resolverName);
 
-        // Update the UI
+        // Update the UI to have the resolver type of the current variable
         this.resolverSelectionRow.selectResolver(resolverName);
       }
 
@@ -892,6 +931,7 @@ var ffM_GUI_config = (function (){
      this.newVariableCounter = 0;
 
      this.windowTitle = Text.T.REMAPPING_SECTION_PART_TEXT;
+
 
      this.sizer = new VerticalSizer;
      this.sizer.margin = 6;

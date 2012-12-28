@@ -105,7 +105,7 @@ var ffM_Configuration = (function() {
                            replacement: "bias"
                          },
                          { regexp: '/offset/i',
-                           replacement: "boas"
+                           replacement: "bias"
                          },
                          { regexp: '/dark/i',
                            replacement: "dark"
@@ -237,7 +237,7 @@ var ffM_Configuration = (function() {
                            replacement: "bias"
                          },
                          { regexp: '/offset/i',
-                           replacement: "boas"
+                           replacement: "bias"
                          },
                          { regexp: '/dark/i',
                            replacement: "dark"

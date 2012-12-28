@@ -281,7 +281,7 @@ var ffM_LookupConverter = (function() {
 
 
 
-// TEMPORARY LOCATION
+// TODO Review location of module
 
 // Global object containing the resolver definitions
 // These definitions are complemented by the modules when they are loaded

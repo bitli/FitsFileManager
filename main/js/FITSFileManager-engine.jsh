@@ -146,9 +146,10 @@ function FFM_Engine(guiParameters) {
    }
 
 
-
+   // -----------------------------------------------------------------------------------------------------
    // ---  Build the list of target files for the checked input files, result stored in object variables
    this.buildTargetFiles = function(listOfFiles) {
+   // -----------------------------------------------------------------------------------------------------
 
 #ifdef DEBUG
       debug("buildTargetFiles: list of " + listOfFiles.length + " files");
@@ -245,8 +246,11 @@ function FFM_Engine(guiParameters) {
       };
 
 
+      // Calculate transformation for each file, in order (order is important for the group functionality)
 
       for (var inputOrderIndex = 0; inputOrderIndex < listOfFiles.length; ++inputOrderIndex) {
+
+            // Get all information required on input file, its variables, FITS keys ...
 
             var inputFile = listOfFiles[inputOrderIndex];
 
@@ -260,12 +264,18 @@ function FFM_Engine(guiParameters) {
 
             var inputFileName =  File.extractName(inputFile);
 
+            // synthetic variables are preclaculated at when the file is added and explictely recalculated if
+            // the configuration is changed, so we use the precalculated values.
             variables = this.inputVariables[inputFileIndex];
+            // FITS keywords are also stable in a file
             fitsKeywords = this.inputFITSKeywords[inputFileIndex];
 
+            // Some variables cannot be precalculated when the file is loaded, because
+            // they depend on properties that vary in the main dialog, like the regular expression to
+            // parse file names or the order of the files or other data that may change after file is loaded.
 
-            // The file name part is calculated at each scan as the regxep may have been changed
-            //   &1; &2;, ... The corresponding match from the sourceFileNameRegExp
+            // Variable to represent parts of the input file name, as parsed by a user specified regexp.
+             //   &1; &2;, ... The corresponding match from the sourceFileNameRegExp
             var regexpVariables = [];
             if (guiParameters.sourceFileNameRegExp !== null) {
                var inputFileNameMatch = guiParameters.sourceFileNameRegExp.exec(inputFileName);
@@ -278,9 +288,12 @@ function FFM_Engine(guiParameters) {
                   }
                }
             }
+
             //   &rank;      The rank in the list of files of the file being moved/copied, padded to COUNT_PAD.
             rankString = inputOrderIndex.pad(FFM_COUNT_PAD);
 
+
+            // Do the template operations (keeping track of error)
 
             expansionErrors = [];
             var targetDirectory = targetDirectoryCompiledTemplate.expandTemplate(expansionErrors,targetDirectoryVariableResolver);
@@ -296,6 +309,7 @@ function FFM_Engine(guiParameters) {
 #endif
                if (expansionErrors.length === 0) {
 
+                  // The count variable must be handeld especially
                   //   &count;    The number of file in the same group
                   count = 0;
                   if (countingGroups.hasOwnProperty(group)) {
@@ -312,6 +326,7 @@ function FFM_Engine(guiParameters) {
 #ifdef DEBUG
                   debug("buildTargetFiles: expanded targetString = " + targetString + ", errors: " + expansionErrors.join(","));
 #endif
+                  // This requires that the variable 'extension' be well defined
                   // Add a default extension
                   if (File.extractExtension(targetString).length === 0) {
                      targetString += variables['extension'];
