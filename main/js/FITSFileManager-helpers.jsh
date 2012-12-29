@@ -285,7 +285,7 @@ var ffM_Resolver = (function(){
       {name: 'RegExpList', description: 'Type of image (flat, bias, ...)',
             initial:{key: '?', reChecks: [{regexp: /.*/, replacement: '?'}]},  control: null, parserFactory:null},
       {name: 'Text', description: 'Text of FITS keyword value',
-            initial:{key: '?', format: '%ls'}, control: null, parserFactory:null},
+            initial:{key: '?', format: '%ls', case: 'NONE'}, control: null, parserFactory:null},
       {name: 'Integer', description: 'Integer value',
             initial:{key: '?', format:'%4.4d'}, control: null, parserFactory:null},
       {name: 'IntegerPair', description: 'Pair of integers (binning)',
@@ -538,6 +538,11 @@ var ffM_variables = (function() {
                return null;
             } else {
                var cleanedValue = filterFITSValue(valueString);
+               if (ruleParameters.case === 'UP') {
+                  cleanedValue = cleanedValue.toUpperCase();
+               } else if (ruleParameters.case === 'DOWN') {
+                  cleanedValue = cleanedValue.toLowerCase();
+               }
                return format(ruleParameters.format, cleanedValue);
             }
          }

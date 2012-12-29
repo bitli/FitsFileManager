@@ -528,6 +528,87 @@ var ffM_GUI_config = (function (){
   BooleanEntryRow.prototype = new Control;
 
 
+   // TODO Refactor with Text Entry Row
+  function CheckListEntryRow(parent, style, name, toolTip, property, checkNames, checkValues, valueChangedCallback) {
+     this.__base__ = Control;
+     this.__base__(parent);
+     var that = this;
+
+     var i;
+
+     this.sizer = new HorizontalSizer;
+     this.sizer.margin = 2;
+     this.sizer.spacing = 2;
+
+     this.property = property;
+     this.target = null;
+
+     var the_Label = new Label( this );
+     this.sizer.add(the_Label);
+     the_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
+     the_Label.minWidth = style.minLabelWidth;
+     the_Label.text = name + ": ";
+     the_Label.toolTip = toolTip;
+
+     var checkBoxContainer = new Control(this);
+     this.sizer.add(checkBoxContainer);
+     checkBoxContainer.sizer = new HorizontalSizer;
+     var checkBoxes = [];
+
+      for (var i=0; i<checkNames.length; i++) {
+
+         var check_Label = new Label( this );
+         checkBoxContainer.sizer.add(check_Label);
+         check_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
+         check_Label.text = checkNames[i];
+         checkBoxContainer.sizer.addSpacing(4);
+
+         var bool_CheckBox = new RadioButton(checkBoxContainer);
+         checkBoxContainer.sizer.add(bool_CheckBox);
+         checkBoxes.push(bool_CheckBox);
+         bool_CheckBox.toolTip = toolTip;
+         bool_CheckBox.code = checkValues[i];
+         checkBoxContainer.sizer.addSpacing(4);
+
+         bool_CheckBox.onCheck = function() {
+            var value;
+            if (that.target !== null) {
+               value =  this.code;
+               bool_CheckBox.textColor = 0x000000;
+               that.target[property] = value;
+               if (valueChangedCallback != null) {
+                  valueChangedCallback();
+               }
+            }
+         }
+     }
+     checkBoxContainer.sizer.addStretch();
+
+     // Define the target object (that must have the property defined originally), null disables input
+     this.updateTarget = function(target) {
+        that.target = target;
+        if (target === null) {
+            for (var i=0; i<checkBoxes.length;i ++) {
+               checkBoxes[i].checked = false;
+               checkBoxes[i].enabled = false;
+            }
+        } else {
+            if (! target.hasOwnProperty(property)) {
+               throw "Entry '" + name + "' does not have property '" + property + "': " + Log.pp(target);
+            }
+            var code = target[property];
+            for (var i=0; i<checkBoxes.length;i ++) {
+               checkBoxes[i].checked = (code === checkValues[i]);
+               checkBoxes[i].enabled = true;
+            }
+        }
+     }
+
+     this.updateTarget(null);
+  }
+  CheckListEntryRow.prototype = new Control;
+
+
   // -- Middle right sub-panes (components to edit variables)
   function ResolverSelection_ComboBox(parent, mappingNames, mappingSelectionCallback) {
      this.__base__ = ComboBox;
@@ -650,6 +731,7 @@ var ffM_GUI_config = (function (){
         propertyTypes.REG_EXP,
         function() {regExpListSelection_Box.currentModelElementChanged()});
      regExpListSelection_GroupBox.sizer.add(this.currentRegExpRow);
+
      this.currentReplacementRow = new TextEntryRow(regExpListSelection_GroupBox,rowStyle, "Replacement",
         "The replacement text to use if the regular expression matched.\n" +
         "&0; may be used to refer to the original text, &1;, &2; refers to parenthesized groups in the regular expression.", "replacement",
@@ -742,6 +824,12 @@ var ffM_GUI_config = (function (){
      "format", propertyTypes.FREE_TEXT, null);
      this.sizer.add(formatRow);
 
+     var caseRuleRow = new CheckListEntryRow(this, rowStyle, "Case conversion",
+     "Case conversion",
+     "case",['up','down','none'], ['UP','DOWN','NONE'], null);
+     this.sizer.add(caseRuleRow);
+
+
      this.initialize = function(variableDefinition) {
         if (!variableDefinition.parameters.hasOwnProperty(resolverName)) {
            variableDefinition.parameters[resolverName] = deepCopyData(ffM_Resolver.resolverByName(resolverName).initial);
@@ -753,6 +841,7 @@ var ffM_GUI_config = (function (){
         this.initialize(variableDefinition);
         keyRow.updateTarget(variableDefinition.parameters[resolverName]);
         formatRow.updateTarget(variableDefinition.parameters[resolverName]);
+        caseRuleRow.updateTarget(variableDefinition.parameters[resolverName]);
      }
      this.leave = function() {
         // Nothing the clean
@@ -993,7 +1082,7 @@ var ffM_GUI_config = (function (){
      // Make all resolver controls, only the selected one will be shown
      addNewResolverControl(new ConstantValueResolverControl(variableDetails_GroupBox, 'Constant', rowStyle));
 
-     addNewResolverControl(new IntegerValueResolverControl(variableDetails_GroupBox, 'Text', rowStyle));
+     addNewResolverControl(new TextValueResolverControl(variableDetails_GroupBox, 'Text', rowStyle));
 
      addNewResolverControl(new IntegerValueResolverControl(variableDetails_GroupBox, 'Integer', rowStyle));
 
