@@ -417,11 +417,17 @@ var ffM_Configuration = (function() {
       }
    }
 
+   // Support for active configuration
+
    var getConfigurationTable = function() {
       return configurationTable;
    }
    var getActiveConfigurationName = function() {
       return activeConfigurationName;
+   }
+   // Return the reference to the active configuration (NOT TO A WORKIGN COPY)
+   var getActiveConfigurationElement = function() {
+      return getConfigurationByName(configurationTable,activeConfigurationName);
    }
 
    var replaceConfigurationTable = function(newConfigurationTable, nameOfNewActiveConfiguration) {
@@ -464,6 +470,7 @@ var ffM_Configuration = (function() {
       // The public singletons
       getConfigurationTable: getConfigurationTable,
       getActiveConfigurationName: getActiveConfigurationName,
+      getActiveConfigurationElement: getActiveConfigurationElement,
 
       // Manage active configurations
       createWorkingConfiguration: createWorkingConfiguration,

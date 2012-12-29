@@ -325,7 +325,7 @@ var ffM_GUI_config = (function (){
       this.configurationNames = initialNames;
 
       var i;
-      this.toolTip = Text.H.GROUP_TEMPLATE_TOOLTIP;
+      this.toolTip = Text.H.SELECT_CONFIGURATION_BUTTON_TOOLTIP;
       this.enabled = true;
       this.editEnabled = false;
       for (i=0; i<initialNames.length;i++) {
@@ -359,6 +359,7 @@ var ffM_GUI_config = (function (){
   // Helper to validate and normalize input text,
   // There is no real conversion, as we keep all information in text format
   // the toString() is just to avoid crash and help debug in case a non string object is received
+  // TODO add variable name validation
   var propertyTypes = {
      FREE_TEXT: {
         name: "FREE_TEXT",
@@ -378,13 +379,14 @@ var ffM_GUI_config = (function (){
   //  parent: UI parent control
   //  style: Style related properties (minLabelWidth, minDataWidth)
   //  name: Text of the label of this text field
+  //  toolTip: the tooltip to present to the user
   //  property: Name of property of the target that will be used as source of text and destination of text
   //  propertyType: An object with two functions:
   //     propertyToText: that format the property as text
   //     textToProperty: that parse the text and return the property value, throw an exception in case of error
   //  valueChangedCallback(): function that will be called if the text is successfuly updated - if null there is no callback
   // The target (the object containing the property to edit) is specified dynamically (including at initialization)
-  function TextEntryRow(parent, style, name, property, propertyType, valueChangedCallback) {
+  function TextEntryRow(parent, style, name, toolTip, property, propertyType, valueChangedCallback) {
      this.__base__ = Control;
      this.__base__(parent);
      var that = this;
@@ -401,10 +403,12 @@ var ffM_GUI_config = (function (){
      the_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
      the_Label.minWidth = style.minLabelWidth;
      the_Label.text = name + ": ";
+     the_Label.toolTip = toolTip;
 
      var name_Edit = new Edit(this);
      name_Edit.minWidth = style.minDataWidth;
      this.sizer.add(name_Edit)
+     name_Edit.toolTip = toolTip;
 
      name_Edit.onTextUpdated = function() {
         var value;
@@ -448,7 +452,7 @@ var ffM_GUI_config = (function (){
   var makeResolverSelection_ComboBox = function(parent, mappingNames, mappingSelectionCallback) {
      var i;
      var comboBox = new ComboBox( parent );
-     comboBox.toolTip = "Mapping";
+     comboBox.toolTip = Text.H.VARIABLE_RESOLVER_TOOLTIP;
      comboBox.enabled = true;
      comboBox.editEnabled = false;
      for (i=0; i<mappingNames.length;i++) {
@@ -520,7 +524,8 @@ var ffM_GUI_config = (function (){
      this.sizer = new VerticalSizer;
 
      // FITS Key
-     var keyRow = new TextEntryRow(this, rowStyle, "FITS key", "key", propertyTypes.FREE_TEXT, null);
+     var keyRow = new TextEntryRow(this, rowStyle, "FITS key", "Enter the name of a FITS key that will provide the value",
+               "key", propertyTypes.FREE_TEXT, null);
      this.sizer.add(keyRow);
 
 
@@ -554,11 +559,13 @@ var ffM_GUI_config = (function (){
      selectionLayoutControl.sizer.add(regExpListSelection_Box);
 
 
-     this.currentRegExpRow = new TextEntryRow(regExpListSelection_GroupBox, rowStyle, "Regexp", "regexp",
+     this.currentRegExpRow = new TextEntryRow(regExpListSelection_GroupBox, rowStyle, "Regexp",
+        "Enter a regular expression that will be tested against the key value", "regexp",
         propertyTypes.REG_EXP,
         function() {regExpListSelection_Box.currentModelElementChanged()});
      regExpListSelection_GroupBox.sizer.add(this.currentRegExpRow);
-     this.currentReplacementRow = new TextEntryRow(regExpListSelection_GroupBox,rowStyle, "Replacement", "replacement",
+     this.currentReplacementRow = new TextEntryRow(regExpListSelection_GroupBox,rowStyle, "Replacement",
+        "Enter the text that will be used as the variable value of the regular expression matched", "replacement",
         propertyTypes.FREE_TEXT,
         function() {regExpListSelection_Box.currentModelElementChanged()});
      regExpListSelection_GroupBox.sizer.add(this.currentReplacementRow);
@@ -603,7 +610,9 @@ var ffM_GUI_config = (function (){
      this.resolverName = resolverName;
 
      this.sizer = new VerticalSizer;
-     var constantValueRow = new TextEntryRow(this, rowStyle, "value", "value", propertyTypes.FREE_TEXT, null);
+     var constantValueRow = new TextEntryRow(this, rowStyle, "Value",
+     "Enter a text that will be used as the value for this variable",
+     "value", propertyTypes.FREE_TEXT, null);
      this.sizer.add(constantValueRow);
 
      this.initialize = function(variableDefinition) {
@@ -634,10 +643,14 @@ var ffM_GUI_config = (function (){
      this.sizer = new VerticalSizer;
 
      // FITS Key
-     var keyRow = new TextEntryRow(this, rowStyle, "FITS key", "key", propertyTypes.FREE_TEXT, null);
+     var keyRow = new TextEntryRow(this, rowStyle, "FITS key",
+      "Enter the name of a FITS key that will provide the value",
+      "key", propertyTypes.FREE_TEXT, null);
      this.sizer.add(keyRow);
 
-     var formatRow = new TextEntryRow(this, rowStyle, "Format", "format", propertyTypes.FREE_TEXT, null);
+     var formatRow = new TextEntryRow(this, rowStyle, "Format",
+     "Enter a valid C format string to display the value, like '%4.4d', text may preceed or follow the '%4d.d",
+     "format", propertyTypes.FREE_TEXT, null);
      this.sizer.add(formatRow);
 
      this.initialize = function(variableDefinition) {
@@ -670,13 +683,19 @@ var ffM_GUI_config = (function (){
      this.sizer = new VerticalSizer;
 
      // FITS Key 1
-     var key1Row = new TextEntryRow(this, rowStyle, "FITS key 1", "key1", propertyTypes.FREE_TEXT, null);
+     var key1Row = new TextEntryRow(this, rowStyle, "FITS key 1",
+      "Enter the name of a FITS key that will provide the first value",
+      "key1", propertyTypes.FREE_TEXT, null);
      this.sizer.add(key1Row);
 
-     var key2Row = new TextEntryRow(this, rowStyle, "FITS key 2", "key2", propertyTypes.FREE_TEXT, null);
+     var key2Row = new TextEntryRow(this, rowStyle, "FITS key 2",
+      "Enter the name of a FITS key that will provide the second value",
+      "key2", propertyTypes.FREE_TEXT, null);
      this.sizer.add(key2Row);
 
-     var formatRow = new TextEntryRow(this, rowStyle, "Format", "format", propertyTypes.FREE_TEXT, null);
+     var formatRow = new TextEntryRow(this, rowStyle, "Format",
+     "Enter a valid C format string to display the 2 values, like '%dx%d'",
+     "format", propertyTypes.FREE_TEXT, null);
      this.sizer.add(formatRow);
 
      this.initialize = function(variableDefinition) {
@@ -708,10 +727,14 @@ var ffM_GUI_config = (function (){
 
      this.sizer = new VerticalSizer;
 
-     var key1Row = new TextEntryRow(this, rowStyle, "LONG_OBS key", "keyLongObs", propertyTypes.FREE_TEXT, null);
+     var key1Row = new TextEntryRow(this, rowStyle, "LONG_OBS key",
+     "Enter the name of a FITS key that provide the longitude of the observatory",
+     "keyLongObs", propertyTypes.FREE_TEXT, null);
      this.sizer.add(key1Row);
 
-     var key2Row = new TextEntryRow(this, rowStyle, "JD key", "keyJD", propertyTypes.FREE_TEXT, null);
+     var key2Row = new TextEntryRow(this, rowStyle, "JD key",
+     "Enter the name of a FITS key that contains the julian date of the observation",
+     "keyJD", propertyTypes.FREE_TEXT, null);
      this.sizer.add(key2Row);
 
 
@@ -786,7 +809,7 @@ var ffM_GUI_config = (function (){
           [{propertyName: 'name'},{propertyName: 'description'}],
           [], // Its model will be initialized dynamically
            variableDefinitionFactory,
-           "Variable definitions",
+           Text.H.VARIABLE_SELECTION_TOOLTIP,
            variableSelectionCallback,
            true // Sort by variable name
      );
@@ -812,11 +835,15 @@ var ffM_GUI_config = (function (){
      this.resolverSelectionRow =  new ResolverSelectionRow(this, rowStyle, "Resolver", ffM_Resolver.resolverNames, resolverSelectionCallback);
      variableDetails_GroupBox.sizer.add(this.resolverSelectionRow);
 
-     this.variableNameRow = new TextEntryRow(this, rowStyle, "Variable name","name",
+     this.variableNameRow = new TextEntryRow(this, rowStyle, "Variable name",
+        "Enter the name of the variable, it will be used as '&amp;name;' in a template",
+        "name",
         propertyTypes.FREE_TEXT,
         function() {variableListSelection_Box.currentModelElementChanged()});
      variableDetails_GroupBox.sizer.add(this.variableNameRow);
-     this.descriptionRow = new TextEntryRow(this, rowStyle, "Description","description",
+     this.descriptionRow = new TextEntryRow(this, rowStyle, "Description",
+        "Enter a short description of the variable",
+        "description",
         propertyTypes.FREE_TEXT,
         function() {variableListSelection_Box.currentModelElementChanged()});
      variableDetails_GroupBox.sizer.add(this.descriptionRow);
@@ -923,6 +950,7 @@ var ffM_GUI_config = (function (){
      this.sizer.addSpacing(12);
      this.configurationComment_Edit = new Edit;
      this.sizer.add(this.configurationComment_Edit);
+     this.configurationComment_Edit.toolTip = "Short description of the configuration";
      // To track edited comment
      this.selectedConfiguration = null;
 
@@ -933,8 +961,8 @@ var ffM_GUI_config = (function (){
          this.configurationComment_Edit.text = this.selectedConfiguration.description;
      }
      this.configurationComment_Edit.onTextUpdated = function() {
-        if (this.selectedConfiguration !== null) {
-           this.selectedConfiguration.description = this.text;
+        if (that.selectedConfiguration !== null) {
+           that.selectedConfiguration.description = this.text;
         }
      }
    }
@@ -963,7 +991,9 @@ var ffM_GUI_config = (function (){
       this.sizer.add(colLayout1_Control);
       colLayout1_Control.sizer = new VerticalSizer;
 
-      var rankFormat = new TextEntryRow(colLayout1_Control, rowStyle, "&rank; format", "rankFormat", propertyTypes.FREE_TEXT, null);
+      var rankFormat = new TextEntryRow(colLayout1_Control, rowStyle, "&rank; format",
+      "Enter a valid C format string for the &rank; value, like '%3.3d'\nYou can also add text around like 'N%3.3d'",
+      "rankFormat", propertyTypes.FREE_TEXT, null);
       colLayout1_Control.sizer.add(rankFormat);
 
       // Right column
@@ -971,7 +1001,9 @@ var ffM_GUI_config = (function (){
       this.sizer.add(colLayout2_Control);
       colLayout2_Control.sizer = new VerticalSizer;
 
-      var countFormat = new TextEntryRow(colLayout2_Control, rowStyle, "&count format", "countFormat", propertyTypes.FREE_TEXT, null);
+      var countFormat = new TextEntryRow(colLayout2_Control, rowStyle, "&count format",
+      "Enter a valid C format string for the &count; value, like '%3.3d'\nYou can also add text around like 'group-%d'",
+      "countFormat", propertyTypes.FREE_TEXT, null);
       colLayout2_Control.sizer.add(countFormat);
 
 

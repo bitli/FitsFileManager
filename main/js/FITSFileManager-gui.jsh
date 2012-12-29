@@ -439,26 +439,36 @@ function MainDialog(engine, guiParameters) {
    // -- Configuration section
    //----------------------------------------------------------------------------------
 
-   // Select current configuration
+   // Show current configuration and allow access to the configuration dialog
 
    this.configurationName_Label = new Label();
    this.configurationName_Label.text =  ffM_Configuration.getActiveConfigurationName();
    this.configurationName_Label.textAlignment	= TextAlign_Left | TextAlign_VertCenter;
+   this.configurationName_Label.toolTip = "The current configuration (define the synthetic variables)";
 
    this.configuration_Button = new PushButton( this );
-   this.configuration_Button.text = "Configure" //Text.T.LOADSAVE_BUTTON_TEXT;
-   //this.configure_Button.toolTip = Text.H.LOADSAVE_BUTTON_TOOLTIP;
+   this.configuration_Button.text = Text.T.CONFIGURE_BUTTON_TEXT;
+   this.configuration_Button.toolTip = Text.H.CONFIGURE_BUTTON_TOOLTIP;
    this.configuration_Button.enabled = true;
    this.configurationDialog = ffM_GUI_config.makeDialog(this);
+
+   this.configurationDescription_Label = new Label();
+   this.configurationDescription_Label.text =  ffM_Configuration.getActiveConfigurationElement().description;
+   this.configurationDescription_Label.textAlignment	= TextAlign_Left | TextAlign_VertCenter;
+   this.configurationDescription_Label.toolTip = "The description of the current configuration (define the synthetic variables)";
 
    this.configuration_Button.onClick = function() {
       var configurationName = ffM_Configuration.getActiveConfigurationName();
       var configurationDialog = this.dialog.configurationDialog;
       configurationDialog.configure(ffM_Configuration.getConfigurationTable(), configurationName);
+
       var result =  configurationDialog.execute();
+
       if (result) {
+         // Update the configuration - THIS REBUILD MOST OF THE VARIABLES AND FILE LISTS
          ffM_Configuration.replaceConfigurationTable(configurationDialog.editedConfigurationSet,configurationDialog.currentConfigurationName)
-          this.dialog.configurationName_Label.text	=  ffM_Configuration.getActiveConfigurationName();
+         this.dialog.configurationName_Label.text	=  ffM_Configuration.getActiveConfigurationName();
+         this.dialog.configurationDescription_Label.text	=  ffM_Configuration.getActiveConfigurationElement().description;
 
          engine.setConfiguration(ffM_Configuration.createWorkingConfiguration());
          engine.rebuildAll();
@@ -660,6 +670,8 @@ function MainDialog(engine, guiParameters) {
 
    this.configurationSelection_sizer.add( label );
    this.configurationSelection_sizer.add( this.configurationName_Label );
+   this.configurationSelection_sizer.addSpacing(10);
+   this.configurationSelection_sizer.add( this.configurationDescription_Label );
    this.configurationSelection_sizer.addStretch( );
    this.configurationSelection_sizer.add( this.configuration_Button );
 
@@ -1176,7 +1188,7 @@ function MainDialog(engine, guiParameters) {
       // hide the columns of unchecked FITS keywords
       this.showOrHideFITSkey();
 
-      // Keep the File name colmn reasonably sized
+      // Keep the File name column reasonably sized
       if (longestFileName.length > 80) {
          longestFileName=longestFileName.substr(0,80);
       }
@@ -1284,7 +1296,10 @@ function MainDialog(engine, guiParameters) {
             node.setTextColor(0,0x00FF0000);
          }
       }
-      if (firstNode) {this.transform_TreeBox.currentNode = firstNode;}
+      if (firstNode) {
+         this.transform_TreeBox.currentNode = firstNode;
+         firstNode.selected = false;
+      }
 
       var nmbFilesExamined = this.engine.targetFiles.length;
 
