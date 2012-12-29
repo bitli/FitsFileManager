@@ -41,7 +41,8 @@ function FFM_Engine(guiParameters) {
       // Target files is a subset of the inputFiles, each file is defined by an index
       // in input file and the corresponding new file name. Unchecked files are not
       // present in the list (the values are undefined).
-      // The targetFilesIndices is in the order of the TreeBox and contain the index in the inputFiles
+      // The targetFilesIndices is in the order of the TreeBox and contain the index  of the corresponding
+      // target file in the inputFiles array (note that not all inputFiles have a corresponging targetFile)
       // The targetFiles and errorPerFile are in the order of the inputFiles.
       // The targetFiles contains the file name without the base directory (common to all files) or null in case of error.
       // The errorPerFile contains the errors String or null if no error,
@@ -437,7 +438,8 @@ function FFM_Engine(guiParameters) {
 
 
     // -- Make List of text accumulating the transformation rules for display --------------
-    this.makeListOfTransforms = function() {
+#ifdef NO
+   this.makeListOfTransforms = function() {
       var listOfTransforms = [];
       for (var i = 0; i<this.targetFiles.length; i++) {
          var index = this.targetFilesIndices[i];
@@ -453,6 +455,31 @@ function FFM_Engine(guiParameters) {
          }
       }
       return listOfTransforms;
+    }
+#endif
+   this.makeListsOfTransforms = function() {
+      var listsOfTransforms = {
+         inputFileIndices: [],
+         inputFiles: [],
+         targetFiles: [],
+         errorMessages: [],
+      }
+      for (var i = 0; i<this.targetFiles.length; i++) {
+         var index = this.targetFilesIndices[i];
+         var inputFile = this.inputFiles[index];
+         var targetFile = this.targetFiles[i];
+         var errorList = this.errorPerFile[i];
+         listsOfTransforms.inputFileIndices.push(index);
+         listsOfTransforms.inputFiles.push(inputFile);
+         if (targetFile) {
+            listsOfTransforms.targetFiles.push(targetFile);
+            listsOfTransforms.errorMessages.push(null);
+         } else {
+            listsOfTransforms.targetFiles.push(null);
+            listsOfTransforms.errorMessages.push(errorList);
+         }
+      }
+      return listsOfTransforms;
     }
 
 

@@ -54,7 +54,7 @@
 // Base on FITSkey_0.06 of Nikolay but almost completely rewritten with another approach
 // Thanks to Nikolay for sharing the original FITSKey
 
-
+// NOTE : The parameters have their own version number in FITSFileManger-parameters.jsh
 #define VERSION   "0.9-snapshot"
 #define TITLE     "FITSFileManager"
 
@@ -64,7 +64,7 @@
 
 // Debug supprt is in the module PJSR-logging
 // Tracing - define DEBUG if you define any other DEBUG_xxx
-//#define DEBUG
+#define DEBUG
 //#define DEBUG_EVENTS
 //#define DEBUG_SHOW_FITS
 //#define DEBUG_FITS

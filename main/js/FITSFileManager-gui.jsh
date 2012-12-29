@@ -783,6 +783,18 @@ function MainDialog(engine, guiParameters) {
    this.transform_TreeBox.setMinSize( 700, 200 );
    this.transform_TreeBox.toolTip = Text.H.TRANSFORM_TREEBOX_TOOLTIP;
 
+   // Select the corresponding source file when the target file is selected
+   // Note that the source files may not all be in the list, so
+   // a lookup is required.
+   this.transform_TreeBox.onCurrentNodeUpdated = function(newCurrentNode) {
+      if (newCurrentNode !== null) {
+//         var index = this.childIndex(newCurrentNode);
+//         index = Math.floor(index / 2 );
+         var index = newCurrentNode.inputFileIndex;
+         this.dialog.filesTreeBox.currentNode = this.dialog.filesTreeBox.child(index);
+      }
+   }
+
    this.outputSummaryLabel = new Label( this );
    this.outputSummaryLabel.textAlignment = TextAlign_Left|TextAlign_VertCenter;
    this.outputSummaryLabel.text = "No operation";
@@ -1283,21 +1295,35 @@ function MainDialog(engine, guiParameters) {
 
 
       // List of text accumulating the transformation rules for display
-      var listOfTransforms = this.engine.makeListOfTransforms();
+      var listsOfTransforms = this.engine.makeListsOfTransforms();
 
       this.transform_TreeBox.clear();
       var firstNode = null;
-      for (var i=0; i<listOfTransforms.length; i++) {
-         var node = new TreeBoxNode( this.transform_TreeBox );
-         if (i===0) { firstNode = node}
-         node.setText( 0, listOfTransforms[i] );
-         // TODO Use better status information than text
-         if (listOfTransforms[i].indexOf("Error")>0) {
-            node.setTextColor(0,0x00FF0000);
+      for (var i=0; i<listsOfTransforms.inputFiles.length; i++) {
+         var inputFile = listsOfTransforms.inputFiles[i];
+         var inputFileIndex =  listsOfTransforms.inputFileIndices[i];
+         var targetFile =  listsOfTransforms.targetFiles[i];
+         var errorMessage = listsOfTransforms.errorMessages[i];
+
+
+         var sourceNode = new TreeBoxNode( this.transform_TreeBox );
+         if (i===0) { firstNode = sourceNode}
+         sourceNode.setText(0,"File ".concat(inputFile));
+         sourceNode.inputFileIndex = inputFileIndex;
+
+         var resultNode = new TreeBoxNode( this.transform_TreeBox );
+         if (targetFile) {
+            resultNode.setText(0,"  to .../".concat(targetFile));
+         } else {
+            resultNode.setText(0,"     Error ".concat(errorMessage));
+            resultNode.setTextColor(0,0x00FF0000);
          }
+         resultNode.inputFileIndex = inputFileIndex;
       }
       if (firstNode) {
+         // Scroll to beginning
          this.transform_TreeBox.currentNode = firstNode;
+         // But do not select
          firstNode.selected = false;
       }
 

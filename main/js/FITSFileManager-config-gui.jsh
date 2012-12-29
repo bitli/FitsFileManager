@@ -24,13 +24,13 @@ var ffM_GUI_support = (function (){
       this.__base__ = Control;
       this.__base__(parent);
 
-      var i, button;
+      var i, button, toolButton;
 
       this.sizer =  new HorizontalSizer;
       this.sizer.margin = 6;
       this.sizer.spacing = 4;
 
-      for (i=0; i<buttons.length;i ++) {
+      for (var i=0; i<buttons.length;i ++) {
          var button = buttons[i];
 #ifdef DEBUG
          Log.debug(i,button.icon, button.toolTip);
@@ -103,16 +103,13 @@ var ffM_GUI_support = (function (){
 
       treeBox.sort(0,sorted); // DO NOT SEEMS TO WORK
 
-      //treeBox.setMinSize( 700, 200 );
-      // DO not seem to have any effect
-      //treeBox.lineWidth = 1;
       treeBox.style = Frame.FrameStyleSunken;
 
       treeBox.toolTip = toolTip;
 
 
       // -- Model update methods
-      // A new model must be used for the listModel
+      // The list model is changed (the model is an array that is updated in place)
       this.modelListChanged = function(newModelList) {
 
          // Clear current list display
@@ -288,7 +285,6 @@ var ffM_GUI_config = (function (){
    function makeOKCancel(parentDialog) {
       var cancel_Button, ok_Button;
 
-      // TODO Add container first
       var c = new Control(parentDialog);
       c.sizer = new HorizontalSizer;
       c.sizer.margin = 6;
@@ -325,6 +321,8 @@ var ffM_GUI_config = (function (){
       this.configurationNames = initialNames;
 
       var i;
+
+      // -- UI
       this.toolTip = Text.H.SELECT_CONFIGURATION_BUTTON_TOOLTIP;
       this.enabled = true;
       this.editEnabled = false;
@@ -335,18 +333,20 @@ var ffM_GUI_config = (function (){
          this.currentItem = 0;
       }
 
+      // -- callback
       this.onItemSelected = function() {
          if (this.currentItem>=0 && this.currentItem<this.configurationNames.length) {
             configurationSelectedCallback(this.configurationNames[this.currentItem]);
          }
       }
 
+      // -- Model update method, provide now list of names and new current name
       this.configure = function(names, selectedName) {
          this.configurationNames = names;
          this.clear();
          for (i=0; i<names.length;i++) {
             this.addItem(names[i]);
-            if (selectedName === names[i]) {
+            if (names[i] === selectedName) {
                this.currentItem = i;
             }
          }
@@ -359,7 +359,6 @@ var ffM_GUI_config = (function (){
   // Helper to validate and normalize input text,
   // There is no real conversion, as we keep all information in text format
   // the toString() is just to avoid crash and help debug in case a non string object is received
-  // TODO add variable name validation
   var testInvalidVariableNameRegExp = /[&\(\);<>=!%*]/;
   var propertyTypes = {
      FREE_TEXT: {
@@ -457,7 +456,7 @@ var ffM_GUI_config = (function (){
   }
   TextEntryRow.prototype = new Control;
 
-
+   // TODO Refactor with Text Entry Row
   function BooleanEntryRow(parent, style, name, toolTip, property, valueChangedCallback) {
      this.__base__ = Control;
      this.__base__(parent);
@@ -514,63 +513,69 @@ var ffM_GUI_config = (function (){
 
 
   // -- Middle right sub-panes (components to edit variables)
-  var makeResolverSelection_ComboBox = function(parent, mappingNames, mappingSelectionCallback) {
-     var i;
-     var comboBox = new ComboBox( parent );
-     comboBox.toolTip = Text.H.VARIABLE_RESOLVER_TOOLTIP;
-     comboBox.enabled = true;
-     comboBox.editEnabled = false;
-     for (i=0; i<mappingNames.length;i++) {
-        comboBox.addItem(mappingNames[i]);
-     }
-     comboBox.currentItem = 0;
-     comboBox.enabled = false;
+  function ResolverSelection_ComboBox(parent, mappingNames, mappingSelectionCallback) {
+     this.__base__ = ComboBox;
+     this.__base__(parent);
 
-     comboBox.onItemSelected = function() {
+     var i;
+
+     // -- UI
+     this.toolTip = Text.H.VARIABLE_RESOLVER_TOOLTIP;
+     this.enabled = true;
+     this.editEnabled = false;
+     for (i=0; i<mappingNames.length;i++) {
+        this.addItem(mappingNames[i]);
+     }
+     this.currentItem = 0;
+     this.enabled = false;
+
+     // -- Call backs
+     this.onItemSelected = function() {
         if (this.currentItem>=0) {
            mappingSelectionCallback(mappingNames[this.currentItem]);
         }
      }
 
-     comboBox.selectResolver = function(name) {
+     // -- Update model
+     this.selectResolver = function(name) {
         if (name == null) {
-              comboBox.enabled = false;
+              this.enabled = false;
         } else {
            for (i=0; i<mappingNames.length;i++) {
               if (name === mappingNames[i]) {
-                 comboBox.currentItem = i;
-                 comboBox.enabled = true;
+                 this.currentItem = i;
+                 this.enabled = true;
                  break;
               }
            }
         }
      }
-
-     return comboBox;
   }
+  ResolverSelection_ComboBox.prototype = new ComboBox
 
   function ResolverSelectionRow(parent, rowStyle, name, mappingNames, mappingSelectionCallback) {
-     this.__base__ = Control;
-     this.__base__(parent);
-     var that=this;
+      this.__base__ = Control;
+      this.__base__(parent);
 
-     this.sizer = new HorizontalSizer;
-     this.sizer.margin = 2;
-     this.sizer.spacing = 2;
+      // -- UI
+      this.sizer = new HorizontalSizer;
+      this.sizer.margin = 2;
+      this.sizer.spacing = 2;
 
-     var the_Label = new Label( this );
-     this.sizer.add(the_Label);
-     the_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
-     the_Label.minWidth = rowStyle.minLabelWidth;
-     the_Label.text = name + ": ";
+      var the_Label = new Label( this );
+      this.sizer.add(the_Label);
+      the_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
+      the_Label.minWidth = rowStyle.minLabelWidth;
+      the_Label.text = name + ": ";
 
-     var resolver_ComboBox = makeResolverSelection_ComboBox (parent, mappingNames, mappingSelectionCallback);
-     resolver_ComboBox.minWidth = rowStyle.minDataWidth;
-     this.sizer.add(resolver_ComboBox);
+      var resolver_ComboBox = new ResolverSelection_ComboBox (parent, mappingNames, mappingSelectionCallback);
+      resolver_ComboBox.minWidth = rowStyle.minDataWidth;
+      this.sizer.add(resolver_ComboBox);
 
-     this.selectResolver = function(name) {
-        resolver_ComboBox.selectResolver(name);
-     }
+      // -- Update model
+      this.selectResolver = function(name) {
+         resolver_ComboBox.selectResolver(name);
+      }
   }
   ResolverSelectionRow.prototype = new Control;
 
@@ -938,7 +943,6 @@ var ffM_GUI_config = (function (){
 
 
 
-     //this.resolverSelection_GroupBox =  makeResolverSelection_ComboBox(this, resolverNames, resolverSelectionCallback);
      this.resolverSelectionRow =  new ResolverSelectionRow(this, rowStyle, "Resolver", ffM_Resolver.resolverNames, resolverSelectionCallback);
      variableDetails_GroupBox.sizer.add(this.resolverSelectionRow);
 
