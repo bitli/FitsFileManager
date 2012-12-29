@@ -84,8 +84,8 @@ function FFM_Engine(guiParameters) {
       }
 
 #ifdef DEBUG
-      debug("FFM_Engine.setConfiguration - shownFITSKeyNames.length",this.shownFITSKeyNames.length,
-        "shownSyntheticKeyNames.length",this.shownSyntheticKeyNames.length);
+      debug("FFM_Engine.setConfiguration - shownFITSKeyNames size",Object.keys(this.shownFITSKeyNames).length,
+        "shownSyntheticKeyNames size",Object.keys(this.shownSyntheticKeyNames).length);
       // debug("FFM_Engine.setConfiguration - " + Log.pp(this.currentConfiguration));
 #endif
 

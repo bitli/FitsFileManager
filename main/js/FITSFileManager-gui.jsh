@@ -217,6 +217,7 @@ function MainDialog(engine, guiParameters) {
 
    var labelWidth = this.font.width( "MMMMMMMMMMMMMM" ) ;
 
+   this.setMinWidth(800);
 
    // -- FITSKeyword Dialog (opened as a child on request)
    this.fitsKeysDialog = new FITSKeysDialog( this, engine );
@@ -1232,8 +1233,7 @@ function MainDialog(engine, guiParameters) {
       this.engine.addFiles(fileNames);
 
       this.rebuildFilesTreeBox();
-      this.setMinWidth(800);
-      this.adjustToContents();
+      //this.adjustToContents();
       this.dialog.updateButtonState();
       this.dialog.updateTotal();
 

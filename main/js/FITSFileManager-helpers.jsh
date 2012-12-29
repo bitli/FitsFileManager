@@ -653,7 +653,7 @@ var ffM_variables = (function() {
       for (var i=0; i<variableList.length; i++) {
          var variableDefinition = variableList[i];
          var parameters = variableDefinition.parameters[variableDefinition.resolver];
-         variables[variableDefinition.name] = variableDefinition.parser(parameters,imageKeywords, variables, inputFileName);
+         variables[variableDefinition.name] = variableDefinition.parser(parameters,imageKeywords, variables, inputFile);
       }
 
 #ifdef DEBUG
