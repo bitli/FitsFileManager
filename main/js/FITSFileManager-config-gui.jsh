@@ -923,7 +923,7 @@ var ffM_GUI_config = (function (){
      this.sizer.addSpacing(12);
      this.configurationComment_Edit = new Edit;
      this.sizer.add(this.configurationComment_Edit);
-     // T otrack edited comment
+     // To track edited comment
      this.selectedConfiguration = null;
 
      this.configure = function(editedConfigurationSet, currentConfigurationName) {
@@ -939,6 +939,53 @@ var ffM_GUI_config = (function (){
      }
    }
    ConfigurationLayoutControl.prototype = new Control;
+
+  // ---------------------------------------------------------------------------------------------------------
+   function BuiltinVariableGroup(parent) {
+      this.__base__ = GroupBox;
+      this.__base__(parent);
+      var that = this;
+
+      this.title = "Built in variable parameters";
+      this.sizer = new HorizontalSizer;
+
+      var labelWidth = this.font.width( "MMMMMMMMMMMM: " );
+      var dataWidth = this.font.width( "MMMMMMMMMMMMMMMMMMMMMMM" );
+      var rowStyle = {
+        minLabelWidth: labelWidth,
+        minDataWidth: dataWidth,
+      }
+
+      //this.sizer.addStretch();
+
+      // Left columns
+      var colLayout1_Control = new Control;
+      this.sizer.add(colLayout1_Control);
+      colLayout1_Control.sizer = new VerticalSizer;
+
+      var rankFormat = new TextEntryRow(colLayout1_Control, rowStyle, "&rank; format", "rankFormat", propertyTypes.FREE_TEXT, null);
+      colLayout1_Control.sizer.add(rankFormat);
+
+      // Right column
+      var colLayout2_Control = new Control;
+      this.sizer.add(colLayout2_Control);
+      colLayout2_Control.sizer = new VerticalSizer;
+
+      var countFormat = new TextEntryRow(colLayout2_Control, rowStyle, "&count format", "countFormat", propertyTypes.FREE_TEXT, null);
+      colLayout2_Control.sizer.add(countFormat);
+
+
+      this.configure = function(editedConfigurationSet, currentConfigurationName) {
+         var configurationNames = ffM_Configuration.getAllConfigurationNames(editedConfigurationSet);
+         this.selectedConfiguration = ffM_Configuration.getConfigurationByName(editedConfigurationSet, currentConfigurationName);
+
+         rankFormat.updateTarget(this.selectedConfiguration.builtins);
+         countFormat.updateTarget(this.selectedConfiguration.builtins);
+      }
+
+   }
+   BuiltinVariableGroup.prototype = new GroupBox();
+
 
   // ---------------------------------------------------------------------------------------------------------
   // This Dialog controls the update of a configurationSet, starting at a current configuration.
@@ -980,6 +1027,7 @@ var ffM_GUI_config = (function (){
         that.currentConfigurationName = configurationName;
         // Update UI
         that.variableUI.updateVariableList(selectedConfiguration.variableList);
+        that.builtinVariable_Group.configure(that.editedConfigurationSet, that.currentConfigurationName);
         // Update the description text
         that.configurationLayoutControl.configure(that.editedConfigurationSet, that.currentConfigurationName);
      }
@@ -1004,6 +1052,9 @@ var ffM_GUI_config = (function (){
      this.variableUI = new VariableUIControl(this, variableDefinitionFactory);
      this.sizer.add(this.variableUI);
 
+     this.builtinVariable_Group = new BuiltinVariableGroup(this);
+     this.sizer.add(this.builtinVariable_Group);
+
      // Bottom pane - buttons
      var okCancelButtons = makeOKCancel(this);
      this.sizer.add(okCancelButtons);
@@ -1018,6 +1069,7 @@ var ffM_GUI_config = (function (){
         var configurationNames = ffM_Configuration.getAllConfigurationNames(this.editedConfigurationSet);
         // Initialize content
         this.configurationLayoutControl.configure(this.editedConfigurationSet, this.currentConfigurationName);
+        this.builtinVariable_Group.configure(this.editedConfigurationSet, this.currentConfigurationName);
         configurationSelectedCallback(this.currentConfigurationName);
      }
 

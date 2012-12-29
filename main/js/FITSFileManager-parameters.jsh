@@ -216,7 +216,11 @@ var ffM_Configuration = (function() {
                    }
                }
            }
-         ]
+         ],
+        builtins: {
+            rankFormat: "%4.4d",
+            countFormat: "%4.4d",
+        }
      },
 
 
@@ -330,7 +334,12 @@ var ffM_Configuration = (function() {
                    }
                }
            }
-         ]
+         ],
+        builtins: {
+            rankFormat: "%4.4d",
+            countFormat: "%4.4d",
+        }
+
      }
 
    ];
