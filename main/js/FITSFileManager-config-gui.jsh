@@ -32,7 +32,9 @@ var ffM_GUI_support = (function (){
 
       for (i=0; i<buttons.length;i ++) {
          var button = buttons[i];
-         //Log.debug(i,button.icon, button.toolTip);
+#ifdef DEBUG
+         Log.debug(i,button.icon, button.toolTip);
+#endif
          var toolButton = new ToolButton( parent );
          this.sizer.add(toolButton);
          toolButton.icon = new Bitmap( button.icon );
@@ -296,14 +298,12 @@ var ffM_GUI_config = (function (){
       cancel_Button.text = "Cancel";
       cancel_Button.enabled = true;
       cancel_Button.onClick = function() {
-         debug("cancel");
          parentDialog.cancel();
       }
       ok_Button = new PushButton( c );
       ok_Button.text = "OK";
       ok_Button.enabled = true;
       ok_Button.onClick = function() {
-         debug("ok");
          parentDialog.ok();
       }
 
@@ -699,6 +699,46 @@ var ffM_GUI_config = (function (){
 
   // ..............................................................................................
 
+  function TextValueResolverControl(parent, resolverName, rowStyle) {
+     this.__base__ = Control;
+     this.__base__(parent);
+
+     this.resolverName = resolverName;
+
+     this.sizer = new VerticalSizer;
+
+     // FITS Key
+     var keyRow = new TextEntryRow(this, rowStyle, "FITS key",
+      "Enter the name of a FITS key that will provide the value as text",
+      "key", propertyTypes.FREE_TEXT, null);
+     this.sizer.add(keyRow);
+
+     var formatRow = new TextEntryRow(this, rowStyle, "Format",
+     "Enter a valid C format string to display the value, for example '-%ls' to preceed the string with a dash\n"+
+     "IMPORTANT - strings must use '%ls', not '%s'",
+     "format", propertyTypes.FREE_TEXT, null);
+     this.sizer.add(formatRow);
+
+     this.initialize = function(variableDefinition) {
+        if (!variableDefinition.parameters.hasOwnProperty(resolverName)) {
+           variableDefinition.parameters[resolverName] = deepCopyData(ffM_Resolver.resolverByName(resolverName).initial);
+        }
+     }
+
+     this.populate = function(variableDefinition) {
+        // Should probably be somewhere else
+        this.initialize(variableDefinition);
+        keyRow.updateTarget(variableDefinition.parameters[resolverName]);
+        formatRow.updateTarget(variableDefinition.parameters[resolverName]);
+     }
+     this.leave = function() {
+        // Nothing the clean
+     }
+  }
+  TextValueResolverControl.prototype = new Control;
+
+  // ..............................................................................................
+
   function IntegerValueResolverControl(parent, resolverName, rowStyle) {
      this.__base__ = Control;
      this.__base__(parent);
@@ -884,7 +924,9 @@ var ffM_GUI_config = (function (){
 
      //--  Right side - Enter parameters corresponding to selected variables
      var resolverSelectionCallback = function(resolverName) {
-        Log.debug("VariableUIControl: resolverSelectionCallback - selected:",resolverName);
+#ifdef DEBUG
+        debug("VariableUIControl: resolverSelectionCallback - selected:",resolverName);
+#endif
         that.updateResolver(resolverName);
      }
 
@@ -928,6 +970,8 @@ var ffM_GUI_config = (function (){
 
      // Make all resolver controls, only the selected one will be shown
      addNewResolverControl(new ConstantValueResolverControl(variableDetails_GroupBox, 'Constant', rowStyle));
+
+     addNewResolverControl(new IntegerValueResolverControl(variableDetails_GroupBox, 'Text', rowStyle));
 
      addNewResolverControl(new IntegerValueResolverControl(variableDetails_GroupBox, 'Integer', rowStyle));
 
@@ -980,8 +1024,10 @@ var ffM_GUI_config = (function (){
 
      // The variable to edit was selected
      this.selectVariable = function(variableDefinition) {
-        Log.debug("VariableUIControl: selectVariable - Variable selected ",variableDefinition.name );
-        var resolverName;
+#ifdef DEBUG
+        debug("VariableUIControl: selectVariable - Variable selected ",variableDefinition.name );
+#endif
+         var resolverName;
 
         that.currentVariableDefinition = variableDefinition;
 
@@ -1123,7 +1169,9 @@ var ffM_GUI_config = (function (){
      // -- GUI actions callbacks
      // configuration changed (also used in initialization)
      var configurationSelectedCallback = function(configurationName) {
-        Log.debug("ConfigurationDialog: configurationSelectedCallback - ConfigurationSet selected:",configurationName);
+#ifdef DEBUG
+        debug("ConfigurationDialog: configurationSelectedCallback - ConfigurationSet selected:",configurationName);
+#endif
         var selectedConfiguration = ffM_Configuration.getConfigurationByName(that.editedConfigurationSet, configurationName);
         if (selectedConfiguration == null) {
            throw "PROGRAM ERROR - Invalid configuration set name '" + configurationName +"'";
@@ -1140,9 +1188,11 @@ var ffM_GUI_config = (function (){
      // -- Model call backs
      // New variable requested in current configuration, define one with default values
      var variableDefinitionFactory = function() {
-          Log.debug("ConfigurationDialog: variableDefinitionFactory - create new variable");
+#ifdef DEBUG
+          debug("ConfigurationDialog: variableDefinitionFactory - create new variable");
+#endif
           that.newVariableCounter++;
-          return ffM_Configuration.defineVariable("new_" + that.newVariableCounter,'','Constant');
+          return ffM_Configuration.defineVariable("new_" + that.newVariableCounter,'','Text');
      }
 
      // -- Build the top level pane

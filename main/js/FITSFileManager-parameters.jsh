@@ -439,6 +439,7 @@ var ffM_Configuration = (function() {
       return {
          name: name,
          description: description,
+         show: true,
          resolver: resolver,
          parameters: initialParameters,
       }

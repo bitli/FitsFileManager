@@ -284,12 +284,14 @@ var ffM_Resolver = (function(){
    var resolvers = [
       {name: 'RegExpList', description: 'Type of image (flat, bias, ...)',
             initial:{key: '?', reChecks: [{regexp: /.*/, replacement: '?'}]},  control: null, parserFactory:null},
-      {name: 'Constant', description: 'Constant value',
-            initial:{value: ''}, control: null, parserFactory:null},
+      {name: 'Text', description: 'Text of FITS keyword value',
+            initial:{key: '?', format: '%ls'}, control: null, parserFactory:null},
       {name: 'Integer', description: 'Integer value',
             initial:{key: '?', format:'%4.4d'}, control: null, parserFactory:null},
       {name: 'IntegerPair', description: 'Pair of integers (binning)',
             initial:{key1: '?', key2: '?', format:'%dx%d'}, control: null, parserFactory:null},
+      {name: 'Constant', description: 'Constant value',
+            initial:{value: ''}, control: null, parserFactory:null},
       {name: 'FileName', description: 'Source file name',
             initial:{}, control: null, parserFactory:null},
       {name: 'FileExtension', description: 'Source file extension',
@@ -525,6 +527,22 @@ var ffM_variables = (function() {
       )
    }
 
+   ffM_Resolver.resolverByName('Text').parserFactory = function(configuration, parameters){
+#ifdef DEBUG
+      debug("resolver factory Text for :",Log.pp(parameters));
+#endif
+     return (
+         function parseText(ruleParameters,imageKeywords,imageVariables,inputFile) {
+            var valueString = imageKeywords.getValue(ruleParameters.key);
+            if (valueString === null) {
+               return null;
+            } else {
+               var cleanedValue = filterFITSValue(valueString);
+               return format(ruleParameters.format, cleanedValue);
+            }
+         }
+      )
+   }
 
    ffM_Resolver.resolverByName('IntegerPair').parserFactory = function(configuration, parameters){
 #ifdef DEBUG
@@ -533,7 +551,7 @@ var ffM_variables = (function() {
      return (
          function parseIntegerPair(ruleParameters,imageKeywords,imageVariables,inputFile) {
             var valueString1 = imageKeywords.getValue(ruleParameters.key1);
-         var valueString2 = imageKeywords.getValue(ruleParameters.key2);
+            var valueString2 = imageKeywords.getValue(ruleParameters.key2);
             // Accept float also
             var valueF1 =  parseFloat(valueString1);
             var valueF2 =  parseFloat(valueString2);
