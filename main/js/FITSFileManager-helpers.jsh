@@ -13,17 +13,6 @@
 
 
 
-// --- String functions
-
-
-
-// --- Pad a mumber with leading 0
-Number.prototype.pad = function(size){
-      var s = String(this);
-      while (s.length < size) s = "0" + s;
-      return s;
-}
-
 // --- RegExp utility functions
 
 

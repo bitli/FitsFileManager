@@ -61,7 +61,7 @@ function FFM_Engine(guiParameters) {
 #ifdef DEBUG
       debug("FFM_Engine.setConfiguration - " + configuration.name);
 #endif
-      this.currentConfiguration = configuration; //deepCopyData(configuration);
+      this.currentConfiguration = configuration; // This is a working copy;
 
       ffM_variables.installParsers(this.currentConfiguration);
 
@@ -289,8 +289,8 @@ function FFM_Engine(guiParameters) {
                }
             }
 
-            //   &rank;      The rank in the list of files of the file being moved/copied, padded to COUNT_PAD.
-            rankString = inputOrderIndex.pad(FFM_COUNT_PAD);
+            //   &rank;      The rank in the list of files of the file being moved/copied
+            rankString = format(this.currentConfiguration.builtins.rankFormat,inputOrderIndex);
 
 
             // Do the template operations (keeping track of error)
@@ -317,7 +317,7 @@ function FFM_Engine(guiParameters) {
                   }
                   count ++;
                   countingGroups[group] = count;
-                  countString = count.pad(FFM_COUNT_PAD);
+                  countString = format(this.currentConfiguration.builtins.countFormat,count);
 #ifdef DEBUG
                   debug("buildTargetFiles: for group = " + group + ", count = " + countString);
 #endif
