@@ -147,7 +147,7 @@ var ffM_Configuration = (function() {
                            replacement: "luminance"
                          },
                          { regexp: '/.*/',
-                           replacement: "&0"
+                           replacement: "&0;"
                          }
                        ]
                        ,
@@ -419,7 +419,10 @@ var ffM_Configuration = (function() {
 #endif
 
       // TODO Should be moved
+      // Rebuild the list of all sythetic variables that can be shown in an Input files window.
       var activeConfiguration = getConfigurationByName(configurationTable,nameOfNewActiveConfiguration);
+      syntheticVariableNames = [];
+      syntheticVariableComments = [];
       for (var i=0; i<activeConfiguration.variableList.length; i++) {
          var aVar = activeConfiguration.variableList[i];
          syntheticVariableNames.push(aVar.name);

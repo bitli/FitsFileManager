@@ -18,7 +18,9 @@ function FFM_Engine(guiParameters) {
    this.outputDirectory = "C:/temp";
 #endif
 
+   // Configuration related variables
    this.currentConfiguration = null;
+   this.shownSyntheticKeyNames = {}; // A synthetic variable is shown in the source file table if its name is a key of this object
 
 
    // Variables that can be reset (when doing clear all)
@@ -31,8 +33,6 @@ function FFM_Engine(guiParameters) {
       // Global FITS key information - (the index of the name in keywordsSet.allValueKeywordNameList give also the column offset in the GUI)
       this.keywordsSet = ffM_FITS_Keywords.makeKeywordsSet();   // array of names of all accumulated FITS keywords from all files
       this.shownFITSKeyNames = {}; // A FITSKeyWord is shown in the source file table if its name is a key of this object
-      this.shownSyntheticKeyNames = {}; // A synthethic variable is shown in the source file table if its name is a key of this object
-      this.currentConfiguration = null;
 
       this.resetTarget();
     };
@@ -84,6 +84,8 @@ function FFM_Engine(guiParameters) {
       }
 
 #ifdef DEBUG
+      debug("FFM_Engine.setConfiguration - shownFITSKeyNames.length",this.shownFITSKeyNames.length,
+        "shownSyntheticKeyNames.length",this.shownSyntheticKeyNames.length);
       // debug("FFM_Engine.setConfiguration - " + Log.pp(this.currentConfiguration));
 #endif
 
@@ -92,7 +94,7 @@ function FFM_Engine(guiParameters) {
    this.isVariableVisible = function(name) {
        var v = this.shownSyntheticKeyNames.hasOwnProperty(name);
 #ifdef DEBUG
-       //debug("FFM_Engine.isVariableVisible -",name,v);
+      //debug("FFM_Engine.isVariableVisible -",name,v);
 #endif
        return v;
    }
@@ -438,25 +440,6 @@ function FFM_Engine(guiParameters) {
 
 
     // -- Make List of text accumulating the transformation rules for display --------------
-#ifdef NO
-   this.makeListOfTransforms = function() {
-      var listOfTransforms = [];
-      for (var i = 0; i<this.targetFiles.length; i++) {
-         var index = this.targetFilesIndices[i];
-         var inputFile = this.inputFiles[index];
-         var targetFile = this.targetFiles[i];
-         var errorList = this.errorPerFile[i];
-         if (targetFile) {
-            listOfTransforms.push("File ".concat(inputFile));
-            listOfTransforms.push("  to .../".concat(targetFile));
-         } else {
-            listOfTransforms.push("File ".concat(inputFile));
-            listOfTransforms.push("     Error ".concat(errorList));
-         }
-      }
-      return listOfTransforms;
-    }
-#endif
    this.makeListsOfTransforms = function() {
       var listsOfTransforms = {
          inputFileIndices: [],

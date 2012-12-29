@@ -473,8 +473,9 @@ function MainDialog(engine, guiParameters) {
          engine.setConfiguration(ffM_Configuration.createWorkingConfiguration());
          engine.rebuildAll();
 
+
          // TODO - Merge with action on add files
-         //this.dialog.rebuildFilesTreeBox();
+         this.dialog.rebuildFilesTreeBox();
          this.dialog.updateButtonState();
          this.dialog.updateTotal();
          this.dialog.refreshTargetFiles();
@@ -1562,6 +1563,7 @@ function FITSKeysDialog( parentDialog, engine) {
          }
       }
       var variableRoootNode = this.parent.keyword_TreeBox.child(0);
+      // TODO Delegate operation to engine
       engine.shownSyntheticKeyNames = {};
       for (var i = 0; i< ffM_Configuration.syntheticVariableNames.length; i++) {
          var checked = variableRoootNode.child(i).checked; // List and rows are in same order
@@ -1639,11 +1641,11 @@ function FITSKeysDialog( parentDialog, engine) {
       synthRootNode.setText(0,"Synthetic keywords");
 
 
-      // Fill the name column form a fixed list of synthetic keywords names
+      // Fill the name column from the list of all synthetic keywords names
       for (var i =0; i<ffM_Configuration.syntheticVariableNames.length; i++) {
          var node = new TreeBoxNode(synthRootNode);
          node.setText( 0, ffM_Configuration.syntheticVariableNames[i] );
-         node.checked = engine.shownSyntheticKeyNames.hasOwnProperty(ffM_Configuration.syntheticVariableNames[i]);;
+         node.checked = engine.isVariableVisible(ffM_Configuration.syntheticVariableNames[i]);;
       }
 
       // Create list of FITS keywords used as variables as a second subtree

@@ -360,6 +360,7 @@ var ffM_GUI_config = (function (){
   // There is no real conversion, as we keep all information in text format
   // the toString() is just to avoid crash and help debug in case a non string object is received
   var testInvalidVariableNameRegExp = /[&\(\);<>=!%*]/;
+  var removeVariableReferencesRE = /&[0-9]+;/g
   var propertyTypes = {
      FREE_TEXT: {
         name: "FREE_TEXT",
@@ -367,17 +368,32 @@ var ffM_GUI_config = (function (){
         textToProperty: function(text) {return text},
      },
      REG_EXP: {
+        // Check that this is a valid regular expression
         name: "REG_EXP",
         propertyToText: function(value) {return value.toString()},
         textToProperty: function(text) {return regExpToString(regExpFromUserString(text))},
      },
+     REG_EXP_REPLACMENT: {
+        // Check that this is a valid replacement for a regular expression,
+        // this ensures that the only &<number>; are used (no &variable; or dangling &)
+        name: "REG_EXP_REPLACMENT",
+        propertyToText: function(value) {return value.toString()},
+        textToProperty: function(text) {
+           var withoutRef = text.replace(removeVariableReferencesRE,'');
+           if (withoutRef.indexOf("&")>=0) {
+               throw "Invalid replacement string"}
+            else {return text}
+        },
+     },
+     // Check that the characters are valid for a variable name
      VAR_NAME: {
         name: "VAR_NAME",
         propertyToText: function(value) {return value.toString()},
         textToProperty: function(text) {
-            if (testInvalidVariableNameRegExp.test(text)) {
+            var t = text.trim();
+            if (testInvalidVariableNameRegExp.test(t)) {
                throw "Invalid character in variable name"}
-            else {return text}
+            else {return t}
          },
      },
 
@@ -630,13 +646,14 @@ var ffM_GUI_config = (function (){
 
 
      this.currentRegExpRow = new TextEntryRow(regExpListSelection_GroupBox, rowStyle, "Regexp",
-        "Enter a regular expression that will be tested against the key value", "regexp",
+        "A regular expression that will be tested against the key value", "regexp",
         propertyTypes.REG_EXP,
         function() {regExpListSelection_Box.currentModelElementChanged()});
      regExpListSelection_GroupBox.sizer.add(this.currentRegExpRow);
      this.currentReplacementRow = new TextEntryRow(regExpListSelection_GroupBox,rowStyle, "Replacement",
-        "Enter the text that will be used as the variable value of the regular expression matched", "replacement",
-        propertyTypes.FREE_TEXT,
+        "The replacement text to use if the regular expression matched.\n" +
+        "&0; may be used to refer to the original text, &1;, &2; refers to parenthesized groups in the regular expression.", "replacement",
+        propertyTypes.REG_EXP_REPLACMENT,
         function() {regExpListSelection_Box.currentModelElementChanged()});
      regExpListSelection_GroupBox.sizer.add(this.currentReplacementRow);
 
@@ -681,7 +698,7 @@ var ffM_GUI_config = (function (){
 
      this.sizer = new VerticalSizer;
      var constantValueRow = new TextEntryRow(this, rowStyle, "Value",
-     "Enter a text that will be used as the value for this variable",
+     "The fixed value for this variable",
      "value", propertyTypes.FREE_TEXT, null);
      this.sizer.add(constantValueRow);
 
@@ -714,13 +731,14 @@ var ffM_GUI_config = (function (){
 
      // FITS Key
      var keyRow = new TextEntryRow(this, rowStyle, "FITS key",
-      "Enter the name of a FITS key that will provide the value as text",
+      "The name of a FITS key that will provide the value of this variable\n" +
+      "(the FITS key value will be cleaned of special characters).",
       "key", propertyTypes.FREE_TEXT, null);
      this.sizer.add(keyRow);
 
      var formatRow = new TextEntryRow(this, rowStyle, "Format",
-     "Enter a valid C format string to display the value, for example '-%ls' to preceed the string with a dash\n"+
-     "IMPORTANT - strings must use '%ls', not '%s'",
+     "A valid C format string to display the value, for example '-%ls' to preceed the string with a dash\n"+
+     "IMPORTANT - You must use '%ls', not '%s' to indicate the location of the string in the format",
      "format", propertyTypes.FREE_TEXT, null);
      this.sizer.add(formatRow);
 
@@ -754,12 +772,12 @@ var ffM_GUI_config = (function (){
 
      // FITS Key
      var keyRow = new TextEntryRow(this, rowStyle, "FITS key",
-      "Enter the name of a FITS key that will provide the value",
+      "The name of a FITS key that will provide the value",
       "key", propertyTypes.FREE_TEXT, null);
      this.sizer.add(keyRow);
 
      var formatRow = new TextEntryRow(this, rowStyle, "Format",
-     "Enter a valid C format string to display the value, like '%4.4d', text may preceed or follow the '%4d.d",
+     "A valid C format string to display the value, like '%4.4d', possibly with additional text like 'TEMP-%3d'",
      "format", propertyTypes.FREE_TEXT, null);
      this.sizer.add(formatRow);
 
@@ -794,17 +812,17 @@ var ffM_GUI_config = (function (){
 
      // FITS Key 1
      var key1Row = new TextEntryRow(this, rowStyle, "FITS key 1",
-      "Enter the name of a FITS key that will provide the first value",
+      "The name of a FITS key that will provide the first value",
       "key1", propertyTypes.FREE_TEXT, null);
      this.sizer.add(key1Row);
 
      var key2Row = new TextEntryRow(this, rowStyle, "FITS key 2",
-      "Enter the name of a FITS key that will provide the second value",
+      "The name of a FITS key that will provide the second value",
       "key2", propertyTypes.FREE_TEXT, null);
      this.sizer.add(key2Row);
 
      var formatRow = new TextEntryRow(this, rowStyle, "Format",
-     "Enter a valid C format string to display the 2 values, like '%dx%d'",
+     "A valid C format string to display the 2 values, for example '%dx%d'",
      "format", propertyTypes.FREE_TEXT, null);
      this.sizer.add(formatRow);
 
@@ -838,12 +856,12 @@ var ffM_GUI_config = (function (){
      this.sizer = new VerticalSizer;
 
      var key1Row = new TextEntryRow(this, rowStyle, "LONG_OBS key",
-     "Enter the name of a FITS key that provide the longitude of the observatory",
+     "The name of a FITS key that provide the longitude of the observatory",
      "keyLongObs", propertyTypes.FREE_TEXT, null);
      this.sizer.add(key1Row);
 
      var key2Row = new TextEntryRow(this, rowStyle, "JD key",
-     "Enter the name of a FITS key that contains the julian date of the observation",
+     "The name of a FITS key that contains the julian date of the observation",
      "keyJD", propertyTypes.FREE_TEXT, null);
      this.sizer.add(key2Row);
 

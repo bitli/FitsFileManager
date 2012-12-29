@@ -61,6 +61,10 @@ var ffM_TestConfigUi = (function(){
          name: name,
          description: description,
          variableList: [],
+        builtins: {
+           rank: {format: "%4.4d"},
+           count: {format: "%4.4d"},
+        }
       };
       var builder = {
          // Operations on the variable list

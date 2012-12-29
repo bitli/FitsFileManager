@@ -51,7 +51,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 // ****************************************************************************
 
-// Base on FITSkey_0.06 of Nikolay but almost completely rewritten with another approach
+// Base on FITSkey_0.06 of Nikolay but completely rewritten with another approach
 // Thanks to Nikolay for sharing the original FITSKey
 
 // NOTE : The parameters have their own version number in FITSFileManger-parameters.jsh
