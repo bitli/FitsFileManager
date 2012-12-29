@@ -360,6 +360,7 @@ var ffM_GUI_config = (function (){
   // There is no real conversion, as we keep all information in text format
   // the toString() is just to avoid crash and help debug in case a non string object is received
   // TODO add variable name validation
+  var testInvalidVariableNameRegExp = /[&\(\);<>=!%*]/;
   var propertyTypes = {
      FREE_TEXT: {
         name: "FREE_TEXT",
@@ -370,7 +371,17 @@ var ffM_GUI_config = (function (){
         name: "REG_EXP",
         propertyToText: function(value) {return value.toString()},
         textToProperty: function(text) {return regExpToString(regExpFromUserString(text))},
-     }
+     },
+     VAR_NAME: {
+        name: "VAR_NAME",
+        propertyToText: function(value) {return value.toString()},
+        textToProperty: function(text) {
+            if (testInvalidVariableNameRegExp.test(text)) {
+               throw "Invalid character in variable name"}
+            else {return text}
+         },
+     },
+
   }
 
 
@@ -405,25 +416,25 @@ var ffM_GUI_config = (function (){
      the_Label.text = name + ": ";
      the_Label.toolTip = toolTip;
 
-     var name_Edit = new Edit(this);
-     name_Edit.minWidth = style.minDataWidth;
-     this.sizer.add(name_Edit)
-     name_Edit.toolTip = toolTip;
+     var text_Edit = new Edit(this);
+     text_Edit.minWidth = style.minDataWidth;
+     this.sizer.add(text_Edit)
+     text_Edit.toolTip = toolTip;
 
-     name_Edit.onTextUpdated = function() {
+     text_Edit.onTextUpdated = function() {
         var value;
         if (that.target !== null) {
            //Log.debug("TextEntryRow: onTextUpdated:",property,this.text);
            try {
               value =  propertyType.textToProperty(this.text);
               // Next lines will only execute if value was correctly parsed
-              name_Edit.textColor = 0x000000;
+              text_Edit.textColor = 0x000000;
               that.target[property] = value;
               if (valueChangedCallback != null) {
                  valueChangedCallback();
               }
            } catch (error) {
-              name_Edit.textColor = 0xFF0000;
+              text_Edit.textColor = 0xFF0000;
            }
         }
      }
@@ -431,14 +442,14 @@ var ffM_GUI_config = (function (){
      this.updateTarget = function(target) {
         that.target = target;
         if (target === null) {
-           name_Edit.text = '';
-           name_Edit.enabled = false;
+           text_Edit.text = '';
+           text_Edit.enabled = false;
         } else {
            if (! target.hasOwnProperty(property)) {
               throw "Entry '" + name + "' does not have property '" + property + "': " + Log.pp(target);
            }
-           name_Edit.text = propertyType.propertyToText(target[property]);
-           name_Edit.enabled = true;
+           text_Edit.text = propertyType.propertyToText(target[property]);
+           text_Edit.enabled = true;
         }
      }
 
@@ -446,6 +457,60 @@ var ffM_GUI_config = (function (){
   }
   TextEntryRow.prototype = new Control;
 
+
+  function BooleanEntryRow(parent, style, name, toolTip, property, valueChangedCallback) {
+     this.__base__ = Control;
+     this.__base__(parent);
+     var that = this;
+
+     this.sizer = new HorizontalSizer;
+     this.sizer.margin = 2;
+     this.sizer.spacing = 2;
+
+     this.property = property;
+     this.target = null;
+
+     var the_Label = new Label( this );
+     this.sizer.add(the_Label);
+     the_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
+     the_Label.minWidth = style.minLabelWidth;
+     the_Label.text = name + ": ";
+     the_Label.toolTip = toolTip;
+
+     var bool_CheckBox = new CheckBox(this);
+     bool_CheckBox.minWidth = style.minDataWidth;
+     this.sizer.add(bool_CheckBox)
+     bool_CheckBox.toolTip = toolTip;
+
+     bool_CheckBox.onCheck = function() {
+        var value;
+        if (that.target !== null) {
+             value =  this.checked;
+            bool_CheckBox.textColor = 0x000000;
+            that.target[property] = value;
+            if (valueChangedCallback != null) {
+               valueChangedCallback();
+            }
+        }
+     }
+     // Define the target object (that must have the property defined originally), null disables input
+     this.updateTarget = function(target) {
+        that.target = target;
+        if (target === null) {
+           bool_CheckBox.checked = false;
+           bool_CheckBox.enabled = false;
+        } else {
+           if (! target.hasOwnProperty(property)) {
+              throw "Entry '" + name + "' does not have property '" + property + "': " + Log.pp(target);
+           }
+           bool_CheckBox.checked = target[property];
+           bool_CheckBox.enabled = true;
+        }
+     }
+
+     this.updateTarget(null);
+  }
+  BooleanEntryRow.prototype = new Control;
 
 
   // -- Middle right sub-panes (components to edit variables)
@@ -838,15 +903,22 @@ var ffM_GUI_config = (function (){
      this.variableNameRow = new TextEntryRow(this, rowStyle, "Variable name",
         "Enter the name of the variable, it will be used as '&amp;name;' in a template",
         "name",
-        propertyTypes.FREE_TEXT,
+        propertyTypes.VAR_NAME,
         function() {variableListSelection_Box.currentModelElementChanged()});
      variableDetails_GroupBox.sizer.add(this.variableNameRow);
+
      this.descriptionRow = new TextEntryRow(this, rowStyle, "Description",
         "Enter a short description of the variable",
         "description",
         propertyTypes.FREE_TEXT,
         function() {variableListSelection_Box.currentModelElementChanged()});
      variableDetails_GroupBox.sizer.add(this.descriptionRow);
+
+     this.variableShownRow = new BooleanEntryRow(this, rowStyle, "Show column by default",
+        "If true, the corresponding column is shown in the Input file list by default",
+        "show",
+        function() {variableListSelection_Box.currentModelElementChanged()});
+     variableDetails_GroupBox.sizer.add(this.variableShownRow);
 
      var addNewResolverControl = function(resolverControl){
         variableDetails_GroupBox.sizer.add(resolverControl);
@@ -916,6 +988,7 @@ var ffM_GUI_config = (function (){
         // populate the common fields
         this.variableNameRow.updateTarget(variableDefinition);
         this.descriptionRow.updateTarget(variableDefinition);
+        this.variableShownRow.updateTarget(variableDefinition);
 
         // Find new resolver, populate and show it
         resolverName = that.currentVariableDefinition.resolver;
@@ -993,7 +1066,7 @@ var ffM_GUI_config = (function (){
 
       var rankFormat = new TextEntryRow(colLayout1_Control, rowStyle, "&rank; format",
       "Enter a valid C format string for the &rank; value, like '%3.3d'\nYou can also add text around like 'N%3.3d'",
-      "rankFormat", propertyTypes.FREE_TEXT, null);
+      "format", propertyTypes.FREE_TEXT, null);
       colLayout1_Control.sizer.add(rankFormat);
 
       // Right column
@@ -1003,7 +1076,7 @@ var ffM_GUI_config = (function (){
 
       var countFormat = new TextEntryRow(colLayout2_Control, rowStyle, "&count format",
       "Enter a valid C format string for the &count; value, like '%3.3d'\nYou can also add text around like 'group-%d'",
-      "countFormat", propertyTypes.FREE_TEXT, null);
+      "format", propertyTypes.FREE_TEXT, null);
       colLayout2_Control.sizer.add(countFormat);
 
 
@@ -1011,8 +1084,8 @@ var ffM_GUI_config = (function (){
          var configurationNames = ffM_Configuration.getAllConfigurationNames(editedConfigurationSet);
          this.selectedConfiguration = ffM_Configuration.getConfigurationByName(editedConfigurationSet, currentConfigurationName);
 
-         rankFormat.updateTarget(this.selectedConfiguration.builtins);
-         countFormat.updateTarget(this.selectedConfiguration.builtins);
+         rankFormat.updateTarget(this.selectedConfiguration.builtins.rank);
+         countFormat.updateTarget(this.selectedConfiguration.builtins.count);
       }
 
    }

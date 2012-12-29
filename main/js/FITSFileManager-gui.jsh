@@ -1060,7 +1060,7 @@ function MainDialog(engine, guiParameters) {
       for (var i = 0; i<ffM_Configuration.syntheticVariableNames.length;i++) {
         // +1 as the file name column is always visible
          var c = i + 1;
-         this.filesTreeBox.showColumn( c, this.engine.shownSyntheticKeyNames.hasOwnProperty(ffM_Configuration.syntheticVariableNames[i]));
+         this.filesTreeBox.showColumn( c, this.engine.isVariableVisible(ffM_Configuration.syntheticVariableNames[i]));
       }
       for (var i = 0; i<allFITSKeyNames.length;i++) {
         // + 1 to skip file name and then skip the synthetic variables columns (they are present even if not shown))

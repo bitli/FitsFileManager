@@ -72,11 +72,14 @@ function FFM_Engine(guiParameters) {
          var name = defaultShownKeywords[i];
          this.shownFITSKeyNames[name] = true;
       }
-      // Currently all synthetic variables are visible by default
+      // Use the 'shown' attribute in the configuration
+      this.shownSyntheticKeyNames = {};
       var vl = this.currentConfiguration.variableList;
       for (var i = 0; i<vl.length;i++) {
          var name = vl[i].name;
-         this.shownSyntheticKeyNames[name] = true;
+         if (vl[i].show) {
+            this.shownSyntheticKeyNames[name] = true;
+         }
       }
 
 #ifdef DEBUG
@@ -84,6 +87,15 @@ function FFM_Engine(guiParameters) {
 #endif
 
     }
+
+   this.isVariableVisible = function(name) {
+       var v = this.shownSyntheticKeyNames.hasOwnProperty(name);
+#ifdef DEBUG
+       //debug("FFM_Engine.isVariableVisible -",name,v);
+#endif
+       return v;
+   }
+
 
    // Rebuild after change of configuration  (GUI ,ust also refresh itself))
    this.rebuildAll = function() {
@@ -290,7 +302,7 @@ function FFM_Engine(guiParameters) {
             }
 
             //   &rank;      The rank in the list of files of the file being moved/copied
-            rankString = format(this.currentConfiguration.builtins.rankFormat,inputOrderIndex);
+            rankString = format(this.currentConfiguration.builtins.rank.format,inputOrderIndex);
 
 
             // Do the template operations (keeping track of error)
@@ -317,7 +329,7 @@ function FFM_Engine(guiParameters) {
                   }
                   count ++;
                   countingGroups[group] = count;
-                  countString = format(this.currentConfiguration.builtins.countFormat,count);
+                  countString = format(this.currentConfiguration.builtins.count.format,count);
 #ifdef DEBUG
                   debug("buildTargetFiles: for group = " + group + ", count = " + countString);
 #endif

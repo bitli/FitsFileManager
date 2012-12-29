@@ -329,10 +329,12 @@ var ffM_template = (function() {
   // Extract parts of &var:truepart?falsepart;
   var variableRegExp = /^([^:?]+)(?::([^:?]*))?(?:\?([^:?]*))?/
 
+  var testInvalidLiteralRegExp = /[&\(\);<>=!%*]/;
+
   // Create a rule that return the parameter literal verbatim
   var makeLiteralRule = function(templateErrors,literal){
     // TODO Check that literal does not contains & ( ) ; < > = ! ( ) and % unless formatting is implemented)
-    if (/[&\(\);<>=!%*]/.test(literal)) {
+    if (testInvalidLiteralRegExp.test(literal)) {
       templateErrors.push("Invalid characters in literal sequence " + literal);
     }
     var literalRule = function(errors) {

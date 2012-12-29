@@ -68,10 +68,9 @@
 
 var ffM_Configuration = (function() {
 
-//var ffM_ConfigurationSet_Model = (function(){
+   var i;
 
    // Default ConfigurationSet, serve also as example of the structure.
-
 
    // --------------------------------------------------------------------------------------------------
    // configurationSet data (ordered list of configurations, the order does not matter for the semantic)
@@ -93,6 +92,7 @@ var ffM_Configuration = (function() {
        variableList:
          [ { name: "type",
              description: "Type of image (flat, bias, ...)",
+             show: true,
              resolver: "RegExpList",
              parameters:
                { RegExpList:
@@ -125,6 +125,7 @@ var ffM_Configuration = (function() {
            },
            { name: "filter",
              description: "Filter (clear, red, ...)",
+             show: true,
              resolver: "RegExpList",
              parameters:
                { RegExpList:
@@ -155,6 +156,7 @@ var ffM_Configuration = (function() {
            },
            { name: "exposure",
              description: "Exposure in seconds",
+             show: true,
              resolver: "Integer",
              parameters:
                { Integer:
@@ -165,6 +167,7 @@ var ffM_Configuration = (function() {
            },
            { name: "temp",
              description: "Temperature in C",
+             show: true,
              resolver: "Integer",
              parameters:
                { Integer:
@@ -175,6 +178,7 @@ var ffM_Configuration = (function() {
            },
            { name: "binning",
              description: "Binning as 1x1, 2x2, ...",
+             show: true,
              resolver: "IntegerPair",
              parameters:
                { IntegerPair:
@@ -190,6 +194,7 @@ var ffM_Configuration = (function() {
 
            { name: "night",
              description: "night (experimental)",
+             show: true,
              resolver: "Night",
              parameters:
                { Night:
@@ -200,6 +205,7 @@ var ffM_Configuration = (function() {
            },
            { name: "filename",
              description: "Input file name",
+             show: false,
              resolver: "FileName",
              parameters:
                { FileName:
@@ -209,6 +215,7 @@ var ffM_Configuration = (function() {
            },
            { name: "extension",
              description: "Input file extension",
+             show: false,
              resolver: "FileExtension",
              parameters:
                { FileExtension:
@@ -218,17 +225,33 @@ var ffM_Configuration = (function() {
            }
          ],
         builtins: {
-            rankFormat: "%4.4d",
-            countFormat: "%4.4d",
+           rank: {format: "%4.4d"},
+           count: {format: "%4.4d"},
         }
-     },
+     }
 
+   ];
 
-      { name: "User 1",
-       description: "User FITS rules",
-       variableList:
+   // Duplicate the default configuration (work around before new configurations can be created),
+   // patch in the differences
+   var defaultConf = defaultConfigurationSet[0];
+
+   for (var i=0; i<3; i++) {
+      var userConf = deepCopyData(defaultConf);
+      userConf.name = "User " + i;
+      userConf.description = "Copy of default " + i;
+      defaultConfigurationSet.push(userConf);
+   }
+
+   // CAHA version
+   var userConf = deepCopyData(defaultConf);
+   userConf.name = "User CAHA";
+   userConf.description = "Test configuration based on CAHA image";
+   // Just the differences from the base configuration - which is about everything
+   userConf.variableList =
          [ { name: "type",
              description: "Type of image (flat, bias, ...)",
+             show: true,
              resolver: "RegExpList",
              parameters:
                { RegExpList:
@@ -261,6 +284,7 @@ var ffM_Configuration = (function() {
            },
            { name: "filter",
              description: "Filter (clear, red, ...)",
+             show: true,
              resolver: "RegExpList",
              parameters:
                { RegExpList:
@@ -276,6 +300,7 @@ var ffM_Configuration = (function() {
            },
            { name: "exposure",
              description: "Exposure in seconds",
+             show: true,
              resolver: "Integer",
              parameters:
                { Integer:
@@ -286,6 +311,7 @@ var ffM_Configuration = (function() {
            },
            { name: "temp",
              description: "Temperature in C",
+             show: true,
              resolver: "Integer",
              parameters:
                { Integer:
@@ -296,6 +322,7 @@ var ffM_Configuration = (function() {
            },
            { name: "binning",
              description: "Binning as 1x1, 2x2, ...",
+             show: true,
              resolver: "IntegerPair",
              parameters:
                { IntegerPair:
@@ -307,6 +334,7 @@ var ffM_Configuration = (function() {
            },
            { name: "night",
              description: "night (experimental)",
+             show: true,
              resolver: "Night",
              parameters:
                { Night:
@@ -318,6 +346,7 @@ var ffM_Configuration = (function() {
            },
            { name: "filename",
              description: "Input file name",
+             show: false,
              resolver: "FileName",
              parameters:
                { FileName:
@@ -327,6 +356,7 @@ var ffM_Configuration = (function() {
            },
            { name: "extension",
              description: "Input file extension",
+             show: false,
              resolver: "FileExtension",
              parameters:
                { FileExtension:
@@ -334,15 +364,12 @@ var ffM_Configuration = (function() {
                    }
                }
            }
-         ],
-        builtins: {
-            rankFormat: "%4.4d",
-            countFormat: "%4.4d",
-        }
+         ];
 
-     }
+   defaultConfigurationSet.push(userConf);
 
-   ];
+
+
 
 
    // --- singletons variables ---------------------------------------------------

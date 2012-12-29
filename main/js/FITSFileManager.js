@@ -132,11 +132,8 @@
 //     Additional tests
 //     Various presentation enhancements
 
-// 2012-12-01 - 0.9
-//     More 'module' structure, made logging in module
-//     Separate text
-//     Rework the UI - separate dialog for configuration, avoid use of section bar
-//     Rework variable as a module
+// 2012-12-28 - 0.9
+//     Very large rewrite of configuration mecanism
 
 
 
