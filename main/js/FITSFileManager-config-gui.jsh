@@ -909,6 +909,36 @@ var ffM_GUI_config = (function (){
   VariableUIControl.prototype = new Control;
 
 
+  function ConfigurationLayoutControl(parent, configurationSelectedCallback ) {
+     this.__base__ = Control;
+     this.__base__(parent);
+     var that = this;
+
+     this.sizer = new HorizontalSizer;
+     var configurationSelection_Label = new Label(this);
+     this.sizer.add(configurationSelection_Label);
+     configurationSelection_Label.text = "Configuration: ";
+     this.configurationSelection_ComboBox = new ConfigurationSelection_ComboBox(this, [], configurationSelectedCallback);
+     this.sizer.add(this.configurationSelection_ComboBox);
+     this.sizer.addSpacing(12);
+     this.configurationComment_Edit = new Edit;
+     this.sizer.add(this.configurationComment_Edit);
+     // T otrack edited comment
+     this.selectedConfiguration = null;
+
+     this.configure = function(editedConfigurationSet, currentConfigurationName) {
+         var configurationNames = ffM_Configuration.getAllConfigurationNames(editedConfigurationSet);
+         this.configurationSelection_ComboBox.configure(configurationNames, currentConfigurationName);
+         this.selectedConfiguration = ffM_Configuration.getConfigurationByName(editedConfigurationSet, currentConfigurationName);
+         this.configurationComment_Edit.text = this.selectedConfiguration.description;
+     }
+     this.configurationComment_Edit.onTextUpdated = function() {
+        if (this.selectedConfiguration !== null) {
+           this.selectedConfiguration.description = this.text;
+        }
+     }
+   }
+   ConfigurationLayoutControl.prototype = new Control;
 
   // ---------------------------------------------------------------------------------------------------------
   // This Dialog controls the update of a configurationSet, starting at a current configuration.
@@ -950,7 +980,8 @@ var ffM_GUI_config = (function (){
         that.currentConfigurationName = configurationName;
         // Update UI
         that.variableUI.updateVariableList(selectedConfiguration.variableList);
-        that.configurationComment_Edit.text = selectedConfiguration.description;
+        // Update the description text
+        that.configurationLayoutControl.configure(that.editedConfigurationSet, that.currentConfigurationName);
      }
 
      // -- Model call backs
@@ -964,19 +995,9 @@ var ffM_GUI_config = (function (){
      // -- Build the top level pane
 
      // Top pane - select configuration to operate upon
-     var configurationLayoutControl = new Control;
-     this.sizer.add(configurationLayoutControl);
-     configurationLayoutControl.sizer = new HorizontalSizer;
-     var configurationSelection_Label = new Label(configurationLayoutControl);
-     configurationLayoutControl.sizer.add(configurationSelection_Label);
-     configurationSelection_Label.text = "Configuration: ";
-     this.configurationSelection_ComboBox = new ConfigurationSelection_ComboBox(configurationLayoutControl, [], configurationSelectedCallback);
-     configurationLayoutControl.sizer.add(this.configurationSelection_ComboBox);
-     this.configurationComment_Edit = new Edit;
-     configurationLayoutControl.sizer.add(this.configurationComment_Edit);
-     this.configurationComment_Edit.onTextUpdated = function() {
-        ffM_Configuration. getConfigurationByName(that.editedConfigurationSet,ffM_Configuration.getActiveConfigurationName()).description = this.text;
-     }
+     this.configurationLayoutControl = new ConfigurationLayoutControl(this, configurationSelectedCallback );
+     this.sizer.add(this.configurationLayoutControl);
+
 
 
      // Middle pane - define variables, their resolvers and the resolver's parameters
@@ -996,7 +1017,7 @@ var ffM_GUI_config = (function (){
         this.currentConfigurationName = configurationNameToEdit;
         var configurationNames = ffM_Configuration.getAllConfigurationNames(this.editedConfigurationSet);
         // Initialize content
-        this.configurationSelection_ComboBox.configure(configurationNames, this.currentConfigurationName);
+        this.configurationLayoutControl.configure(this.editedConfigurationSet, this.currentConfigurationName);
         configurationSelectedCallback(this.currentConfigurationName);
      }
 
