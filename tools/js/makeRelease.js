@@ -55,16 +55,18 @@
    var targetFile = new File;
    targetFile.createForWriting(targetFilePath);
 
-   var includeRegExp = new RegExp("#include[ \\t]\"+(" + rootFileNameOnly + "-.+)\"");
+   var includeRegExp1 = new RegExp("#include[ \\t]\"+(" + rootFileNameOnly + "-.+)\"");
+   var includeRegExp2 = new RegExp("#include[ \\t]\"+(PJSR-logging\.jsh)\"");
    // var includeRegExp = /#include[ \t]"+(VaryParams-.+)"/;
-   Console.writeln("  looking up include as " + includeRegExp);
+   Console.writeln("  looking up include as " + includeRegExp1 + " or " + includeRegExp2);
 
    // For some reason adding the N make the regexp not working....
    var defineVersionRegExp = /^#define[ \t]+VERSIO/;
 
    for (var i=0; i<rootFileText.length; i++) {
       var line = rootFileText[i];
-      var match = line.match(includeRegExp);
+      var match = line.match(includeRegExp1);
+      if (!match) match = line.match(includeRegExp2);
       if (match) {
          Console.writeln("  handling " + line);
          var inludedFilePath = rootFileDirectory + "/" + match[1];

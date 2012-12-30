@@ -8,6 +8,8 @@
 //    ffM_GUI_config  - Dialog to manage configuration sets
 
 
+#define GROUP_BOX_MIN_SIZE 22
+
 // ========================================================================================================================
 // ffM_GUI_support - GUI support methods and controls
 //   This module contains controls independent of the FITSFileManager data model
@@ -719,7 +721,10 @@ var ffM_GUI_config = (function (){
            [{propertyName: 'regexp'},{propertyName: 'replacement'}],
            [], // Its model will be initialized dynamically
            transformationDefinitionFactory,
-           "Transformation",
+           "Regular expression to text mapping.\nSelect a row to edit the details.\n"+
+           "The first matching expression will define the value of the variable.\n"+
+           "If none match, the variable is undefined. Use '/.*/' as the last expression to have a default value\n"+
+           "&0; etc may be used to refer to the result of the regular expression",
            transformationSelectionCallback,
            false // Keep in order
      );
@@ -1100,7 +1105,7 @@ var ffM_GUI_config = (function (){
 
      // TRICK - void growing when more proeprties are added to the right pane, the dialg can grow,
      // so it is possible to avoid this minimum size, but the effect is likely uggly.
-     variableDetails_GroupBox.setMinHeight(20 * this.font.lineSpacing + 2*this.sizer.margin);
+     variableDetails_GroupBox.setMinHeight(GROUP_BOX_MIN_SIZE * this.font.lineSpacing + 2*this.sizer.margin);
 
 
 

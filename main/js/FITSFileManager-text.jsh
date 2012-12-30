@@ -26,9 +26,10 @@ new location path from a template with the replacement of variables with values 
 and other information.\
 <p/>You select the files to move/copy (files can be individually checked or un-checked) \
 and select a predefined template or enter a new template to generate the target path using variables to substitute values \
-based on the source image file name, FITS keywords or synthethic variables. \
+based on the source image file name, FITS keywords or synthethic variables. \ 
 Various other parameters can be adapted to fine tune the path generation. \
 The list of transformation is updated as you type templates and other parameters. \
+The synthetic variables are defined in a 'configuration' that you may edit. \
 ";
 
 var VARIABLE_HELP_TEXT = "\
@@ -41,20 +42,24 @@ generated if the variable is missing) but its value does not contribute to the t
 <li>The optional '?missing' part is used if the variable is not present in the file (for example '&OBJECT?unknown;'). \
 You can also have an empty 'missing' value (like '&amp;binning?;') in which case there is no error if the variable  \
 has no value. </li>\
-</ul><p>The synthetic variables are described in the section 'target template' below. They are built from the FITS keywords, \
-the number of the file being processed or are result of a regular expression applied to the file name. \
+</ul><p>The synthetic variables are described in the section 'target template' below. They are built \
+from the FITS keywords (following rules specified in a 'configuration'). \
+from the number of the file being processed or from the a regular expression applied to the file name. \
 The source file regular expression can be used, for example, to extract the part of the file name \
 before the first dash and use it as a prefix for all files. \
-<p/>The files are processed in the order they appear in the table (variable '&amp;rank;'). \
-In addition a 'group' string can be generated using the same template rules and a '&amp;count;' \
-variable is increased for each different group (for example each target directory). \
+<p/>The files are processed in the order they appear in the table, the variable '&amp;rank;' provides \
+the image number to help generating a unique file file. \
+In addition a 'group' string can be generated using from the 'group' template. A '&amp;count;' \
+variable is increased for each different group (for example each target directory if the group template \
+contained the target directory). \
 The values are cleaned up of special characters, so that they form legal file names. \
 ";
 
 
 var TARGET_TEMPLATE_TOOLTIP_A = "\
 Define how the target file path will be generated. The text of this field is used \
-as the output path, except that the variables are replaced by their value.<br/>\
+as the output path, except that the variables are replaced by their value according to \
+the current 'configuration'.<br/>\
 ";
 
 // Part used only in tooltip
@@ -67,7 +72,7 @@ is defined in the help available by the icon at bottom right.<br/>\
 
 var TARGET_TEMPLATE_TOOLTIP_C = "\
 The variables include the FITS keywords and the synthetic variables defined in the configuration. \
-A typical configuration contains the following keywords:<\br/>\
+A typical configuration contains the following keywords (your actual configuration may be different):<\br/>\
 <dl>\
    <dt>&amp;binning;</dt><dd>Binning from XBINNING and YBINNING as integers, like 2x2.</dd>\
    <dt>&amp;exposure;</dt><dd>The exposure from EXPOSURE, but as an integer (assume seconds).<\dd>\
@@ -83,7 +88,7 @@ A typical configuration contains the following keywords:<\br/>\
 <dl>\
    <dt>&amp;count;</dt><dd>The number of the file being moved/copied int the current group.<\dd>\
    <dt>&amp;rank;</dt><dd>The number of the file in the order of the input file list.<\dd>\
-</dl>You can enter the template or select one of the predefined one and optionaly modify it.\
+</dl>You can enter the template or select one of the predefined one and optionaly modify it.<br/>\
 ";
 
 var SOURCE_FILENAME_REGEXP_TOOLTIP = "\
@@ -105,24 +110,26 @@ A count of image will be kept for each different group name and can be used as t
 target path template. \
 All variables can be used in the group template, except &count;. In addition you can use the following variable:\
 <dl><dt>&targetDir;</dt><dd>The directory part of the target file name.</dd>\
-</dl>Leave blank or use a fixed name have a single global counter.<br/>\
-Example: '&targetDir;' counts images in each target directory. \
-'&filter;' counts the images separetely for each filter (independently of the target directory).<br/> \
-You can enter the template or select one of the predefined one and optionaly modify it.\
-";
+</dl>Leave blank or use a fixed name to have a single global counter.\
+<p>Example of group templates:<dl>\
+<dt>'&targetDir;'</dt><dd>counts images in each target directory.</dd> \
+<dt>'&filter;'</dt><dd>counts the images separetely for each filter (independently of the target directory).<dd/> \
+</dl>You can enter the template or select one of the predefined one and optionaly modify it.\
+</p>";
 
 var HELP_CONFIGURATION = "\
-The configuration of mapping rules allows you to select one of the preconfigured set of rules. \
-Currently the loadable set of rules only includes the mapping of FITS keywords use to generate the synthetic keywords. \
-The mapping section also show the rules used to map the values of the IMAGETYP and FILTER keywords to their \
-corresponding synthetic variables &amp;type; and &amp;filter;.<br/>\
-The values of the keyword are tested with each regular expression (left column) in turn, \
-at the first match, the corresponding value (right column) is returned as the value of the corresponding \
-synthetic variable. The variables &amp;0;, &amp;1; ... may be used to insert the matching groups of the regular expression, \
-after cleaning of special characters.<br/>\
-Currently the list of mapping can only be modified in the initialization code.\
+The configuration defines how the synthetic variables are created, for example the FITS key to \
+use, the format of the value, specific operations like changing case or renaming filter names. \
+FITSFileManager keeps track of multiple configurations, only one at a time may be active. \
+Currently the list of configuration is fixed (this will be made more dynamic in the future). \
+It is expected that most users could use the default configuration, or may be the default with \
+some simple adjustments. It is also possible to have a set of configuration for different \
+image type, but currently you must still change the configuration or the template between \
+image types.  Some cofiguration options may require more advanced understanding of regular \
+expressions and the FITS key words. \
+<br/>Click on the Configure... button to change or edit the configuration. \
 ";
-
+                          
 var HELP_OPERATIONS = "<p>The operations Copy/Move copy or move the files directly, without \
 adding any FITS keywords.  The operation Load/SaveAs loads each image temporarily in the workspace \
 and save it to the new location. An ORIGFILE keyword with the original file name is added if it is not already present. \
