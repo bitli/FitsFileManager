@@ -161,6 +161,7 @@ var ffM_Configuration = (function() {
              parameters:
                { Integer:
                    { key: "EXPTIME", // also EXPOSURE
+                     abs: true,
                      format: "%4.4d"
                    }
                }
@@ -172,6 +173,7 @@ var ffM_Configuration = (function() {
              parameters:
                { Integer:
                    { key: "SET-TEMP", // Also CCDTEMP and CCD-TEMP",
+                     abs: true,
                      format: "%4.4d"
                    }
                }
@@ -305,7 +307,8 @@ var ffM_Configuration = (function() {
              parameters:
                { Integer:
                    { key: "EXPTIME", // also EXPOSURE
-                     format: "%4.4d"
+                     abs: true,
+                     format: "%4.4d",
                    }
                }
            },
@@ -316,6 +319,7 @@ var ffM_Configuration = (function() {
              parameters:
                { Integer:
                    { key: "CCDTEMP", // Also CCDTEMP and CCD-TEMP",
+                     abs: true,
                      format: "%4.4d"
                    }
                }

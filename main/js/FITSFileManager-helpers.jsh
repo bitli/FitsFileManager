@@ -287,7 +287,7 @@ var ffM_Resolver = (function(){
       {name: 'Text', description: 'Text of FITS keyword value',
             initial:{key: '?', format: '%ls', case: 'NONE'}, control: null, parserFactory:null},
       {name: 'Integer', description: 'Integer value',
-            initial:{key: '?', format:'%4.4d'}, control: null, parserFactory:null},
+            initial:{key: '?', abs: true, format:'%4.4d'}, control: null, parserFactory:null},
       {name: 'IntegerPair', description: 'Pair of integers (binning)',
             initial:{key1: '?', key2: '?', format:'%dx%d'}, control: null, parserFactory:null},
       {name: 'Constant', description: 'Constant value',
@@ -521,6 +521,7 @@ var ffM_variables = (function() {
             if (isNaN(valueF)) {
                return null;
             } else {
+               if (ruleParameters.abs) { valueF = Math.abs(valueF);}
                return format(ruleParameters.format, Math.round( valueF));
             }
          }

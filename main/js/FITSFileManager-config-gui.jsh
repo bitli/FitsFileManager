@@ -870,6 +870,11 @@ var ffM_GUI_config = (function (){
       "key", propertyTypes.FREE_TEXT, null);
      this.sizer.add(keyRow);
 
+     var useAbsoluteRow = new BooleanEntryRow(this, rowStyle, "Use absolute value",
+        "If true, the absolute value of the corresponding value is taken (the sign is discarded)",
+        "abs", null);
+     this.sizer.add(useAbsoluteRow);
+
      var formatRow = new TextEntryRow(this, rowStyle, "Format",
      "A valid C format string to display the value, like '%4.4d', possibly with additional text like 'TEMP-%3d'",
      "format", propertyTypes.FREE_TEXT, null);
@@ -885,6 +890,7 @@ var ffM_GUI_config = (function (){
         // Should probably be somewhere else
         this.initialize(variableDefinition);
         keyRow.updateTarget(variableDefinition.parameters[resolverName]);
+        useAbsoluteRow.updateTarget(variableDefinition.parameters[resolverName]);
         formatRow.updateTarget(variableDefinition.parameters[resolverName]);
      }
      this.leave = function() {
