@@ -1177,37 +1177,58 @@ var ffM_GUI_config = (function (){
   VariableUIControl.prototype = new Control;
 
 
-  function ConfigurationLayoutControl(parent, configurationSelectedCallback ) {
-     this.__base__ = Control;
-     this.__base__(parent);
-     var that = this;
+   function ConfigurationGroupBox(parent, configurationSelectedCallback, configurationDuplicateCallback, configurationDeleteCallback ) {
+      this.__base__ = GroupBox;
+      this.__base__(parent);
+      var that = this;
 
-     this.sizer = new HorizontalSizer;
-     var configurationSelection_Label = new Label(this);
-     this.sizer.add(configurationSelection_Label);
-     configurationSelection_Label.text = "Configuration: ";
-     this.configurationSelection_ComboBox = new ConfigurationSelection_ComboBox(this, [], configurationSelectedCallback);
-     this.sizer.add(this.configurationSelection_ComboBox);
-     this.sizer.addSpacing(12);
-     this.configurationComment_Edit = new Edit;
-     this.sizer.add(this.configurationComment_Edit);
-     this.configurationComment_Edit.toolTip = "Short description of the configuration";
-     // To track edited comment
-     this.selectedConfiguration = null;
+      var configurationNameMinWidth = this.font.width( "MMMMMMMMMMMMMMMMM: " );
 
-     this.configure = function(editedConfigurationSet, currentConfigurationName) {
+      this.sizer = new HorizontalSizer;
+      this.sizer.margin = 5;
+      this.sizer.spacing = 10;
+      this.title = "Configuration selection";
+      this.configurationSelection_ComboBox = new ConfigurationSelection_ComboBox(this, [], configurationSelectedCallback);
+      this.sizer.add(this.configurationSelection_ComboBox);
+      this.configurationSelection_ComboBox.minWidth = configurationNameMinWidth;
+      this.configurationComment_Edit = new Edit;
+      this.sizer.add(this.configurationComment_Edit);
+      this.configurationComment_Edit.toolTip = "Short description of the configuration";
+
+      var addConfigurationButton = new ToolButton( this );
+      this.sizer.add(addConfigurationButton);
+      addConfigurationButton.icon = new Bitmap( ":/images/icons/copy.png" );
+      addConfigurationButton.toolTip = "Add a configuration (duplicate current one)";
+      addConfigurationButton.onClick = configurationDuplicateCallback;
+
+      var removeConfigurationButton = new ToolButton( this );
+      this.sizer.add(removeConfigurationButton);
+      removeConfigurationButton.icon = new Bitmap( ":/images/icons/cancel.png" );
+      removeConfigurationButton.toolTip = "Delete the current configuration";
+      removeConfigurationButton.onClick = function() {
+         var msg = new MessageBox( "Do you want to delete the current configuration?",
+                          "Are you sure?", StdIcon_Question, StdButton_Yes, StdButton_No );
+         if (msg.execute() == StdButton_Yes) {
+          configurationDeleteCallback();
+         }
+      }
+
+      // To track edited comment
+      this.selectedConfiguration = null;
+
+      this.configure = function(editedConfigurationSet, currentConfigurationName) {
          var configurationNames = ffM_Configuration.getAllConfigurationNames(editedConfigurationSet);
          this.configurationSelection_ComboBox.configure(configurationNames, currentConfigurationName);
          this.selectedConfiguration = ffM_Configuration.getConfigurationByName(editedConfigurationSet, currentConfigurationName);
          this.configurationComment_Edit.text = this.selectedConfiguration.description;
-     }
-     this.configurationComment_Edit.onTextUpdated = function() {
-        if (that.selectedConfiguration !== null) {
-           that.selectedConfiguration.description = this.text;
-        }
-     }
+      }
+      this.configurationComment_Edit.onTextUpdated = function() {
+         if (that.selectedConfiguration !== null) {
+            that.selectedConfiguration.description = this.text;
+         }
+      }
    }
-   ConfigurationLayoutControl.prototype = new Control;
+   ConfigurationGroupBox.prototype = new GroupBox;
 
   // ---------------------------------------------------------------------------------------------------------
    function BuiltinVariableGroup(parent) {
@@ -1307,6 +1328,33 @@ var ffM_GUI_config = (function (){
         that.configurationLayoutControl.configure(that.editedConfigurationSet, that.currentConfigurationName);
      }
 
+     var deleteConfigurationCallback = function() {
+#ifdef DEBUG
+        debug("ConfigurationDialog: deleteConfigurationCallback");
+#endif
+        var configurationName = that.currentConfigurationName;
+        var newConfigurationName = ffM_Configuration.removeConfigurationByName(that.editedConfigurationSet, configurationName);
+        if (newConfigurationName == null) {
+           Console.writeln("Configuration '" + configurationName  +"' not deleted, it is the last one");
+        } else {
+           configurationSelectedCallback(newConfigurationName);
+        }
+     }
+
+     // We duplicate the current configuration
+     var duplicateConfigurationCallback = function() {
+#ifdef DEBUG
+        debug("ConfigurationDialog: duplicateConfigurationCallback");
+#endif
+        var configurationName = that.currentConfigurationName;
+        var selectedConfiguration = ffM_Configuration.getConfigurationByName(that.editedConfigurationSet, configurationName);
+        var newConfiguration = deepCopyData(selectedConfiguration);
+        newConfiguration.name = createUniqueName(configurationName,ffM_Configuration.getAllConfigurationNames(that.editedConfigurationSet));
+        that.editedConfigurationSet.push(newConfiguration);
+        configurationSelectedCallback(newConfiguration.name);
+         Console.writeln("Configuration '" + newConfiguration.name  +"' created");
+     }
+
      // -- Model call backs
      // New variable requested in current configuration, define one with default values
      var variableDefinitionFactory = function() {
@@ -1320,7 +1368,7 @@ var ffM_GUI_config = (function (){
      // -- Build the top level pane
 
      // Top pane - select configuration to operate upon
-     this.configurationLayoutControl = new ConfigurationLayoutControl(this, configurationSelectedCallback );
+     this.configurationLayoutControl = new ConfigurationGroupBox(this, configurationSelectedCallback, duplicateConfigurationCallback, deleteConfigurationCallback);
      this.sizer.add(this.configurationLayoutControl);
 
 

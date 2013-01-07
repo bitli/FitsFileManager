@@ -405,6 +405,21 @@ var ffM_Configuration = (function() {
       return null;
    }
 
+   // At least one configuration is required
+   var removeConfigurationByName = function(aConfigurationTable, name) {
+      if (aConfigurationTable.length>1) {
+         for (var i=0; i<aConfigurationTable.length; i++) {
+            if (aConfigurationTable[i].name === name) {
+               aConfigurationTable.splice(i,1);
+               break;
+            }
+         }
+         // Return the name of the new first configuration
+         return aConfigurationTable[0].name;
+      }
+      return null;
+   }
+
 
 
    // --- List of all synthethic variables and their comments (2 parallel arrays)
@@ -481,7 +496,7 @@ var ffM_Configuration = (function() {
 
 
 #ifdef NO
-
+  // TODO See how this is defined in the new mecanism
    // List of FITS keywords shown by default (even if not present in any image) in the input files TreeBox
    var defaultShownKeywords_DEFAULT = [
       "IMAGETYP","FILTER","OBJECT"
@@ -515,6 +530,7 @@ var ffM_Configuration = (function() {
       replaceConfigurationTable: replaceConfigurationTable,
       getAllConfigurationNames: getAllConfigurationNames,
       getConfigurationByName: getConfigurationByName,
+      removeConfigurationByName: removeConfigurationByName,
 
       // Support for variables
       defineVariable: defineVariable,

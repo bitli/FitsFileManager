@@ -104,6 +104,27 @@ var ffM_allTests = {
    },
 
 
+   test_createUniqueName_empty: function() {
+      var n = createUniqueName('prefix',[]);
+      pT_assertEquals('prefix_1',n);
+   },
+   test_createUniqueName_none: function() {
+      var n = createUniqueName('prefix',['abc','def','ghi']);
+      pT_assertEquals('prefix_1',n);
+   },
+   test_createUniqueName_one: function() {
+      var n = createUniqueName('prefix',['abc','def_2','ghi']);
+      pT_assertEquals('prefix_3',n);
+   },
+   test_createUniqueName_numbered_prefix: function() {
+      var n = createUniqueName('prefix_3',['abc','def_9','ghi']);
+      pT_assertEquals('prefix_10',n);
+   },
+   test_createUniqueName_multi: function() {
+      var n = createUniqueName('prefix',['abc','def_567','ghi_23']);
+      pT_assertEquals('prefix_568',n);
+   },
+
 
    test_deep_copy_null: function() {
       pT_assertEquals(null,deepCopyData(null));
