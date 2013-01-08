@@ -215,6 +215,8 @@ function MainDialog(engine, guiParameters) {
    this.engine = engine;
    this.guiParameters = guiParameters;
 
+   var that = this;
+
    var labelWidth = this.font.width( "MMMMMMMMMMMMMM" ) ;
 
    this.setMinWidth(800);
@@ -442,10 +444,41 @@ function MainDialog(engine, guiParameters) {
 
    // Show current configuration and allow access to the configuration dialog
 
+#ifdef NO
    this.configurationName_Label = new Label();
    this.configurationName_Label.text =  ffM_Configuration.getActiveConfigurationName();
    this.configurationName_Label.textAlignment	= TextAlign_Left | TextAlign_VertCenter;
    this.configurationName_Label.toolTip = "The current configuration (define the synthetic variables)";
+#endif
+
+   var configurationSelectedCallback = function(configurationName) {
+#ifdef DEBUG
+        debug("MainDialog: configurationSelectedCallback - ConfigurationSet selected:",configurationName);
+#endif
+
+        var selectedConfiguration = ffM_Configuration.getConfigurationByName(ffM_Configuration.getConfigurationTable(), configurationName);
+        if (selectedConfiguration == null) {
+           throw "PROGRAM ERROR - Invalid configuration set name '" + configurationName +"'";
+        }
+         // Update the configuration - THIS REBUILD MOST OF THE VARIABLES AND FILE LISTS
+         ffM_Configuration.setActiveConfigurationName(configurationName);
+         that.configurationDescription_Label.text	=  ffM_Configuration.getActiveConfigurationElement().description;
+
+         that.engine.setConfiguration(ffM_Configuration.createWorkingConfiguration());
+         that.engine.rebuildAll();
+
+
+         // TODO - Merge with action on add files and manage configurations
+         that.rebuildFilesTreeBox();
+         that.updateButtonState();
+         that.updateTotal();
+         that.refreshTargetFiles();
+
+   }
+   this.configurationSelection_ComboBox = new ffM_GUI_config.ConfigurationSelection_ComboBox(this, [], configurationSelectedCallback);
+   this.configurationSelection_ComboBox.configure(
+         ffM_Configuration.getAllConfigurationNames(ffM_Configuration.getConfigurationTable()),
+         ffM_Configuration.getActiveConfigurationName());
 
    this.configuration_Button = new PushButton( this );
    this.configuration_Button.text = Text.T.CONFIGURE_BUTTON_TEXT;
@@ -468,14 +501,18 @@ function MainDialog(engine, guiParameters) {
       if (result) {
          // Update the configuration - THIS REBUILD MOST OF THE VARIABLES AND FILE LISTS
          ffM_Configuration.replaceConfigurationTable(configurationDialog.editedConfigurationSet,configurationDialog.currentConfigurationName)
-         this.dialog.configurationName_Label.text	=  ffM_Configuration.getActiveConfigurationName();
+
+         this.dialog.configurationSelection_ComboBox.configure(
+            ffM_Configuration.getAllConfigurationNames(configurationDialog.editedConfigurationSet),
+            configurationDialog.currentConfigurationName);
+
          this.dialog.configurationDescription_Label.text	=  ffM_Configuration.getActiveConfigurationElement().description;
 
          engine.setConfiguration(ffM_Configuration.createWorkingConfiguration());
          engine.rebuildAll();
 
 
-         // TODO - Merge with action on add files
+         // TODO - Merge with action on add files and select configuration
          this.dialog.rebuildFilesTreeBox();
          this.dialog.updateButtonState();
          this.dialog.updateTotal();
@@ -660,7 +697,7 @@ function MainDialog(engine, guiParameters) {
    }
 
 
-   // Sizers for Rules section
+   // Sizers for Configuration section
 
    this.configurationSelection_sizer = new HorizontalSizer;
    this.configurationSelection_sizer.margin = 4;
@@ -670,9 +707,11 @@ function MainDialog(engine, guiParameters) {
    label.text		= "Configuration: ";
    label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
+
    this.configurationSelection_sizer.add( label );
-   this.configurationSelection_sizer.add( this.configurationName_Label );
-   this.configurationSelection_sizer.addSpacing(10);
+   this.configurationSelection_sizer.add( this.configurationSelection_ComboBox );
+   this.configurationSelection_sizer.addSpacing(5);
+
    this.configurationSelection_sizer.add( this.configurationDescription_Label );
    this.configurationSelection_sizer.addStretch( );
    this.configurationSelection_sizer.add( this.configuration_Button );

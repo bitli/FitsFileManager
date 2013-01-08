@@ -1408,7 +1408,8 @@ var ffM_GUI_config = (function (){
   return {
      makeDialog: function(parent, configurationSet, configurationNameToEdit) {
         return new ConfigurationDialog(parent, configurationSet, configurationNameToEdit);
-     }
+     },
+     ConfigurationSelection_ComboBox: ConfigurationSelection_ComboBox,
 
   }
 

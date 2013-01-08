@@ -26,7 +26,7 @@ new location path from a template with the replacement of variables with values 
 and other information.\
 <p/>You select the files to move/copy (files can be individually checked or un-checked) \
 and select a predefined template or enter a new template to generate the target path using variables to substitute values \
-based on the source image file name, FITS keywords or synthethic variables. \ 
+based on the source image file name, FITS keywords or synthethic variables. \
 Various other parameters can be adapted to fine tune the path generation. \
 The list of transformation is updated as you type templates and other parameters. \
 The synthetic variables are defined in a 'configuration' that you may edit. \
@@ -127,9 +127,9 @@ some simple adjustments. It is also possible to have a set of configuration for 
 image type, but currently you must still change the configuration or the template between \
 image types.  Some cofiguration options may require more advanced understanding of regular \
 expressions and the FITS key words. \
-<br/>Click on the Configure... button to change or edit the configuration. \
+<br/>Click on the Manage configurations... button to change or edit the configuration. \
 ";
-                          
+
 var HELP_OPERATIONS = "<p>The operations Copy/Move copy or move the files directly, without \
 adding any FITS keywords.  The operation Load/SaveAs loads each image temporarily in the workspace \
 and save it to the new location. An ORIGFILE keyword with the original file name is added if it is not already present. \
@@ -275,7 +275,7 @@ H: {
       MOVE_BUTTON_TEXT: "Move files",
       COPY_BUTTON_TEXT: "Copy files",
       LOADSAVE_BUTTON_TEXT:  "Load / SaveAs files",
-      CONFIGURE_BUTTON_TEXT:  "Configure...",
+      CONFIGURE_BUTTON_TEXT:  "Manage configurations...",
 
       COMPLETION_TITLE: "FITSFileManager operation result",
       COMPLETION_CONTINUE_BUTTON_TEXT : "Continue in FITSFileManager",

@@ -156,9 +156,8 @@
 // Check # of images in file (when using load image), or use direct writes to update fits headers
 // Enhance 'night' with accepting other dates and possibly midnight offset
 // Management of alternate source keywords for synthethic keywords, possibly default values in keyword mapping
-// Make COUNT_PAD a parameter or use a configurable default format
 // Make creation of HISTORY/ORIGFILE keyword optional, make name of ORIGFILE key configurable
-// Support date formatting, number formatting (padding)
+// Support date formatting
 
 // Some ideas for formatting:
 // Format indicators
