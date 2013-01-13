@@ -113,15 +113,24 @@ var ffM_allTests = {
       pT_assertEquals('prefix_1',n);
    },
    test_createUniqueName_one: function() {
-      var n = createUniqueName('prefix',['abc','def_2','ghi']);
+      var n = createUniqueName('prefix',['abc','prefix_2','ghi']);
       pT_assertEquals('prefix_3',n);
    },
+   test_createUniqueName_other: function() {
+      var n = createUniqueName('prefix',['abc','other_2','ghi']);
+      pT_assertEquals('prefix_1',n);
+   },
    test_createUniqueName_numbered_prefix: function() {
-      var n = createUniqueName('prefix_3',['abc','def_9','ghi']);
+      var n = createUniqueName('prefix_3',['abc','prefix_9','ghi']);
       pT_assertEquals('prefix_10',n);
    },
+   test_createUniqueName_numbered_prefix_other: function() {
+      //current name is always part of the list
+      var n = createUniqueName('prefix_3',['abc','other_9','prefix_3','ghi']);
+      pT_assertEquals('prefix_4',n);
+   },
    test_createUniqueName_multi: function() {
-      var n = createUniqueName('prefix',['abc','def_567','ghi_23']);
+      var n = createUniqueName('prefix',['abc','prefix_567','prefix_23']);
       pT_assertEquals('prefix_568',n);
    },
 

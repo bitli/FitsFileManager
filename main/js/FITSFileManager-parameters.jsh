@@ -234,16 +234,9 @@ var ffM_Configuration = (function() {
 
    ];
 
-   // Duplicate the default configuration (work around before new configurations can be created),
+   // Duplicate the default configuration ,
    // patch in the differences
    var defaultConf = defaultConfigurationSet[0];
-
-   for (var i=0; i<3; i++) {
-      var userConf = deepCopyData(defaultConf);
-      userConf.name = "User " + i;
-      userConf.description = "Copy of default " + i;
-      defaultConfigurationSet.push(userConf);
-   }
 
    // CAHA version
    var userConf = deepCopyData(defaultConf);

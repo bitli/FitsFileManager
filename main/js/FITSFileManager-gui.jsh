@@ -217,7 +217,7 @@ function MainDialog(engine, guiParameters) {
 
    var that = this;
 
-   var labelWidth = this.font.width( "MMMMMMMMMMMMMM" ) ;
+   var labelWidth = this.font.width( "MMMMMMMMMMM" ) ;
 
    this.setMinWidth(800);
 
@@ -442,37 +442,30 @@ function MainDialog(engine, guiParameters) {
    // -- Configuration section
    //----------------------------------------------------------------------------------
 
-   // Show current configuration and allow access to the configuration dialog
-
-#ifdef NO
-   this.configurationName_Label = new Label();
-   this.configurationName_Label.text =  ffM_Configuration.getActiveConfigurationName();
-   this.configurationName_Label.textAlignment	= TextAlign_Left | TextAlign_VertCenter;
-   this.configurationName_Label.toolTip = "The current configuration (define the synthetic variables)";
-#endif
+   // This section shows current configuration and allow access to the configuration dialog
 
    var configurationSelectedCallback = function(configurationName) {
 #ifdef DEBUG
-        debug("MainDialog: configurationSelectedCallback - ConfigurationSet selected:",configurationName);
+      debug("MainDialog: configurationSelectedCallback - ConfigurationSet selected:",configurationName);
 #endif
 
-        var selectedConfiguration = ffM_Configuration.getConfigurationByName(ffM_Configuration.getConfigurationTable(), configurationName);
-        if (selectedConfiguration == null) {
-           throw "PROGRAM ERROR - Invalid configuration set name '" + configurationName +"'";
-        }
-         // Update the configuration - THIS REBUILD MOST OF THE VARIABLES AND FILE LISTS
-         ffM_Configuration.setActiveConfigurationName(configurationName);
-         that.configurationDescription_Label.text	=  ffM_Configuration.getActiveConfigurationElement().description;
+      var selectedConfiguration = ffM_Configuration.getConfigurationByName(ffM_Configuration.getConfigurationTable(), configurationName);
+      if (selectedConfiguration == null) {
+         throw "PROGRAM ERROR - Invalid configuration set name '" + configurationName +"'";
+      }
+      // Update the configuration - THIS REBUILD MOST OF THE VARIABLES AND FILE LISTS
+      ffM_Configuration.setActiveConfigurationName(configurationName);
+      that.configurationDescription_Label.text	=  ffM_Configuration.getActiveConfigurationElement().description;
 
-         that.engine.setConfiguration(ffM_Configuration.createWorkingConfiguration());
-         that.engine.rebuildAll();
+      that.engine.setConfiguration(ffM_Configuration.createWorkingConfiguration());
+      that.engine.rebuildAll();
 
 
-         // TODO - Merge with action on add files and manage configurations
-         that.rebuildFilesTreeBox();
-         that.updateButtonState();
-         that.updateTotal();
-         that.refreshTargetFiles();
+      // TODO - Merge with action on add files and manage configurations
+      that.rebuildFilesTreeBox();
+      that.updateButtonState();
+      that.updateTotal();
+      that.refreshTargetFiles();
 
    }
    this.configurationSelection_ComboBox = new ffM_GUI_config.ConfigurationSelection_ComboBox(this, [], configurationSelectedCallback);
@@ -500,11 +493,12 @@ function MainDialog(engine, guiParameters) {
 
       if (result) {
          // Update the configuration - THIS REBUILD MOST OF THE VARIABLES AND FILE LISTS
-         ffM_Configuration.replaceConfigurationTable(configurationDialog.editedConfigurationSet,configurationDialog.currentConfigurationName)
+         ffM_Configuration.replaceConfigurationTable(configurationDialog.editedConfigurationSet,configurationDialog.selectedConfiguration.name)
+
 
          this.dialog.configurationSelection_ComboBox.configure(
             ffM_Configuration.getAllConfigurationNames(configurationDialog.editedConfigurationSet),
-            configurationDialog.currentConfigurationName);
+            configurationDialog.selectedConfiguration.name);
 
          this.dialog.configurationDescription_Label.text	=  ffM_Configuration.getActiveConfigurationElement().description;
 
@@ -697,7 +691,9 @@ function MainDialog(engine, guiParameters) {
    }
 
 
-   // Sizers for Configuration section
+   // Sizers
+
+   var configurationNameMinWidth = this.font.width( "MMMMMMMMMMMMMMMMM: " );
 
    this.configurationSelection_sizer = new HorizontalSizer;
    this.configurationSelection_sizer.margin = 4;
@@ -711,6 +707,8 @@ function MainDialog(engine, guiParameters) {
    this.configurationSelection_sizer.add( label );
    this.configurationSelection_sizer.add( this.configurationSelection_ComboBox );
    this.configurationSelection_sizer.addSpacing(5);
+   this.configurationSelection_ComboBox.minWidth = configurationNameMinWidth;
+
 
    this.configurationSelection_sizer.add( this.configurationDescription_Label );
    this.configurationSelection_sizer.addStretch( );
@@ -746,7 +744,7 @@ function MainDialog(engine, guiParameters) {
    this.groupTemplate_ComboBox_sizer.margin = 4;
    this.groupTemplate_ComboBox_sizer.spacing = 2;
    var label = new Label();
-   label.setFixedWidth(labelWidth);;
+   label.setFixedWidth(labelWidth);
    label.text		= "Group template: ";
    label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 

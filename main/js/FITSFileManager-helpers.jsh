@@ -73,17 +73,23 @@ function regExpFromUserString(reString) {
 }
 
 
-// Create a unique name
+// Create a unique name with the same prefix
 function createUniqueName(baseName, existingNames) {
+   var reSuffix = /^[^_]+_(\d+)/;
+   var reNoSuffix = /_\d+$/;
    var largestSuffix = 0;
-   var baseWithoutSuffix = baseName.replace(/_\d+$/,'');
-   var re = /^[^_]+_(\d+)/;
+   var baseWithoutSuffix = baseName.replace(reNoSuffix,'');
+   var reSuffix = /^[^_]+_(\d+)/;
    for (var i=0; i<existingNames.length;i++) {
-      var m = existingNames[i].match(re);
-      if (m) {
-         var n = parseInt(m[1]);
-         if (n>largestSuffix) {
-            largestSuffix = n;
+      var exisitingName = existingNames[i];
+      var existingNameWithoutSuffix = exisitingName.replace(reNoSuffix,'');
+      if (existingNameWithoutSuffix === baseWithoutSuffix) {
+         var suffixMatch = exisitingName.match(reSuffix);
+         if (suffixMatch) {
+            var n = parseInt(suffixMatch[1]);
+            if (n>largestSuffix) {
+               largestSuffix = n;
+            }
          }
       }
    }

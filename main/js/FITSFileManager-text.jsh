@@ -232,7 +232,7 @@ H: {
 
    CONFIGURE_BUTTON_TOOLTIP:  ("Select a new current configuration or modify it.\n"+
                                "A configuration defines the synthetic variables and their format.\n"),
-   SELECT_CONFIGURATION_BUTTON_TOOLTIP: ("Select the configuration to edit and to use as current configuration"),
+   SELECT_CONFIGURATION_BUTTON_TOOLTIP: ("Select the configuration to use as current configuration"),
 
    HELP_BUTTON_TOOLTIP:  "Browse Documentation",
 

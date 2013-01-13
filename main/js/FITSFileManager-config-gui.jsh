@@ -1182,45 +1182,124 @@ var ffM_GUI_config = (function (){
       this.__base__(parent);
       var that = this;
 
+      // Initialized by configure()
+      this.editedConfigurationSet = null;
+
       var configurationNameMinWidth = this.font.width( "MMMMMMMMMMMMMMMMM: " );
-
-      this.sizer = new HorizontalSizer;
-      this.sizer.margin = 5;
-      this.sizer.spacing = 10;
       this.title = "Configuration selection";
-      this.configurationSelection_ComboBox = new ConfigurationSelection_ComboBox(this, [], configurationSelectedCallback);
-      this.sizer.add(this.configurationSelection_ComboBox);
-      this.configurationSelection_ComboBox.minWidth = configurationNameMinWidth;
-      this.configurationComment_Edit = new Edit;
-      this.sizer.add(this.configurationComment_Edit);
-      this.configurationComment_Edit.toolTip = "Short description of the configuration";
 
-      var addConfigurationButton = new ToolButton( this );
-      this.sizer.add(addConfigurationButton);
+      this.sizer = new VerticalSizer;
+      this.sizer.margin = 5;
+      this.sizer.spacing = 5;
+
+      var nameRow = new Control(this);
+      this.sizer.add(nameRow);
+
+      nameRow.sizer = new HorizontalSizer;
+
+      nameRow.sizer.margin = 1;
+      nameRow.sizer.spacing = 2;
+      this.configurationSelection_ComboBox = new ConfigurationSelection_ComboBox(nameRow, [], configurationSelectedCallback);
+      nameRow.sizer.add(this.configurationSelection_ComboBox);
+      this.configurationSelection_ComboBox.minWidth = configurationNameMinWidth;
+
+
+      nameRow.sizer.addStretch();
+
+      var name_Label = new Label( nameRow );
+      nameRow.sizer.add(name_Label);
+      name_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
+      name_Label.text = " Name: ";
+
+      this.configurationName_Edit = new Edit(nameRow);
+      nameRow.sizer.add(this.configurationName_Edit);
+      this.configurationName_Edit.minWidth = configurationNameMinWidth;
+      this.configurationName_Edit.toolTip = "Name of configuration\nIllegal special characters makes the field red.";
+      this.configurationName_Edit.onTextUpdated = function() {
+         // We should always have a selected configuration at this point, but play it safe
+         if (that.selectedConfiguration !== null) {
+            var t = this.text.trim();
+            var configurationNames = ffM_Configuration.getAllConfigurationNames(that.editedConfigurationSet);
+            // Avoid duplicate or illegal names (the check is a hack, but this is java script after all)
+            // Characters are limited to avoid problem in case the name is used in some expression later
+            if (t.length >0 && !(/[()\[\]{}&$;!?'".,]/.test(t)) && configurationNames.indexOf(t)===-1) {
+               that.updateName(t);
+            } else if (that.currentConfigurationName !== t) {
+               // Red only if the trimmed value is not the current one
+               this.textColor=0x00FF0000;
+            } else {
+               // Back to the current one, assumne legal
+               this.textColor=0x00000000;
+            }
+         }
+      }
+
+      var addConfigurationButton = new ToolButton( nameRow );
+      nameRow.sizer.add(addConfigurationButton);
       addConfigurationButton.icon = new Bitmap( ":/images/icons/copy.png" );
       addConfigurationButton.toolTip = "Add a configuration (duplicate current one)";
-      addConfigurationButton.onClick = configurationDuplicateCallback;
+      addConfigurationButton.onClick = function() {
+         configurationDuplicateCallback(that.currentConfigurationName);
+      }
 
-      var removeConfigurationButton = new ToolButton( this );
-      this.sizer.add(removeConfigurationButton);
+      var removeConfigurationButton = new ToolButton( nameRow );
+      nameRow.sizer.add(removeConfigurationButton);
       removeConfigurationButton.icon = new Bitmap( ":/images/icons/cancel.png" );
       removeConfigurationButton.toolTip = "Delete the current configuration";
       removeConfigurationButton.onClick = function() {
-         var msg = new MessageBox( "Do you want to delete the current configuration?",
+         var msg = new MessageBox( "Do you want to delete the configuration '" +that.currentConfigurationName + "' ?",
                           "Are you sure?", StdIcon_Question, StdButton_Yes, StdButton_No );
          if (msg.execute() == StdButton_Yes) {
-          configurationDeleteCallback();
+          configurationDeleteCallback(that.currentConfigurationName);
          }
       }
+
+      var descriptionRow = new Control(this);
+      this.sizer.add(descriptionRow);
+      descriptionRow.sizer = new HorizontalSizer;
+
+      var description_Label = new Label( descriptionRow );
+      descriptionRow.sizer.add(description_Label);
+      description_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
+      description_Label.text = " Description: ";
+
+      descriptionRow.sizer.margin = 1;
+      descriptionRow.sizer.spacing = 2;
+      this.configurationComment_Edit = new Edit(descriptionRow);
+      descriptionRow.sizer.add(this.configurationComment_Edit);
+      this.configurationComment_Edit.toolTip = "Short description of the configuration";
+
+      descriptionRow.sizer.addSpacing(50); // Pretty approximate
 
       // To track edited comment
       this.selectedConfiguration = null;
 
+
       this.configure = function(editedConfigurationSet, currentConfigurationName) {
+         this.editedConfigurationSet = editedConfigurationSet;
+         this.currentConfigurationName = currentConfigurationName;
          var configurationNames = ffM_Configuration.getAllConfigurationNames(editedConfigurationSet);
          this.configurationSelection_ComboBox.configure(configurationNames, currentConfigurationName);
          this.selectedConfiguration = ffM_Configuration.getConfigurationByName(editedConfigurationSet, currentConfigurationName);
+         if (this.selectedConfiguration === null) {
+            throw "Internal Error - configuration name '" + currentConfigurationName + "' not in list of configurations";
+         }
          this.configurationComment_Edit.text = this.selectedConfiguration.description;
+         this.configurationName_Edit.text = currentConfigurationName;
+         this.configurationName_Edit.textColor =0x00000000;
+      }
+      this.updateName = function(newConfigurationName) {
+         // Assume the name is allowed and not duplicated (checked by caller),
+         // set the new current name in our working copy (our selected configuration)
+         this.selectedConfiguration.name = newConfigurationName;
+         this.currentConfigurationName = newConfigurationName;
+         // Update the whole configuration selection box with the new names
+         var configurationNames = ffM_Configuration.getAllConfigurationNames(this.editedConfigurationSet);
+         if (configurationNames.indexOf(newConfigurationName)===-1) {
+            throw "Internal Error - new configuration name '" + newConfigurationName + "' not in list of configurations";
+         }
+         this.configurationSelection_ComboBox.configure(configurationNames, newConfigurationName);
+         this.configurationName_Edit.textColor=0x00000000;
       }
       this.configurationComment_Edit.onTextUpdated = function() {
          if (that.selectedConfiguration !== null) {
@@ -1315,44 +1394,43 @@ var ffM_GUI_config = (function (){
 #ifdef DEBUG
         debug("ConfigurationDialog: configurationSelectedCallback - ConfigurationSet selected:",configurationName);
 #endif
-        var selectedConfiguration = ffM_Configuration.getConfigurationByName(that.editedConfigurationSet, configurationName);
-        if (selectedConfiguration == null) {
+        that.selectedConfiguration = ffM_Configuration.getConfigurationByName(that.editedConfigurationSet, configurationName);
+        if (that.selectedConfiguration == null) {
            throw "PROGRAM ERROR - Invalid configuration set name '" + configurationName +"'";
         }
+
         // Update model
         that.currentConfigurationName = configurationName;
         // Update UI
-        that.variableUI.updateVariableList(selectedConfiguration.variableList);
+        that.variableUI.updateVariableList(that.selectedConfiguration.variableList);
         that.builtinVariable_Group.configure(that.editedConfigurationSet, that.currentConfigurationName);
         // Update the description text
         that.configurationLayoutControl.configure(that.editedConfigurationSet, that.currentConfigurationName);
      }
 
-     var deleteConfigurationCallback = function() {
+     var deleteConfigurationCallback = function(currentConfigurationName) {
 #ifdef DEBUG
         debug("ConfigurationDialog: deleteConfigurationCallback");
 #endif
-        var configurationName = that.currentConfigurationName;
-        var newConfigurationName = ffM_Configuration.removeConfigurationByName(that.editedConfigurationSet, configurationName);
+        var newConfigurationName = ffM_Configuration.removeConfigurationByName(that.editedConfigurationSet, currentConfigurationName);
         if (newConfigurationName == null) {
-           Console.writeln("Configuration '" + configurationName  +"' not deleted, it is the last one");
+           Console.writeln("Configuration '" + currentConfigurationName  +"' not deleted, it is the last one");
         } else {
            configurationSelectedCallback(newConfigurationName);
         }
      }
 
      // We duplicate the current configuration
-     var duplicateConfigurationCallback = function() {
+     var duplicateConfigurationCallback = function(configurationName) {
 #ifdef DEBUG
         debug("ConfigurationDialog: duplicateConfigurationCallback");
 #endif
-        var configurationName = that.currentConfigurationName;
         var selectedConfiguration = ffM_Configuration.getConfigurationByName(that.editedConfigurationSet, configurationName);
         var newConfiguration = deepCopyData(selectedConfiguration);
         newConfiguration.name = createUniqueName(configurationName,ffM_Configuration.getAllConfigurationNames(that.editedConfigurationSet));
         that.editedConfigurationSet.push(newConfiguration);
         configurationSelectedCallback(newConfiguration.name);
-         Console.writeln("Configuration '" + newConfiguration.name  +"' created");
+        Console.writeln("Configuration '" + newConfiguration.name  +"' created");
      }
 
      // -- Model call backs
@@ -1372,7 +1450,6 @@ var ffM_GUI_config = (function (){
      this.sizer.add(this.configurationLayoutControl);
 
 
-
      // Middle pane - define variables, their resolvers and the resolver's parameters
      this.variableUI = new VariableUIControl(this, variableDefinitionFactory);
      this.sizer.add(this.variableUI);
@@ -1390,6 +1467,10 @@ var ffM_GUI_config = (function (){
      // -- Configure before executing
      this.configure = function configure(originalConfigurationSet, configurationNameToEdit) {
         this.editedConfigurationSet = deepCopyData(originalConfigurationSet);
+        this.selectedConfiguration = ffM_Configuration.getConfigurationByName(this.editedConfigurationSet, configurationNameToEdit);
+        if (this.selectedConfiguration === null) {
+           throw "Internal Error - current configuration not found:'" + configurationNameToEdit + "'";
+        }
         this.currentConfigurationName = configurationNameToEdit;
         var configurationNames = ffM_Configuration.getAllConfigurationNames(this.editedConfigurationSet);
         // Initialize content
