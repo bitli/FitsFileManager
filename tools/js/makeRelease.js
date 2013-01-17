@@ -7,7 +7,7 @@
 
 #include <pjsr/DataType.jsh>
 
-#define VERSION "0.9-snapshot"
+#define VERSION "1.0-RC1"
 #define ROOT_FILE_NAME "FITSFileManager.js"
 #define ROOT_FILE_DIR "../../main/js"
 #define TARGET_FILE_DIR "../../../releases"

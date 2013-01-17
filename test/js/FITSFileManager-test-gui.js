@@ -10,7 +10,7 @@
 #include "PJSR-unit-tests-support.jsh"
 
 
-#define VERSION "0.8-tests"
+#define VERSION "1.0-tests"
 
 #define TITLE     "FITSFileManager"
 
