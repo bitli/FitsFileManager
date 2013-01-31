@@ -14,6 +14,12 @@ var CompletionDialog_doneKeep = 1;
 var CompletionDialog_doneRemove = 2;
 var CompletionDialog_doneLeave= 3;
 
+// This sizes show depend on the screen size and font used
+var InputTreeboxWindowHeight = 200;
+var TransformTreeBoxWindowHeight = 200;
+var TreeboxWindowWidth = 700;
+
+
 
 // ------------------------------------------------------------------------------------------------------------------------
 // Section Group - support to switch between SectionBar and a group box
@@ -253,7 +259,7 @@ function MainDialog(engine, guiParameters) {
    this.filesTreeBox.headerSorting = true;
    this.filesTreeBox.setHeaderText(0, "Filename");
    this.filesTreeBox.sort(0,true);
-   this.filesTreeBox.setMinSize( 700, 200 );
+   this.filesTreeBox.setMinSize( TreeboxWindowWidth, InputTreeboxWindowHeight );
    this.filesTreeBox.toolTip = Text.H.FILES_TREEBOX_TOOLTIP;
 
 
@@ -819,7 +825,7 @@ function MainDialog(engine, guiParameters) {
    this.transform_TreeBox.headerSorting = false;
    this.transform_TreeBox.setHeaderText(0, "Filename");
    //this.transform_TreeBox.sort(0,false);
-   this.transform_TreeBox.setMinSize( 700, 200 );
+   this.transform_TreeBox.setMinSize( TreeboxWindowWidth, TransformTreeBoxWindowHeight );
    this.transform_TreeBox.toolTip = Text.H.TRANSFORM_TREEBOX_TOOLTIP;
 
    // Select the corresponding source file when the target file is selected
@@ -1340,6 +1346,7 @@ function MainDialog(engine, guiParameters) {
       for (var i=0; i<listsOfTransforms.inputFiles.length; i++) {
          var inputFile = listsOfTransforms.inputFiles[i];
          var inputFileIndex =  listsOfTransforms.inputFileIndices[i];
+         //Console.writeln(i + " " + inputFileIndex + " " + inputFile);
          var targetFile =  listsOfTransforms.targetFiles[i];
          var errorMessage = listsOfTransforms.errorMessages[i];
 
@@ -1703,8 +1710,8 @@ function FITSKeysDialog( parentDialog, engine) {
       // Populate with default file
       this.populate(fileIndex);
 
-
-      this.setMinSize(700,600);
+      // TODO This may not be required
+      this.setMinSize(TreeboxWindowWidth,600);
    };
 
    this.getTypeString = function (fitsKey) {

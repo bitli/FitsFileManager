@@ -452,7 +452,7 @@ function FFM_Engine(guiParameters) {
          var inputFile = this.inputFiles[index];
          var targetFile = this.targetFiles[i];
          var errorList = this.errorPerFile[i];
-         listsOfTransforms.inputFileIndices.push(index);
+         listsOfTransforms.inputFileIndices.push(i); // We want the index in the inputBox
          listsOfTransforms.inputFiles.push(inputFile);
          if (targetFile) {
             listsOfTransforms.targetFiles.push(targetFile);
