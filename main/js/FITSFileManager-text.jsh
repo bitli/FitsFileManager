@@ -1,6 +1,6 @@
 // FITSFileManager-text.js
 
-// This file is part of FITSFileManager, see copyrigh in FITSFileManager.js
+// This file is part of FITSFileManager, see copyright in FITSFileManager.js
 
 
 // This module contains the fixed text for help, tooltips, GUI labels and buttons,

@@ -1,6 +1,6 @@
 // FITSFileManager-gui.js
 
-// This file is part of FITSFileManager, see copyrigh in FITSFileManager.js
+// This file is part of FITSFileManager, see copyright in FITSFileManager.js
 
 
 
@@ -14,11 +14,27 @@ var CompletionDialog_doneKeep = 1;
 var CompletionDialog_doneRemove = 2;
 var CompletionDialog_doneLeave= 3;
 
-// This sizes show depend on the screen size and font used
-var InputTreeboxWindowHeight = 200;
-var TransformTreeBoxWindowHeight = 200;
-var TreeboxWindowWidth = 700;
+// These sizes show depend on the screen size and font used
+var TreeboxWindowMinWidth = 700;
 
+// Dialog box minimum width, do not set too large to avoid problem on small screens
+var InputTreeboxWindowMinHeight = 200;
+var TransformTreeBoxWindowMinHeight = 200;
+var DialogMinimumWidth = 400;
+
+// Prefered size may be larger than screen, should be reduced by PI,
+// although this is usually not pretty
+var MainDialogPreferedHeight = 700;
+var MainDialogPreferedWidth = 800;
+
+// Fits keys window:
+// To make sure something reasonable is visible,
+// if too large this may be a problem in small screens
+var FitsKeysDialogMinimumHeight = 300;
+var FitsKeysDialogMinimumWidth = 400;
+// Make default more reasonable
+var FitsKeysDialogPreferedHeight = 600;
+var FitsKeysDialogPreferedWidth = 800;
 
 
 // ------------------------------------------------------------------------------------------------------------------------
@@ -225,7 +241,9 @@ function MainDialog(engine, guiParameters) {
 
    var labelWidth = this.font.width( "MMMMMMMMMMM" ) ;
 
-   this.setMinWidth(800);
+   this.setMinWidth(DialogMinimumWidth);
+   this.width = MainDialogPreferedWidth;
+   this.height = MainDialogPreferedHeight;
 
    // -- FITSKeyword Dialog (opened as a child on request)
    this.fitsKeysDialog = new FITSKeysDialog( this, engine );
@@ -259,7 +277,7 @@ function MainDialog(engine, guiParameters) {
    this.filesTreeBox.headerSorting = true;
    this.filesTreeBox.setHeaderText(0, "Filename");
    this.filesTreeBox.sort(0,true);
-   this.filesTreeBox.setMinSize( TreeboxWindowWidth, InputTreeboxWindowHeight );
+   this.filesTreeBox.setMinSize( TreeboxWindowMinWidth, InputTreeboxWindowMinHeight );
    this.filesTreeBox.toolTip = Text.H.FILES_TREEBOX_TOOLTIP;
 
 
@@ -825,7 +843,7 @@ function MainDialog(engine, guiParameters) {
    this.transform_TreeBox.headerSorting = false;
    this.transform_TreeBox.setHeaderText(0, "Filename");
    //this.transform_TreeBox.sort(0,false);
-   this.transform_TreeBox.setMinSize( TreeboxWindowWidth, TransformTreeBoxWindowHeight );
+   this.transform_TreeBox.setMinSize( TreeboxWindowMinWidth, TransformTreeBoxMinWindowHeight );
    this.transform_TreeBox.toolTip = Text.H.TRANSFORM_TREEBOX_TOOLTIP;
 
    // Select the corresponding source file when the target file is selected
@@ -1710,8 +1728,13 @@ function FITSKeysDialog( parentDialog, engine) {
       // Populate with default file
       this.populate(fileIndex);
 
-      // TODO This may not be required
-      this.setMinSize(TreeboxWindowWidth,600);
+      // Ensure that something reasonable is visible so the user can
+      // figure out what to do, but try to make it large to be convenient,
+      // hopefully this should work on small screens.
+      // adjustToContents result in too small a window.
+      this.setMinSize(FitsKeysDialogMinimumWidth,FitsKeysDialogMinimumHeight);
+      this.width = FitsKeysDialogPreferedWidth;
+      this.height = FitsKeysDialogPreferedHeight;
    };
 
    this.getTypeString = function (fitsKey) {

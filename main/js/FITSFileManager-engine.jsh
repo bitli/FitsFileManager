@@ -1,7 +1,7 @@
 // FITSFileMannager-engine.js
 
 
-// This file is part of FITSFileManager, see copyrigh in FITSFileManager.js
+// This file is part of FITSFileManager, see copyright in FITSFileManager.js
 
 
 // ------------------------------------------------------------------------------------------------------------------------
