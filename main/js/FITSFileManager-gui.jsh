@@ -15,12 +15,16 @@ var CompletionDialog_doneRemove = 2;
 var CompletionDialog_doneLeave= 3;
 
 // These sizes show depend on the screen size and font used
-var TreeboxWindowMinWidth = 700;
 
-// Dialog box minimum width, do not set too large to avoid problem on small screens
-var InputTreeboxWindowMinHeight = 200;
-var TransformTreeBoxWindowMinHeight = 200;
-var DialogMinimumWidth = 400;
+// Tree box for file lists minimum sizes, do not set too large to avoid problem on small screens
+var TreeboxWindowMinWidth = 700;
+var InputTreeboxMinHeight = 200;
+var TransformTreeBoxMinHeight = 200;
+
+// Main dialog minimum size, required on Linux to avoid overlap on small window
+// Should be derived from sizes of tree box or autoadjust
+var MainDialogMinimumWidth = 600;
+var MainDialogMinimumHeight = 600;
 
 // Prefered size may be larger than screen, should be reduced by PI,
 // although this is usually not pretty
@@ -239,9 +243,12 @@ function MainDialog(engine, guiParameters) {
 
    var that = this;
 
+   this.showFullPath = false;
+
    var labelWidth = this.font.width( "MMMMMMMMMMM" ) ;
 
-   this.setMinWidth(DialogMinimumWidth);
+   this.setMinWidth(MainDialogMinimumWidth);
+   this.setMinHeight(MainDialogMinimumHeight);
    this.width = MainDialogPreferedWidth;
    this.height = MainDialogPreferedHeight;
 
@@ -277,7 +284,7 @@ function MainDialog(engine, guiParameters) {
    this.filesTreeBox.headerSorting = true;
    this.filesTreeBox.setHeaderText(0, "Filename");
    this.filesTreeBox.sort(0,true);
-   this.filesTreeBox.setMinSize( TreeboxWindowMinWidth, InputTreeboxWindowMinHeight );
+   this.filesTreeBox.setMinSize( TreeboxWindowMinWidth, InputTreeboxMinHeight );
    this.filesTreeBox.toolTip = Text.H.FILES_TREEBOX_TOOLTIP;
 
 
@@ -392,7 +399,8 @@ function MainDialog(engine, guiParameters) {
 
       for ( var iTreeBox = this.dialog.filesTreeBox.numberOfChildren; --iTreeBox >= 0; ) {
          if ( this.dialog.filesTreeBox.child( iTreeBox ).selected ) {
-            var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).text(0);
+            //var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).text(0);
+            var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).fullFileName;
 
             this.dialog.engine.removeFiles(nameInTreeBox);
             this.dialog.filesTreeBox.remove( iTreeBox );
@@ -426,6 +434,17 @@ function MainDialog(engine, guiParameters) {
 
    }
 
+   this.fullPath_CheckBox = new CheckBox(this);
+   this.fullPath_CheckBox.state = this.showFullPath ? 1 : 0;
+   this.fullPath_CheckBox.onCheck = function(checked) {
+      this.dialog.showFullPath = checked;
+      this.dialog.rebuildFilesTreeBox();
+   }
+
+   this.fullPath_Label = new Label(this);
+   this.fullPath_Label.text = "Full path";
+   this.fullPath_Label.textAlignment	= TextAlign_Left | TextAlign_VertCenter;
+
    // -- Total file Label ---------------------------------------------------------------------------
    this.inputSummaryLabel = new Label( this );
    this.inputSummaryLabel.textAlignment = TextAlign_Right|TextAlign_VertCenter;
@@ -445,6 +464,8 @@ function MainDialog(engine, guiParameters) {
    this.fileButonSizer.add( this.remove_files_Button );
    this.fileButonSizer.add( this.remove_all_files_Button );
    this.fileButonSizer.add( this.inputSummaryLabel );
+   this.fileButonSizer.add( this.fullPath_CheckBox );
+   this.fileButonSizer.add( this.fullPath_Label );
    this.fileButonSizer.addStretch();
 
 
@@ -454,6 +475,7 @@ function MainDialog(engine, guiParameters) {
    this.inputFiles_GroupBox.sizer.spacing = 2;
    this.inputFiles_GroupBox.sizer.add( this.filesTreeBox,100 );
    this.inputFiles_GroupBox.sizer.add( this.fileButonSizer );
+
 
 
    this.barInput = makeSectionGroup(this,this.inputFiles_GroupBox,"Input",false);
@@ -717,7 +739,7 @@ function MainDialog(engine, guiParameters) {
 
    // Sizers
 
-   var configurationNameMinWidth = this.font.width( "MMMMMMMMMMMMMMMMM: " );
+   var configurationNameMinWidth = this.font.width( "Target file template:  " );
 
    this.configurationSelection_sizer = new HorizontalSizer;
    this.configurationSelection_sizer.margin = 4;
@@ -787,6 +809,10 @@ function MainDialog(engine, guiParameters) {
    this.rules_GroupBox.sizer.add( this.regexp_ComboBox_sizer );
    this.rules_GroupBox.sizer.add( this.groupTemplate_ComboBox_sizer );
 
+   // More or less futile attempt to avoid bad small layout on unix
+   this.rules_GroupBox.adjustToContents();
+   this.rules_GroupBox.setFixedHeight();
+
    this.barRules = makeSectionGroup(this, this.rules_GroupBox,"Rules",false);
 
 
@@ -825,6 +851,10 @@ function MainDialog(engine, guiParameters) {
    this.outputDir_GroupBox.sizer.add( this.outputDir_Edit, 100 );
    this.outputDir_GroupBox.sizer.add( this.outputDirSelect_Button );
 
+   // More or less futile attempt to avoid bad small layout on unix
+   this.outputDir_GroupBox.adjustToContents();
+   this.outputDir_GroupBox.setFixedHeight();
+
    this.barOutput = makeSectionGroup(this, this.outputDir_GroupBox, Text.T.OUPUT_SECTION_TEXT_PART, false);
 
 
@@ -843,7 +873,7 @@ function MainDialog(engine, guiParameters) {
    this.transform_TreeBox.headerSorting = false;
    this.transform_TreeBox.setHeaderText(0, "Filename");
    //this.transform_TreeBox.sort(0,false);
-   this.transform_TreeBox.setMinSize( TreeboxWindowMinWidth, TransformTreeBoxMinWindowHeight );
+   this.transform_TreeBox.setMinSize( TreeboxWindowMinWidth, TransformTreeBoxMinHeight );
    this.transform_TreeBox.toolTip = Text.H.TRANSFORM_TREEBOX_TOOLTIP;
 
    // Select the corresponding source file when the target file is selected
@@ -997,7 +1027,8 @@ function MainDialog(engine, guiParameters) {
          case CompletionDialog_doneRemove:
             for ( var iTreeBox = this.dialog.filesTreeBox.numberOfChildren; --iTreeBox >= 0; ) {
             if ( this.dialog.filesTreeBox.child( iTreeBox ).checked ) {
-               var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).text(0);
+//               var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).text(0);
+               var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).fullFileName;
                this.dialog.engine.removeFiles(nameInTreeBox);
                this.dialog.filesTreeBox.remove( iTreeBox );
             }
@@ -1047,7 +1078,8 @@ function MainDialog(engine, guiParameters) {
          case CompletionDialog_doneRemove:
             for ( var iTreeBox = this.dialog.filesTreeBox.numberOfChildren; --iTreeBox >= 0; ) {
             if ( this.dialog.filesTreeBox.child( iTreeBox ).checked ) {
-               var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).text(0);
+               //var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).text(0);
+               var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).fullFileName;
                this.dialog.engine.removeFiles(nameInTreeBox);
                this.dialog.filesTreeBox.remove( iTreeBox );
             }
@@ -1147,7 +1179,7 @@ function MainDialog(engine, guiParameters) {
 
    // -- Rebuild the TreeBox content
    this.rebuildFilesTreeBox = function () {
-      var i, keys, node, name, iKeyOfFile, k;
+      var i, keys, node, name, iKeyOfFile, k,displayFileName;
 
 #ifdef DEBUG
       debug("rebuildFilesTreeBox: rebuilding filesTreeBox - " + this.engine.inputFiles.length + " input files");
@@ -1183,7 +1215,13 @@ function MainDialog(engine, guiParameters) {
 
       for (var i = 0; i < this.engine.inputFiles.length; ++i) {
 
-         if (this.engine.inputFiles[i].length>longestFileName.length) {longestFileName = this.engine.inputFiles[i];}
+         if (this.showFullPath) {
+            displayFileName = this.engine.inputFiles[i];
+         } else {
+            displayFileName = File.extractNameAndExtension(this.engine.inputFiles[i]);
+         }
+
+         if (displayFileName.length>longestFileName.length) {longestFileName = displayFileName;}
 
 #ifdef DEBUG
          debug("rebuildFilesTreeBox: adding file '" +this.engine.inputFiles[i] + "' to row " + i);
@@ -1196,8 +1234,10 @@ function MainDialog(engine, guiParameters) {
          // Create TreeBoxNode (line) for the current file
          var node = new TreeBoxNode( this.filesTreeBox );
          // put name of the file int the first column
-         node.setText( 0, this.engine.inputFiles[i] );
+         node.setText( 0, displayFileName );
          node.checked = true;
+         // Keep full file name for retrievial by action methods (as the rows may be sorted)
+         node.fullFileName = this.engine.inputFiles[i];
          // Reserve column for file name
          var colOffset = 1;
 
@@ -1336,7 +1376,8 @@ function MainDialog(engine, guiParameters) {
 
          if ( this.filesTreeBox.child(iTreeBox).checked ) {
             // Select name in tree box, find corresponding file in inputFiles
-            var nameInTreeBox = this.filesTreeBox.child(iTreeBox).text(0);
+//            var nameInTreeBox = this.filesTreeBox.child(iTreeBox).text(0);
+            var nameInTreeBox = this.filesTreeBox.child(iTreeBox).fullFileName;
             listOfFiles.push(nameInTreeBox);
          }
       }
@@ -1417,7 +1458,8 @@ function MainDialog(engine, guiParameters) {
     this.removeDeletedFiles = function() {
       for ( var iTreeBox = this.dialog.filesTreeBox.numberOfChildren; --iTreeBox >= 0; ) {
 
-         var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).text(0);
+         //var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).text(0);
+         var nameInTreeBox = this.dialog.filesTreeBox.child(iTreeBox).fullFileName;
          if (!File.exists(nameInTreeBox)) {
 #ifdef DEBUG
             debug("File '" + nameInTreeBox + "' removed from input list as not present on file system anymore.");
@@ -1670,7 +1712,8 @@ function FITSKeysDialog( parentDialog, engine) {
       // Note - this requires finding the proper index in inputFile[] when a selection is done, as order may be different
       this.file_ComboBox.clear();
       for (i = 0; i<parentDialog.filesTreeBox.numberOfChildren; i++) {
-         this.file_ComboBox.addItem(parentDialog.filesTreeBox.child(i).text(0));
+//         this.file_ComboBox.addItem(parentDialog.filesTreeBox.child(i).text(0));
+        this.file_ComboBox.addItem(parentDialog.filesTreeBox.child(i).fullFileName);
       }
 ////    OLD: This is filling the list in the loaded file order
 //      for (i = 0; i< engine.inputFiles.length; i++) {
@@ -1682,7 +1725,8 @@ function FITSKeysDialog( parentDialog, engine) {
       if (parentDialog.filesTreeBox.selectedNodes.length >0) {
          // Show first selected node
          var firstSelectedNode = parentDialog.filesTreeBox.selectedNodes[0];
-         var fileName = firstSelectedNode.text(0);
+//         var fileName = firstSelectedNode.text(0);
+         var fileName = firstSelectedNode.fullFileName;
          fileIndex = engine.inputFiles.indexOf(fileName);
          selectedFileIndex = parentDialog.filesTreeBox.childIndex(firstSelectedNode);
 #ifdef DEBUG

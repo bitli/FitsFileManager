@@ -55,7 +55,7 @@
 // Thanks to Nikolay for sharing the original FITSKey
 
 // NOTE : The parameters have their own version number in FITSFileManger-parameters.jsh
-#define VERSION   "1.0-snapshot"
+#define VERSION   "1.0-development"
 #define TITLE     "FITSFileManager"
 
 // --- Debugging control ----------------
@@ -134,15 +134,16 @@
 
 // 2012-12-28 - 0.9
 //     Very large rewrite of configuration mecanism
-
-
+// 2013-02-06 - 1.0
+//     Bug corrections on selection,
+//    made minimum dialog size smaller (hopefully support screens down to approx 1200 x 760)
+//    added shopw/hide fullPath on inputTreeBox
 
 // TODO
 // Make cleaning of FITS keyword values used in file name configurable
 // Support optional reformatting of file name as valid PI identifier
 // Add mark of sequence of text to ignore if missing variable value (in parentheses for example)
 // Enhance control of ordering (support for ordering of non string values if possible)
-// Hide common header part of source folders in file name in tree view to make file name more visible
 // Add a way to use directory of source file as variable  &filedir, &filedirparent for template matching and group names
 // Create a log file to record the operations
 // Support export of FITS keywords as CSV or tab delimite
@@ -158,15 +159,7 @@
 // Management of alternate source keywords for synthethic keywords, possibly default values in keyword mapping
 // Make creation of HISTORY/ORIGFILE keyword optional, make name of ORIGFILE key configurable
 // Support date formatting
-
-// Some ideas for formatting:
-// Format indicators
-// %<stuff>
-// %s (for maximum size, fixed sizre with padding)
-// %S For cleanup strings
-// %d decimal number (minimun size, 0 padding)
-// %b boolean T,F or two values)
-// % Y M D h m s t for date (conflic with %s) or %{params}d
+// Allow choice of 'cleaned up' strings (make optiona lremove of special chraracters)
 
 // See http://heasarc.gsfc.nasa.gov/docs/software/ftools/fitsverify/
 
