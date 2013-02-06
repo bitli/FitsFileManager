@@ -421,6 +421,14 @@ function MainDialog(engine, guiParameters) {
 #ifdef DEBUG
       debug("remove_all_files_Button: onClick");
 #endif
+      if (this.dialog.filesTreeBox.numberOfChildren > 0) {
+          if (new MessageBox( "Do you really want to remove all " +
+             this.dialog.filesTreeBox.numberOfChildren + " files from input list ?",
+              TITLE, StdIcon_Question, StdButton_No, StdButton_Yes ).execute() != StdButton_Yes )
+            {
+            return;
+         }
+      }
 
       // TODO We can probably clear in one go
       for ( var i = this.dialog.filesTreeBox.numberOfChildren; --i >= 0; ) {
@@ -463,9 +471,10 @@ function MainDialog(engine, guiParameters) {
    this.fileButonSizer.addSpacing( 5 );
    this.fileButonSizer.add( this.remove_files_Button );
    this.fileButonSizer.add( this.remove_all_files_Button );
-   this.fileButonSizer.add( this.inputSummaryLabel );
    this.fileButonSizer.add( this.fullPath_CheckBox );
    this.fileButonSizer.add( this.fullPath_Label );
+   this.fileButonSizer.addSpacing( 3 );
+   this.fileButonSizer.add( this.inputSummaryLabel );
    this.fileButonSizer.addStretch();
 
 
@@ -1107,6 +1116,19 @@ function MainDialog(engine, guiParameters) {
    }
 #endif
 
+   this.exit_Button = new PushButton( this );
+   this.exit_Button.text = "Exit";
+   this.exit_Button.toolTip = "Exit (no action)";
+   this.exit_Button.enabled = true;
+   this.exit_Button.onClick = function() {
+      if (this.dialog.filesTreeBox.numberOfChildren == 0 ||
+          ((new MessageBox( "Do you really want to exit " + TITLE + " ?",
+              TITLE, StdIcon_Question, StdButton_No, StdButton_Yes )).execute() == StdButton_Yes )
+      ) {
+         this.dialog.cancel();
+      }
+   }
+
    // Help buton
    this.helpButton = new ToolButton( this );
    this.helpButton.icon = new Bitmap( ":/images/interface/browseDocumentationButton.png" );
@@ -1133,6 +1155,7 @@ function MainDialog(engine, guiParameters) {
    this.buttonSizer.add( this.txt_Button);
 #endif
    this.buttonSizer.addStretch();
+   this.buttonSizer.add( this.exit_Button);
    this.buttonSizer.add( this.helpButton);
 
 

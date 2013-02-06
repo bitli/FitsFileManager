@@ -138,6 +138,7 @@
 //     Bug corrections on selection,
 //    made minimum dialog size smaller (hopefully support screens down to approx 1200 x 760)
 //    added shopw/hide fullPath on inputTreeBox
+//    added exit button and confirmation for remove all
 
 // TODO
 // Make cleaning of FITS keyword values used in file name configurable
