@@ -55,7 +55,7 @@
 // Thanks to Nikolay for sharing the original FITSKey
 
 // NOTE : The parameters have their own version number in FITSFileManger-parameters.jsh
-#define VERSION   "1.0"
+#define VERSION   "1.1-development"
 #define TITLE     "FITSFileManager"
 
 // --- Debugging control ----------------
@@ -139,6 +139,8 @@
 //    made minimum dialog size smaller (hopefully support screens down to approx 1200 x 760)
 //    added shopw/hide fullPath on inputTreeBox
 //    added exit button and confirmation for remove all
+
+// Prepare for future developments
 
 // TODO
 // Make cleaning of FITS keyword values used in file name configurable
