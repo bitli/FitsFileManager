@@ -32,16 +32,21 @@ var ffM_GUI_support = (function (){
       this.sizer.margin = 6;
       this.sizer.spacing = 4;
 
+      // To protect against GC
+      this.toolButtons = [];
+
       for (var i=0; i<buttons.length;i ++) {
          var button = buttons[i];
 #ifdef DEBUG
          Log.debug(i,button.icon, button.toolTip);
 #endif
          var toolButton = new ToolButton( parent );
+         this.toolButtons.push(toolButton);
          this.sizer.add(toolButton);
          toolButton.icon = new Bitmap( button.icon );
          toolButton.toolTip = button.toolTip;
          toolButton.onClick = button.action;
+
       }
       this.sizer.addStretch();
    }
@@ -52,7 +57,7 @@ var ffM_GUI_support = (function (){
 
    // ---------------------------------------------------------------------------------------------------------
    // ManagedList_Box: A list selection box with the possibility to add, remove and move elements,
-   //                  the list elements amy have multiple properties represented in multiple columns.
+   //                  the list elements may have multiple properties represented in multiple columns.
    // parameters:
    //    parent: UI Control
    //    modeldescription: An array of element model descriptions (one description for each column),
@@ -62,13 +67,15 @@ var ffM_GUI_support = (function (){
    //                    Usually the model is specified by the modelListChange call (including for initial populate)
    //   elementFactory: A function() that return a new element model (called when new is created)
    //   toolTip: The tool tip text
-   //   selectionCallBack: a function(elementModel) that return the element model currently selected. an be null if
+   //   selectionCallBack: a function(elementModel) that return the element model currently selected. Can be null if
    //                      no element is selected (for example last one is deleted).
    //   sorted: if true the elements are sorted on the first column
    // ---------------------------------------------------------------------------------------------------------
    function ManagedList_Box(parent, modelDescription, initialListModel, elementFactory, toolTip, selectionCallback, sorted) {
       this.__base__ = Control;
       this.__base__(parent);
+
+      var that = this;
 
       var i;
       (typeof sorted === 'undefined') && (sorted = false);
@@ -94,20 +101,20 @@ var ffM_GUI_support = (function (){
 
       this.sizer = new VerticalSizer;
 
-      var treeBox = new TreeBox(this);
-      this.sizer.add(treeBox);
+      this.treeBox = new TreeBox(this);
+      this.sizer.add(this.treeBox);
 
-      treeBox.rootDecoration = false;
-      treeBox.numberOfColumns = 2;
-      treeBox.multipleSelection = false;
-      treeBox.headerVisible = false;
-      treeBox.headerSorting = false;
+      this.treeBox.rootDecoration = false;
+      this.treeBox.numberOfColumns = 2;
+      this.treeBox.multipleSelection = false;
+      this.treeBox.headerVisible = false;
+      this.treeBox.headerSorting = false;
 
-      treeBox.sort(0,sorted); // DO NOT SEEMS TO WORK
+      this.treeBox.sort(0,sorted); // DO NOT SEEMS TO WORK
 
-      treeBox.style = Frame.FrameStyleSunken;
+      this.treeBox.style = Frame.FrameStyleSunken;
 
-      treeBox.toolTip = toolTip;
+      this.treeBox.toolTip = toolTip;
 
 
       // -- Model update methods
@@ -116,17 +123,17 @@ var ffM_GUI_support = (function (){
 
          // Clear current list display
          var i;
-         var nmbNodes = treeBox.numberOfChildren;
+         var nmbNodes = this.treeBox.numberOfChildren;
          for (i=nmbNodes; i>0; i--) {
-            treeBox.remove(i-1);
+            this.treeBox.remove(i-1);
          }
          // Update variable tracking current model
          listModel = newModelList;
 
          // Add new nodes
          for (i=0; i<listModel.length; i++) {
-            // Just making the nodes add them to the treeBox
-            makeNode(treeBox, listModel[i], i);
+            // Just making the nodes adds them to the treeBox
+            makeNode(this.treeBox, listModel[i], i);
          }
       }
       // Create initial model
@@ -134,9 +141,9 @@ var ffM_GUI_support = (function (){
 
      // The current values of the current row model changed
      this.currentModelElementChanged = function() {
-        if (treeBox.selectedNodes.length>0) {
-           var selectedNode = treeBox.selectedNodes[0];
-           var selectedIndex = treeBox.childIndex(selectedNode);
+        if (this.treeBox.selectedNodes.length>0) {
+           var selectedNode = this.treeBox.selectedNodes[0];
+           var selectedIndex = this.treeBox.childIndex(selectedNode);
            if (selectedIndex>=0 && selectedIndex<listModel.length) {
               for (var i=0; i<modelDescription.length;i++){
                  selectedNode.setText(i, listModel[selectedIndex][modelDescription[i].propertyName].toString());
@@ -149,71 +156,71 @@ var ffM_GUI_support = (function (){
      // -- Internal actions
      var upAction = function() {
         var nodeToMove,  nodeIndex, element1, element2;
-        if (treeBox.selectedNodes.length>0) {
-           nodeToMove = treeBox.selectedNodes[0];
-           nodeIndex = treeBox.childIndex(nodeToMove);
+        if (that.treeBox.selectedNodes.length>0) {
+           nodeToMove = that.treeBox.selectedNodes[0];
+           nodeIndex = that.treeBox.childIndex(nodeToMove);
            if (nodeIndex>0) {
               // Update model
               element1 = listModel[nodeIndex-1];
               element2 = listModel[nodeIndex];
               listModel.splice(nodeIndex-1, 2, element2, element1);
               // update UI
-              treeBox.remove(nodeIndex);
-              treeBox.insert(nodeIndex-1,nodeToMove);
-              treeBox.currentNode = nodeToMove;
+              that.treeBox.remove(nodeIndex);
+              that.treeBox.insert(nodeIndex-1,nodeToMove);
+              that.treeBox.currentNode = nodeToMove;
            }
         }
      }
      var downAction = function() {
         var nodeToMove,  nodeIndex, element1, element2;
-        if (treeBox.selectedNodes.length>0) {
-           nodeToMove = treeBox.selectedNodes[0];
-           nodeIndex = treeBox.childIndex(nodeToMove);
-           if (nodeIndex<treeBox.numberOfChildren-1) {
+        if (that.treeBox.selectedNodes.length>0) {
+           nodeToMove = that.treeBox.selectedNodes[0];
+           nodeIndex = that.treeBox.childIndex(nodeToMove);
+           if (nodeIndex<that.treeBox.numberOfChildren-1) {
               // Update model
               element1 = listModel[nodeIndex];
               element2 = listModel[nodeIndex+1];
               listModel.splice(nodeIndex, 2, element2, element1);
               // update UI
-              treeBox.remove(nodeIndex);
-              treeBox.insert(nodeIndex+1,nodeToMove);
-              treeBox.currentNode = nodeToMove;
+              that.treeBox.remove(nodeIndex);
+              that.treeBox.insert(nodeIndex+1,nodeToMove);
+              that.treeBox.currentNode = nodeToMove;
            }
         }
      }
      var addAction = function() {
         var nodeBeforeNew, newNode;
-        var nodeIndex = treeBox.numberOfChildren;
-        if (treeBox.selectedNodes.length>0) {
-           nodeBeforeNew = treeBox.selectedNodes[0];
-           nodeIndex = treeBox.childIndex(nodeBeforeNew) + 1;
+        var nodeIndex = that.treeBox.numberOfChildren;
+        if (that.treeBox.selectedNodes.length>0) {
+           nodeBeforeNew = that.treeBox.selectedNodes[0];
+           nodeIndex = that.treeBox.childIndex(nodeBeforeNew) + 1;
         }
         // Create node
         var element = elementFactory();
         if (element !== null) {
            // insert node in model then ui
            listModel.splice(nodeIndex, 0, element);
-           newNode = makeNode(treeBox, element, nodeIndex);
-           treeBox.currentNode = newNode;
-           treeBox.onNodeSelectionUpdated();
+           newNode = makeNode(that.treeBox, element, nodeIndex);
+           that.treeBox.currentNode = newNode;
+           that.treeBox.onNodeSelectionUpdated();
         }
      }
 
      var deleteAction = function() {
         var nodeToDelete,  nodeIndex;
-        if (treeBox.selectedNodes.length>0) {
-           nodeToDelete = treeBox.selectedNodes[0];
-           nodeIndex = treeBox.childIndex(nodeToDelete);
+        if (that.treeBox.selectedNodes.length>0) {
+           nodeToDelete = that.treeBox.selectedNodes[0];
+           nodeIndex = that.treeBox.childIndex(nodeToDelete);
            listModel.splice(nodeIndex,1);
-           treeBox.remove(nodeIndex);
+           that.treeBox.remove(nodeIndex);
         }
      }
 
-     treeBox.onNodeSelectionUpdated  = function() {
+     this.treeBox.onNodeSelectionUpdated  = function() {
         // There could be an empty selection (last element removed)
-        if (treeBox.selectedNodes.length>0) {
-           var selectedNode = treeBox.selectedNodes[0];
-           var selectedIndex = treeBox.childIndex(selectedNode);
+        if (that.treeBox.selectedNodes.length>0) {
+           var selectedNode = that.treeBox.selectedNodes[0];
+           var selectedIndex = that.treeBox.childIndex(selectedNode);
            if (selectedIndex>=0 && selectedIndex<listModel.length) {
               selectionCallback(listModel[selectedIndex]);
             }
@@ -285,29 +292,28 @@ var ffM_GUI_config = (function (){
 
    // -- Private methods
    function makeOKCancel(parentDialog) {
-      var cancel_Button, ok_Button;
 
       var c = new Control(parentDialog);
       c.sizer = new HorizontalSizer;
       c.sizer.margin = 6;
       c.sizer.spacing = 4;
 
-      cancel_Button = new PushButton( c );
-      cancel_Button.text = "Cancel";
-      cancel_Button.enabled = true;
-      cancel_Button.onClick = function() {
+      c.cancel_Button = new PushButton( c );
+      c.cancel_Button.text = "Cancel";
+      c.cancel_Button.enabled = true;
+      c.cancel_Button.onClick = function() {
          parentDialog.cancel();
       }
-      ok_Button = new PushButton( c );
-      ok_Button.text = "OK";
-      ok_Button.enabled = true;
-      ok_Button.onClick = function() {
+      c.ok_Button = new PushButton( c );
+      c.ok_Button.text = "OK";
+      c.ok_Button.enabled = true;
+      c.ok_Button.onClick = function() {
          parentDialog.ok();
       }
 
       c.sizer.addStretch();
-      c.sizer.add(cancel_Button);
-      c.sizer.add(ok_Button);
+      c.sizer.add(c.cancel_Button);
+      c.sizer.add(c.ok_Button);
 
       return c;
 
@@ -426,32 +432,32 @@ var ffM_GUI_config = (function (){
      this.property = property;
      this.target = null;
 
-     var the_Label = new Label( this );
-     this.sizer.add(the_Label);
-     the_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
-     the_Label.minWidth = style.minLabelWidth;
-     the_Label.text = name + ": ";
-     the_Label.toolTip = toolTip;
+     this.the_Label = new Label( this );
+     this.sizer.add(this.the_Label);
+     this.the_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
+     this.the_Label.minWidth = style.minLabelWidth;
+     this.the_Label.text = name + ": ";
+     this.the_Label.toolTip = toolTip;
 
-     var text_Edit = new Edit(this);
-     text_Edit.minWidth = style.minDataWidth;
-     this.sizer.add(text_Edit)
-     text_Edit.toolTip = toolTip;
+     this.text_Edit = new Edit(this);
+     this.text_Edit.minWidth = style.minDataWidth;
+     this.sizer.add(this.text_Edit)
+     this.text_Edit.toolTip = toolTip;
 
-     text_Edit.onTextUpdated = function() {
+     this.text_Edit.onTextUpdated = function() {
         var value;
         if (that.target !== null) {
            //Log.debug("TextEntryRow: onTextUpdated:",property,this.text);
            try {
               value =  propertyType.textToProperty(this.text);
               // Next lines will only execute if value was correctly parsed
-              text_Edit.textColor = 0x000000;
+              that.text_Edit.textColor = 0x000000;
               that.target[property] = value;
               if (valueChangedCallback != null) {
                  valueChangedCallback();
               }
            } catch (error) {
-              text_Edit.textColor = 0xFF0000;
+              that.text_Edit.textColor = 0xFF0000;
            }
         }
      }
@@ -459,14 +465,14 @@ var ffM_GUI_config = (function (){
      this.updateTarget = function(target) {
         that.target = target;
         if (target === null) {
-           text_Edit.text = '';
-           text_Edit.enabled = false;
+           that.text_Edit.text = '';
+           that.text_Edit.enabled = false;
         } else {
            if (! target.hasOwnProperty(property)) {
               throw "Entry '" + name + "' does not have property '" + property + "': " + Log.pp(target);
            }
-           text_Edit.text = propertyType.propertyToText(target[property]);
-           text_Edit.enabled = true;
+           that.text_Edit.text = propertyType.propertyToText(target[property]);
+           that.text_Edit.enabled = true;
         }
      }
 
@@ -487,23 +493,23 @@ var ffM_GUI_config = (function (){
      this.property = property;
      this.target = null;
 
-     var the_Label = new Label( this );
-     this.sizer.add(the_Label);
-     the_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
-     the_Label.minWidth = style.minLabelWidth;
-     the_Label.text = name + ": ";
-     the_Label.toolTip = toolTip;
+     this.the_Label = new Label( this );
+     this.sizer.add(this.the_Label);
+     this.the_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
+     this.the_Label.minWidth = style.minLabelWidth;
+     this.the_Label.text = name + ": ";
+     this.the_Label.toolTip = toolTip;
 
-     var bool_CheckBox = new CheckBox(this);
-     bool_CheckBox.minWidth = style.minDataWidth;
-     this.sizer.add(bool_CheckBox)
-     bool_CheckBox.toolTip = toolTip;
+     this.bool_CheckBox = new CheckBox(this);
+     this.bool_CheckBox.minWidth = style.minDataWidth;
+     this.sizer.add(this.bool_CheckBox)
+     this.bool_CheckBox.toolTip = toolTip;
 
-     bool_CheckBox.onCheck = function() {
+     this.bool_CheckBox.onCheck = function() {
         var value;
         if (that.target !== null) {
              value =  this.checked;
-            bool_CheckBox.textColor = 0x000000;
+            that.bool_CheckBox.textColor = 0x000000;
             that.target[property] = value;
             if (valueChangedCallback != null) {
                valueChangedCallback();
@@ -514,14 +520,14 @@ var ffM_GUI_config = (function (){
      this.updateTarget = function(target) {
         that.target = target;
         if (target === null) {
-           bool_CheckBox.checked = false;
-           bool_CheckBox.enabled = false;
+           that.bool_CheckBox.checked = false;
+           that.bool_CheckBox.enabled = false;
         } else {
            if (! target.hasOwnProperty(property)) {
               throw "Entry '" + name + "' does not have property '" + property + "': " + Log.pp(target);
            }
-           bool_CheckBox.checked = target[property];
-           bool_CheckBox.enabled = true;
+           that.bool_CheckBox.checked = target[property];
+           that.bool_CheckBox.enabled = true;
         }
      }
 
@@ -544,33 +550,35 @@ var ffM_GUI_config = (function (){
 
      this.property = property;
      this.target = null;
+     this.checkLabels = [];
 
-     var the_Label = new Label( this );
-     this.sizer.add(the_Label);
-     the_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
-     the_Label.minWidth = style.minLabelWidth;
-     the_Label.text = name + ": ";
-     the_Label.toolTip = toolTip;
+     this.the_Label = new Label( this );
+     this.sizer.add(this.the_Label);
+     this.the_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
+     this.the_Label.minWidth = style.minLabelWidth;
+     this.the_Label.text = name + ": ";
+     this.the_Label.toolTip = toolTip;
 
-     var checkBoxContainer = new Control(this);
-     this.sizer.add(checkBoxContainer);
-     checkBoxContainer.sizer = new HorizontalSizer;
-     var checkBoxes = [];
+     this.checkBoxContainer = new Control(this);
+     this.sizer.add(this.checkBoxContainer);
+     this.checkBoxContainer.sizer = new HorizontalSizer;
+     this.checkBoxes = [];
 
-      for (var i=0; i<checkNames.length; i++) {
+     for (var i=0; i<checkNames.length; i++) {
 
          var check_Label = new Label( this );
-         checkBoxContainer.sizer.add(check_Label);
+         this.checkBoxContainer.sizer.add(check_Label);
+         this.checkLabels.push(check_Label);
          check_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
          check_Label.text = checkNames[i];
-         checkBoxContainer.sizer.addSpacing(4);
+         this.checkBoxContainer.sizer.addSpacing(4);
 
-         var bool_CheckBox = new RadioButton(checkBoxContainer);
-         checkBoxContainer.sizer.add(bool_CheckBox);
-         checkBoxes.push(bool_CheckBox);
+         var bool_CheckBox = new RadioButton(this.checkBoxContainer);
+         this.checkBoxContainer.sizer.add(bool_CheckBox);
+         this.checkBoxes.push(bool_CheckBox);
          bool_CheckBox.toolTip = toolTip;
          bool_CheckBox.code = checkValues[i];
-         checkBoxContainer.sizer.addSpacing(4);
+         this.checkBoxContainer.sizer.addSpacing(4);
 
          bool_CheckBox.onCheck = function() {
             var value;
@@ -584,24 +592,24 @@ var ffM_GUI_config = (function (){
             }
          }
      }
-     checkBoxContainer.sizer.addStretch();
+     this.checkBoxContainer.sizer.addStretch();
 
      // Define the target object (that must have the property defined originally), null disables input
      this.updateTarget = function(target) {
         that.target = target;
         if (target === null) {
-            for (var i=0; i<checkBoxes.length;i ++) {
-               checkBoxes[i].checked = false;
-               checkBoxes[i].enabled = false;
+            for (var i=0; i<that.checkBoxes.length;i ++) {
+               that.checkBoxes[i].checked = false;
+               that.checkBoxes[i].enabled = false;
             }
         } else {
             if (! target.hasOwnProperty(property)) {
                throw "Entry '" + name + "' does not have property '" + property + "': " + Log.pp(target);
             }
             var code = target[property];
-            for (var i=0; i<checkBoxes.length;i ++) {
-               checkBoxes[i].checked = (code === checkValues[i]);
-               checkBoxes[i].enabled = true;
+            for (var i=0; i<that.checkBoxes.length;i ++) {
+               that.checkBoxes[i].checked = (code === checkValues[i]);
+               that.checkBoxes[i].enabled = true;
             }
         }
      }
@@ -656,24 +664,26 @@ var ffM_GUI_config = (function (){
       this.__base__ = Control;
       this.__base__(parent);
 
+      var that = this;
+
       // -- UI
       this.sizer = new HorizontalSizer;
       this.sizer.margin = 2;
       this.sizer.spacing = 2;
 
-      var the_Label = new Label( this );
-      this.sizer.add(the_Label);
-      the_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
-      the_Label.minWidth = rowStyle.minLabelWidth;
-      the_Label.text = name + ": ";
+      this.the_Label = new Label( this );
+      this.sizer.add(this.the_Label);
+      this.the_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
+      this.the_Label.minWidth = rowStyle.minLabelWidth;
+      this.the_Label.text = name + ": ";
 
-      var resolver_ComboBox = new ResolverSelection_ComboBox (parent, mappingNames, mappingSelectionCallback);
-      resolver_ComboBox.minWidth = rowStyle.minDataWidth;
-      this.sizer.add(resolver_ComboBox);
+      this.resolver_ComboBox = new ResolverSelection_ComboBox (parent, mappingNames, mappingSelectionCallback);
+      this.resolver_ComboBox.minWidth = rowStyle.minDataWidth;
+      this.sizer.add(this.resolver_ComboBox);
 
       // -- Update model
       this.selectResolver = function(name) {
-         resolver_ComboBox.selectResolver(name);
+         that.resolver_ComboBox.selectResolver(name);
       }
   }
   ResolverSelectionRow.prototype = new Control;
@@ -706,18 +716,18 @@ var ffM_GUI_config = (function (){
         that.selectTransformationToEdit(transformationModel);
      }
 
-     var regExpListSelection_GroupBox = new GroupBox(this);
-     this.sizer.add(regExpListSelection_GroupBox);
-     regExpListSelection_GroupBox.title ="List of RegExp->value";
-     regExpListSelection_GroupBox.sizer = new VerticalSizer;
+     this.regExpListSelection_GroupBox = new GroupBox(this);
+     this.sizer.add(this.regExpListSelection_GroupBox);
+     this.regExpListSelection_GroupBox.title ="List of RegExp->value";
+     this.regExpListSelection_GroupBox.sizer = new VerticalSizer;
 
-     var selectionLayoutControl = new Control;
-     regExpListSelection_GroupBox.sizer.add(selectionLayoutControl);
-     selectionLayoutControl.sizer = new HorizontalSizer;
-     selectionLayoutControl.sizer.addStretch();
+     this.selectionLayoutControl = new Control;
+     this.regExpListSelection_GroupBox.sizer.add(this.selectionLayoutControl);
+     this.selectionLayoutControl.sizer = new HorizontalSizer;
+     this.selectionLayoutControl.sizer.addStretch();
 
-     var regExpListSelection_Box = new ffM_GUI_support.ManagedList_Box(
-           selectionLayoutControl,
+     this.regExpListSelection_Box = new ffM_GUI_support.ManagedList_Box(
+           this.selectionLayoutControl,
            [{propertyName: 'regexp'},{propertyName: 'replacement'}],
            [], // Its model will be initialized dynamically
            transformationDefinitionFactory,
@@ -728,21 +738,21 @@ var ffM_GUI_config = (function (){
            transformationSelectionCallback,
            false // Keep in order
      );
-     selectionLayoutControl.sizer.add(regExpListSelection_Box);
+     this.selectionLayoutControl.sizer.add(this.regExpListSelection_Box);
 
 
-     this.currentRegExpRow = new TextEntryRow(regExpListSelection_GroupBox, rowStyle, "Regexp",
+     this.currentRegExpRow = new TextEntryRow(this.regExpListSelection_GroupBox, rowStyle, "Regexp",
         "A regular expression that will be tested against the key value", "regexp",
         propertyTypes.REG_EXP,
-        function() {regExpListSelection_Box.currentModelElementChanged()});
-     regExpListSelection_GroupBox.sizer.add(this.currentRegExpRow);
+        function() {that.regExpListSelection_Box.currentModelElementChanged()});
+     this.regExpListSelection_GroupBox.sizer.add(this.currentRegExpRow);
 
-     this.currentReplacementRow = new TextEntryRow(regExpListSelection_GroupBox,rowStyle, "Replacement",
+     this.currentReplacementRow = new TextEntryRow(this.regExpListSelection_GroupBox,rowStyle, "Replacement",
         "The replacement text to use if the regular expression matched.\n" +
         "&0; may be used to refer to the original text, &1;, &2; refers to parenthesized groups in the regular expression.", "replacement",
         propertyTypes.REG_EXP_REPLACMENT,
-        function() {regExpListSelection_Box.currentModelElementChanged()});
-     regExpListSelection_GroupBox.sizer.add(this.currentReplacementRow);
+        function() {that.regExpListSelection_Box.currentModelElementChanged()});
+     this.regExpListSelection_GroupBox.sizer.add(this.currentReplacementRow);
 
 
      this.selectTransformationToEdit = function(transformationModel) {
@@ -760,7 +770,7 @@ var ffM_GUI_config = (function (){
         // initialize should probably be somewhere else
         this.initialize(variableDefinition);
         keyRow.updateTarget(variableDefinition.parameters[resolverName]);
-        regExpListSelection_Box.modelListChanged(variableDefinition.parameters[resolverName].reChecks);
+        this.regExpListSelection_Box.modelListChanged(variableDefinition.parameters[resolverName].reChecks);
         // Workaround:
         // The modelListChanged above seem to generate callbacks events that update the regexp
         // and replacement row, but we want them to be disabled until the user explicitely select one.
@@ -784,10 +794,10 @@ var ffM_GUI_config = (function (){
      this.resolverName = resolverName;
 
      this.sizer = new VerticalSizer;
-     var constantValueRow = new TextEntryRow(this, rowStyle, "Value",
+     this.constantValueRow = new TextEntryRow(this, rowStyle, "Value",
      "The fixed value for this variable",
      "value", propertyTypes.FREE_TEXT, null);
-     this.sizer.add(constantValueRow);
+     this.sizer.add(this.constantValueRow);
 
      this.initialize = function(variableDefinition) {
         if (!variableDefinition.parameters.hasOwnProperty(resolverName)) {
@@ -798,7 +808,7 @@ var ffM_GUI_config = (function (){
      this.populate = function(variableDefinition) {
         // Should probably be somewhere else
         this.initialize(variableDefinition);
-        constantValueRow.updateTarget(variableDefinition.parameters[resolverName]);
+        this.constantValueRow.updateTarget(variableDefinition.parameters[resolverName]);
      }
      this.leave = function() {
         // Nothing the clean
@@ -817,22 +827,22 @@ var ffM_GUI_config = (function (){
      this.sizer = new VerticalSizer;
 
      // FITS Key
-     var keyRow = new TextEntryRow(this, rowStyle, "FITS key",
+     this.keyRow = new TextEntryRow(this, rowStyle, "FITS key",
       "The name of a FITS key that will provide the value of this variable\n" +
       "(the FITS key value will be cleaned of special characters).",
       "key", propertyTypes.FREE_TEXT, null);
-     this.sizer.add(keyRow);
+     this.sizer.add(this.keyRow);
 
-     var formatRow = new TextEntryRow(this, rowStyle, "Format",
+     this.formatRow = new TextEntryRow(this, rowStyle, "Format",
      "A valid C format string to display the value, for example '-%ls' to preceed the string with a dash\n"+
      "IMPORTANT - You must use '%ls', not '%s' to indicate the location of the string in the format",
      "format", propertyTypes.FREE_TEXT, null);
-     this.sizer.add(formatRow);
+     this.sizer.add(this.formatRow);
 
-     var caseRuleRow = new CheckListEntryRow(this, rowStyle, "Case conversion",
+     this.caseRuleRow = new CheckListEntryRow(this, rowStyle, "Case conversion",
      "Case conversion",
      "case",['up','down','none'], ['UP','DOWN','NONE'], null);
-     this.sizer.add(caseRuleRow);
+     this.sizer.add(this.caseRuleRow);
 
 
      this.initialize = function(variableDefinition) {
@@ -844,9 +854,9 @@ var ffM_GUI_config = (function (){
      this.populate = function(variableDefinition) {
         // Should probably be somewhere else
         this.initialize(variableDefinition);
-        keyRow.updateTarget(variableDefinition.parameters[resolverName]);
-        formatRow.updateTarget(variableDefinition.parameters[resolverName]);
-        caseRuleRow.updateTarget(variableDefinition.parameters[resolverName]);
+        this.keyRow.updateTarget(variableDefinition.parameters[resolverName]);
+        this.formatRow.updateTarget(variableDefinition.parameters[resolverName]);
+        this.caseRuleRow.updateTarget(variableDefinition.parameters[resolverName]);
      }
      this.leave = function() {
         // Nothing the clean
@@ -865,20 +875,20 @@ var ffM_GUI_config = (function (){
      this.sizer = new VerticalSizer;
 
      // FITS Key
-     var keyRow = new TextEntryRow(this, rowStyle, "FITS key",
+     this.keyRow = new TextEntryRow(this, rowStyle, "FITS key",
       "The name of a FITS key that will provide the value",
       "key", propertyTypes.FREE_TEXT, null);
-     this.sizer.add(keyRow);
+     this.sizer.add(this.keyRow);
 
-     var useAbsoluteRow = new BooleanEntryRow(this, rowStyle, "Use absolute value",
+     this.useAbsoluteRow = new BooleanEntryRow(this, rowStyle, "Use absolute value",
         "If true, the absolute value of the corresponding value is taken (the sign is discarded)",
         "abs", null);
-     this.sizer.add(useAbsoluteRow);
+     this.sizer.add(this.useAbsoluteRow);
 
-     var formatRow = new TextEntryRow(this, rowStyle, "Format",
+     this.formatRow = new TextEntryRow(this, rowStyle, "Format",
      "A valid C format string to display the value, like '%4.4d', possibly with additional text like 'TEMP-%3d'",
      "format", propertyTypes.FREE_TEXT, null);
-     this.sizer.add(formatRow);
+     this.sizer.add(this.formatRow);
 
      this.initialize = function(variableDefinition) {
         if (!variableDefinition.parameters.hasOwnProperty(resolverName)) {
@@ -889,9 +899,9 @@ var ffM_GUI_config = (function (){
      this.populate = function(variableDefinition) {
         // Should probably be somewhere else
         this.initialize(variableDefinition);
-        keyRow.updateTarget(variableDefinition.parameters[resolverName]);
-        useAbsoluteRow.updateTarget(variableDefinition.parameters[resolverName]);
-        formatRow.updateTarget(variableDefinition.parameters[resolverName]);
+        this.keyRow.updateTarget(variableDefinition.parameters[resolverName]);
+        this.useAbsoluteRow.updateTarget(variableDefinition.parameters[resolverName]);
+        this.formatRow.updateTarget(variableDefinition.parameters[resolverName]);
      }
      this.leave = function() {
         // Nothing the clean
@@ -911,20 +921,20 @@ var ffM_GUI_config = (function (){
      this.sizer = new VerticalSizer;
 
      // FITS Key 1
-     var key1Row = new TextEntryRow(this, rowStyle, "FITS key 1",
+     this.key1Row = new TextEntryRow(this, rowStyle, "FITS key 1",
       "The name of a FITS key that will provide the first value",
       "key1", propertyTypes.FREE_TEXT, null);
-     this.sizer.add(key1Row);
+     this.sizer.add(this.key1Row);
 
-     var key2Row = new TextEntryRow(this, rowStyle, "FITS key 2",
+     this.key2Row = new TextEntryRow(this, rowStyle, "FITS key 2",
       "The name of a FITS key that will provide the second value",
       "key2", propertyTypes.FREE_TEXT, null);
-     this.sizer.add(key2Row);
+     this.sizer.add(this.key2Row);
 
-     var formatRow = new TextEntryRow(this, rowStyle, "Format",
+     this.formatRow = new TextEntryRow(this, rowStyle, "Format",
      "A valid C format string to display the 2 values, for example '%dx%d'",
      "format", propertyTypes.FREE_TEXT, null);
-     this.sizer.add(formatRow);
+     this.sizer.add(this.formatRow);
 
      this.initialize = function(variableDefinition) {
         if (!variableDefinition.parameters.hasOwnProperty(resolverName)) {
@@ -935,9 +945,9 @@ var ffM_GUI_config = (function (){
      this.populate = function(variableDefinition) {
         // Should probably be somewhere else
         this.initialize(variableDefinition);
-        key1Row.updateTarget(variableDefinition.parameters[resolverName]);
-        key2Row.updateTarget(variableDefinition.parameters[resolverName]);
-        formatRow.updateTarget(variableDefinition.parameters[resolverName]);
+        this.key1Row.updateTarget(variableDefinition.parameters[resolverName]);
+        this.key2Row.updateTarget(variableDefinition.parameters[resolverName]);
+        this.formatRow.updateTarget(variableDefinition.parameters[resolverName]);
      }
      this.leave = function() {
         // Nothing the clean
@@ -955,15 +965,15 @@ var ffM_GUI_config = (function (){
 
      this.sizer = new VerticalSizer;
 
-     var key1Row = new TextEntryRow(this, rowStyle, "LONG_OBS key",
+     this.key1Row = new TextEntryRow(this, rowStyle, "LONG_OBS key",
      "The name of a FITS key that provide the longitude of the observatory",
      "keyLongObs", propertyTypes.FREE_TEXT, null);
-     this.sizer.add(key1Row);
+     this.sizer.add(this.key1Row);
 
-     var key2Row = new TextEntryRow(this, rowStyle, "JD key",
+     this.key2Row = new TextEntryRow(this, rowStyle, "JD key",
      "The name of a FITS key that contains the julian date of the observation",
      "keyJD", propertyTypes.FREE_TEXT, null);
-     this.sizer.add(key2Row);
+     this.sizer.add(this.key2Row);
 
 
      this.initialize = function(variableDefinition) {
@@ -975,8 +985,8 @@ var ffM_GUI_config = (function (){
      this.populate = function(variableDefinition) {
         // Should probably be somewhere else
         this.initialize(variableDefinition);
-        key1Row.updateTarget(variableDefinition.parameters[resolverName]);
-        key2Row.updateTarget(variableDefinition.parameters[resolverName]);
+        this.key1Row.updateTarget(variableDefinition.parameters[resolverName]);
+        this.key2Row.updateTarget(variableDefinition.parameters[resolverName]);
      }
      this.leave = function() {
         // Nothing the clean
@@ -1027,13 +1037,13 @@ var ffM_GUI_config = (function (){
 
      // -- Left side - select variable being edited, add/remove variables
 
-     var variableListSelection_GroupBox = new GroupBox(this);
-     this.sizer.add(variableListSelection_GroupBox);
-     variableListSelection_GroupBox.title = "Select variable";
-     variableListSelection_GroupBox.sizer = new VerticalSizer; // Any sizer
+     this.variableListSelection_GroupBox = new GroupBox(this);
+     this.sizer.add(this.variableListSelection_GroupBox);
+     this.variableListSelection_GroupBox.title = "Select variable";
+     this.variableListSelection_GroupBox.sizer = new VerticalSizer; // Any sizer
 
-     var variableListSelection_Box = new ffM_GUI_support.ManagedList_Box(
-           variableListSelection_GroupBox,
+     this.variableListSelection_Box = new ffM_GUI_support.ManagedList_Box(
+           this.variableListSelection_GroupBox,
           [{propertyName: 'name'},{propertyName: 'description'}],
           [], // Its model will be initialized dynamically
            variableDefinitionFactory,
@@ -1041,7 +1051,7 @@ var ffM_GUI_config = (function (){
            variableSelectionCallback,
            true // Sort by variable name
      );
-     variableListSelection_GroupBox.sizer.add(variableListSelection_Box);
+     this.variableListSelection_GroupBox.sizer.add(this.variableListSelection_Box);
 
 
 
@@ -1053,65 +1063,66 @@ var ffM_GUI_config = (function (){
         that.updateResolver(resolverName);
      }
 
-     var variableDetails_GroupBox = new GroupBox(this);
-     variableDetails_GroupBox.title = "Parameters of variable";
-     this.sizer.add(variableDetails_GroupBox);
+     this.variableDetails_GroupBox = new GroupBox(this);
+     this.variableDetails_GroupBox.title = "Parameters of variable";
+     this.sizer.add(this.variableDetails_GroupBox);
 
-     variableDetails_GroupBox.sizer = new VerticalSizer;
+     this.variableDetails_GroupBox.sizer = new VerticalSizer;
 
 
 
      this.resolverSelectionRow =  new ResolverSelectionRow(this, rowStyle, "Resolver", ffM_Resolver.resolverNames, resolverSelectionCallback);
-     variableDetails_GroupBox.sizer.add(this.resolverSelectionRow);
+     this.variableDetails_GroupBox.sizer.add(this.resolverSelectionRow);
 
      this.variableNameRow = new TextEntryRow(this, rowStyle, "Variable name",
         "Enter the name of the variable, it will be used as '&amp;name;' in a template",
         "name",
         propertyTypes.VAR_NAME,
-        function() {variableListSelection_Box.currentModelElementChanged()});
-     variableDetails_GroupBox.sizer.add(this.variableNameRow);
+        function() {that.variableListSelection_Box.currentModelElementChanged()});
+     this.variableDetails_GroupBox.sizer.add(this.variableNameRow);
 
      this.descriptionRow = new TextEntryRow(this, rowStyle, "Description",
         "Enter a short description of the variable",
         "description",
         propertyTypes.FREE_TEXT,
-        function() {variableListSelection_Box.currentModelElementChanged()});
-     variableDetails_GroupBox.sizer.add(this.descriptionRow);
+        function() {that.variableListSelection_Box.currentModelElementChanged()});
+     this.variableDetails_GroupBox.sizer.add(this.descriptionRow);
 
      this.variableShownRow = new BooleanEntryRow(this, rowStyle, "Show column by default",
         "If true, the corresponding column is shown in the Input file list by default",
         "show",
-        function() {variableListSelection_Box.currentModelElementChanged()});
-     variableDetails_GroupBox.sizer.add(this.variableShownRow);
+        function() {that.variableListSelection_Box.currentModelElementChanged()});
+     this.variableDetails_GroupBox.sizer.add(this.variableShownRow);
 
-     var addNewResolverControl = function(resolverControl){
-        variableDetails_GroupBox.sizer.add(resolverControl);
+     this.addNewResolverControl = function(resolverControl){
+        // This also keep a reference to the resolverControl, so that it is not GCs
         ffM_Resolver.resolverByName(resolverControl.resolverName).control = resolverControl;
+        this.variableDetails_GroupBox.sizer.add(resolverControl);
         resolverControl.hide();
      }
 
      // Make all resolver controls, only the selected one will be shown
-     addNewResolverControl(new ConstantValueResolverControl(variableDetails_GroupBox, 'Constant', rowStyle));
+     this.addNewResolverControl(new ConstantValueResolverControl(this.variableDetails_GroupBox, 'Constant', rowStyle));
 
-     addNewResolverControl(new TextValueResolverControl(variableDetails_GroupBox, 'Text', rowStyle));
+     this.addNewResolverControl(new TextValueResolverControl(this.variableDetails_GroupBox, 'Text', rowStyle));
 
-     addNewResolverControl(new IntegerValueResolverControl(variableDetails_GroupBox, 'Integer', rowStyle));
+     this.addNewResolverControl(new IntegerValueResolverControl(this.variableDetails_GroupBox, 'Integer', rowStyle));
 
-     addNewResolverControl(new IntegerPairValueResolverControl(variableDetails_GroupBox, 'IntegerPair', rowStyle));
+     this.addNewResolverControl(new IntegerPairValueResolverControl(this.variableDetails_GroupBox, 'IntegerPair', rowStyle));
 
-     addNewResolverControl(new MapFirstRegExpControl(variableDetails_GroupBox,'RegExpList', rowStyle));
+     this.addNewResolverControl(new MapFirstRegExpControl(this.variableDetails_GroupBox,'RegExpList', rowStyle));
 
-     addNewResolverControl(new NightResolverControl(variableDetails_GroupBox,'Night', rowStyle));
+     this.addNewResolverControl(new NightResolverControl(this.variableDetails_GroupBox,'Night', rowStyle));
 
      // FileName and FileExtension have no parameter
      ffM_Resolver.resolverByName('FileName').control = null
      ffM_Resolver.resolverByName('FileExtension').control = null
 
-     variableDetails_GroupBox.sizer.addStretch();
+     this.variableDetails_GroupBox.sizer.addStretch();
 
      // TRICK - void growing when more proeprties are added to the right pane, the dialg can grow,
      // so it is possible to avoid this minimum size, but the effect is likely uggly.
-     variableDetails_GroupBox.setMinHeight(GROUP_BOX_MIN_SIZE * this.font.lineSpacing + 2*this.sizer.margin);
+     this.variableDetails_GroupBox.setMinHeight(GROUP_BOX_MIN_SIZE * this.font.lineSpacing + 2*this.sizer.margin);
 
 
 
@@ -1121,23 +1132,23 @@ var ffM_GUI_config = (function (){
      this.updateResolver = function(resolverName) {
         //Log.debug(" updateResolver",resolverName,that.currentResolver);
         // There could be no controller if there is no parameter
-        if (that.currentResolver != null && that.currentResolver.control !== null) {
-           that.currentResolver.control.leave();
-           that.currentResolver.control.hide();
+        if (this.currentResolver != null && this.currentResolver.control !== null) {
+           this.currentResolver.control.leave();
+           this.currentResolver.control.hide();
         }
-        that.currentResolver =null;
+        this.currentResolver =null;
         if (resolverName != null) {
            var resolver = ffM_Resolver.resolverByName(resolverName);
            if (resolver === null) {
               throw "Invalid resolver '" + resolverName + "' for variable '"+ variableDefinition.name+"'";
            }
-           if (that.currentVariableDefinition !== null) {
+           if (this.currentVariableDefinition !== null) {
               // record the new resolver
-              that.currentVariableDefinition.resolver = resolverName;
+              this.currentVariableDefinition.resolver = resolverName;
               // Populate and show it
-              that.currentResolver = resolver;
+              this.currentResolver = resolver;
               if (resolver.control !== null) {
-                 resolver.control.populate(that.currentVariableDefinition );
+                 resolver.control.populate(this.currentVariableDefinition );
                  resolver.control.show();
               }
            }
@@ -1151,7 +1162,7 @@ var ffM_GUI_config = (function (){
 #endif
          var resolverName;
 
-        that.currentVariableDefinition = variableDefinition;
+        this.currentVariableDefinition = variableDefinition;
 
         // populate the common fields
         this.variableNameRow.updateTarget(variableDefinition);
@@ -1159,8 +1170,8 @@ var ffM_GUI_config = (function (){
         this.variableShownRow.updateTarget(variableDefinition);
 
         // Find new resolver, populate and show it
-        resolverName = that.currentVariableDefinition.resolver;
-        that.updateResolver(resolverName);
+        resolverName = this.currentVariableDefinition.resolver;
+        this.updateResolver(resolverName);
 
         // Update the UI to have the resolver type of the current variable
         this.resolverSelectionRow.selectResolver(resolverName);
@@ -1169,7 +1180,7 @@ var ffM_GUI_config = (function (){
      // The list of variables was changed externally (initial or change)
      this.updateVariableList = function(newVariableList) {
         // Update UI
-        variableListSelection_Box.modelListChanged(newVariableList);
+        this.variableListSelection_Box.modelListChanged(newVariableList);
      }
 
   }
@@ -1192,27 +1203,27 @@ var ffM_GUI_config = (function (){
       this.sizer.margin = 5;
       this.sizer.spacing = 5;
 
-      var nameRow = new Control(this);
-      this.sizer.add(nameRow);
+      this.nameRow = new Control(this);
+      this.sizer.add(this.nameRow);
 
-      nameRow.sizer = new HorizontalSizer;
+      this.nameRow.sizer = new HorizontalSizer;
 
-      nameRow.sizer.margin = 1;
-      nameRow.sizer.spacing = 2;
-      this.configurationSelection_ComboBox = new ConfigurationSelection_ComboBox(nameRow, [], configurationSelectedCallback);
-      nameRow.sizer.add(this.configurationSelection_ComboBox);
+      this.nameRow.sizer.margin = 1;
+      this.nameRow.sizer.spacing = 2;
+      this.configurationSelection_ComboBox = new ConfigurationSelection_ComboBox(this.nameRow, [], configurationSelectedCallback);
+      this.nameRow.sizer.add(this.configurationSelection_ComboBox);
       this.configurationSelection_ComboBox.minWidth = configurationNameMinWidth;
 
 
-      nameRow.sizer.addStretch();
+      this.nameRow.sizer.addStretch();
 
-      var name_Label = new Label( nameRow );
-      nameRow.sizer.add(name_Label);
-      name_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
-      name_Label.text = " Name: ";
+      this.name_Label = new Label( this.nameRow );
+      this.nameRow.sizer.add(this.name_Label);
+      this.name_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
+      this.name_Label.text = " Name: ";
 
-      this.configurationName_Edit = new Edit(nameRow);
-      nameRow.sizer.add(this.configurationName_Edit);
+      this.configurationName_Edit = new Edit(this.nameRow);
+      this.nameRow.sizer.add(this.configurationName_Edit);
       this.configurationName_Edit.minWidth = configurationNameMinWidth;
       this.configurationName_Edit.toolTip = "Name of configuration\nIllegal special characters makes the field red.";
       this.configurationName_Edit.onTextUpdated = function() {
@@ -1234,19 +1245,19 @@ var ffM_GUI_config = (function (){
          }
       }
 
-      var addConfigurationButton = new ToolButton( nameRow );
-      nameRow.sizer.add(addConfigurationButton);
-      addConfigurationButton.icon = new Bitmap( ":/images/icons/copy.png" );
-      addConfigurationButton.toolTip = "Add a configuration (duplicate current one)";
-      addConfigurationButton.onClick = function() {
+      this.addConfigurationButton = new ToolButton( this.nameRow );
+      this.nameRow.sizer.add(this.addConfigurationButton);
+      this.addConfigurationButton.icon = new Bitmap( ":/images/icons/copy.png" );
+      this.addConfigurationButton.toolTip = "Add a configuration (duplicate current one)";
+      this.addConfigurationButton.onClick = function() {
          configurationDuplicateCallback(that.currentConfigurationName);
       }
 
-      var removeConfigurationButton = new ToolButton( nameRow );
-      nameRow.sizer.add(removeConfigurationButton);
-      removeConfigurationButton.icon = new Bitmap( ":/images/icons/cancel.png" );
-      removeConfigurationButton.toolTip = "Delete the current configuration";
-      removeConfigurationButton.onClick = function() {
+      this.removeConfigurationButton = new ToolButton( this.nameRow );
+      this.nameRow.sizer.add(this.removeConfigurationButton);
+      this.removeConfigurationButton.icon = new Bitmap( ":/images/icons/cancel.png" );
+      this.removeConfigurationButton.toolTip = "Delete the current configuration";
+      this.removeConfigurationButton.onClick = function() {
          var msg = new MessageBox( "Do you want to delete the configuration '" +that.currentConfigurationName + "' ?",
                           "Are you sure?", StdIcon_Question, StdButton_Yes, StdButton_No );
          if (msg.execute() == StdButton_Yes) {
@@ -1254,22 +1265,22 @@ var ffM_GUI_config = (function (){
          }
       }
 
-      var descriptionRow = new Control(this);
-      this.sizer.add(descriptionRow);
-      descriptionRow.sizer = new HorizontalSizer;
+      this.descriptionRow = new Control(this);
+      this.sizer.add(this.descriptionRow);
+      this.descriptionRow.sizer = new HorizontalSizer;
 
-      var description_Label = new Label( descriptionRow );
-      descriptionRow.sizer.add(description_Label);
-      description_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
-      description_Label.text = " Description: ";
+      this.description_Label = new Label( this.descriptionRow );
+      this.descriptionRow.sizer.add(this.description_Label);
+      this.description_Label.textAlignment = TextAlign_Right|TextAlign_VertCenter;
+      this.description_Label.text = " Description: ";
 
-      descriptionRow.sizer.margin = 1;
-      descriptionRow.sizer.spacing = 2;
-      this.configurationComment_Edit = new Edit(descriptionRow);
-      descriptionRow.sizer.add(this.configurationComment_Edit);
+      this.descriptionRow.sizer.margin = 1;
+      this.descriptionRow.sizer.spacing = 2;
+      this.configurationComment_Edit = new Edit(this.descriptionRow);
+      this.descriptionRow.sizer.add(this.configurationComment_Edit);
       this.configurationComment_Edit.toolTip = "Short description of the configuration";
 
-      descriptionRow.sizer.addSpacing(50); // Pretty approximate
+      this.descriptionRow.sizer.addSpacing(50); // Pretty approximate
 
       // To track edited comment
       this.selectedConfiguration = null;
@@ -1328,24 +1339,24 @@ var ffM_GUI_config = (function (){
       //this.sizer.addStretch();
 
       // Left columns
-      var colLayout1_Control = new Control;
-      this.sizer.add(colLayout1_Control);
-      colLayout1_Control.sizer = new VerticalSizer;
+      this.colLayout1_Control = new Control;
+      this.sizer.add(this.colLayout1_Control);
+      this.colLayout1_Control.sizer = new VerticalSizer;
 
-      var rankFormat = new TextEntryRow(colLayout1_Control, rowStyle, "&rank; format",
+      var rankFormat = new TextEntryRow(this.colLayout1_Control, rowStyle, "&rank; format",
       "Enter a valid C format string for the &rank; value, like '%3.3d'\nYou can also add text around like 'N%3.3d'",
       "format", propertyTypes.FREE_TEXT, null);
-      colLayout1_Control.sizer.add(rankFormat);
+      this.colLayout1_Control.sizer.add(rankFormat);
 
       // Right column
-      var colLayout2_Control = new Control;
-      this.sizer.add(colLayout2_Control);
-      colLayout2_Control.sizer = new VerticalSizer;
+      this.colLayout2_Control = new Control;
+      this.sizer.add(this.colLayout2_Control);
+      this.colLayout2_Control.sizer = new VerticalSizer;
 
-      var countFormat = new TextEntryRow(colLayout2_Control, rowStyle, "&count format",
+      var countFormat = new TextEntryRow(this.colLayout2_Control, rowStyle, "&count format",
       "Enter a valid C format string for the &count; value, like '%3.3d'\nYou can also add text around like 'group-%d'",
       "format", propertyTypes.FREE_TEXT, null);
-      colLayout2_Control.sizer.add(countFormat);
+      this.colLayout2_Control.sizer.add(countFormat);
 
 
       this.configure = function(editedConfigurationSet, currentConfigurationName) {
@@ -1458,8 +1469,8 @@ var ffM_GUI_config = (function (){
      this.sizer.add(this.builtinVariable_Group);
 
      // Bottom pane - buttons
-     var okCancelButtons = makeOKCancel(this);
-     this.sizer.add(okCancelButtons);
+     this.okCancelButtons = makeOKCancel(this);
+     this.sizer.add(this.okCancelButtons);
 
      this.setVariableSize();
      //this.adjustToContents();
