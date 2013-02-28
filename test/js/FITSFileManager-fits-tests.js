@@ -31,6 +31,8 @@
 
 var ffM_allTests_filePath = #__FILE__ ;
 var ffM_allTests_baseDirectory = File.extractDrive(ffM_allTests_filePath) + File.extractDirectory(ffM_allTests_filePath) + "/../images";
+Console.writeln("ffM_allTests_filePath is '" + ffM_allTests_filePath + "', ffM_allTests_baseDirectory is '" + ffM_allTests_baseDirectory +"'");
+
 
 var ffM_allTests = {
 
@@ -215,7 +217,7 @@ var ffM_allTests = {
    // Test the ffM_FITS_Keywords.fitsKeywords
 
    test_ffM_load_fits: function() {
-      var attrs = ffM_FITS_Keywords.makeImageKeywordsfromFile("C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/m31_Green_0028.fit");
+      var attrs = ffM_FITS_Keywords.makeImageKeywordsfromFile(ffM_allTests_baseDirectory+ "/" +"m31_Green_0028.fit");
       pT_assertEquals(26, attrs.fitsKeywordsList.length);
       // Only some are keywords with value
       pT_assertEquals(14, Object.getOwnPropertyNames(attrs.fitsKeywordsMap).length);
@@ -228,7 +230,7 @@ var ffM_allTests = {
 
    test_ffM_load_bad_fits: function() {
       try {
-         ffM_FITS_Keywords.makeImageKeywordsfromFile("C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/badfitsmissingend.fit");
+         ffM_FITS_Keywords.makeImageKeywordsfromFile(ffM_allTests_baseDirectory+ "/" + "badfitsmissingend.fit");
       } catch (error) {
          pT_assertEquals(0,error.toString().indexOf("Error: Unexpected end of file reading FITS keywords"));
          return;
@@ -238,7 +240,7 @@ var ffM_allTests = {
 
    // Test the ffM_FITS_Keywords.keywordSet
    test_ffM_keywordsSet: function() {
-      var kwof = ffM_FITS_Keywords.makeImageKeywordsfromFile("C:/Users/jmlugrin/Documents/Astronomie/Programs/PixInsight/PI my Scripts/FitsFileManager/sources/test/images/m31_Green_0028.fit");
+      var kwof = ffM_FITS_Keywords.makeImageKeywordsfromFile(ffM_allTests_baseDirectory+ "/" + "m31_Green_0028.fit");
       var kws = ffM_FITS_Keywords.makeKeywordsSet();
       kws.putAllImageKeywords(kwof);
       pT_assertEquals(14, Object.keys(kws.allValueKeywordNames).length);
