@@ -85,65 +85,6 @@
 
 
 
-// Change log
-// 2012-08-27 - 0.1 - Initial Version
-// 2012-09-11 - 0.5 - Significant enhancements
-//     Code refactoring, speedups
-//     Save/restore parameters
-//     Corrected mapping of files in tree and list if not sorted as loaded,
-//     added refresh button because there is no onSort event,
-//     default sort is ascending on FileName
-//     Added button remove all
-//     Added help label
-//     Use SectionBar
-//     Added optional indicator to accept missing values '?' and default value
-//     Check for missing key values, show message
-//     Source file list is refreshed after a move
-//     Supressed Export FITS keys as incompletely implemented and may be integrated in 1.8
-// 2012-09-26 - 0.6 - Many enhancements
-//     Use TreeBox instead of TextBox
-//     Added button to check/uncheck boxes
-//     List types in keyword table
-//     More dynamic layout
-//     Added predefined templates and regexps
-//     Added copy via FITS load/save with added KEYWORD
-//     Show conversion definitions
-// 2012-11-11 - 0.7 - Bug correction, keyword enhancements
-//     Corrected bug on display of FITS keyword in image table
-//     Add the input &extension if the output file has no extension
-//     Added &object as a synthethic keyword
-//     Added &night as an experimental keyword
-//     Added alternate FITS keywords for creation of synthetic keywords
-//     Load HIERARCH FITS keywords
-// 2012-11-19 - 0.8 - Refactor, bug corrections, more configurability
-//     Refactored FITS keyword loading (separate js file), parameters (separate file) and quite some code
-//     Correcting error of selection of file in FITSKeyword window
-//     Corrected error of list entry reported by Vicent
-//     Document &kw:present?absent;
-//     Show alternate FITS keyword in 'Remapping' section
-//     Allow selection of visibility of synthetic variable in inputFile table
-//     Accept FITS keywords as variables, clean FITS kewyword value to make clean file names
-//     Removed the &object; variable as this can now be done with &OBJECT;
-//     Added predefiend named configuration to select kewyword mappign and conversions,
-//     two configurations predefined (DEFAULT and CAHA)
-//     Reworked conversion rules for filters and types, support back references in right hand side.
-//     Enhance unquoting of string (respect FITS standard)
-//     Handle cursor and console during file move/copy operations
-//     Additional tests
-//     Various presentation enhancements
-
-// 2012-12-28 - 0.9
-//     Very large rewrite of configuration mecanism
-// 2013-02-06 - 1.0
-//     Bug corrections on selection,
-//    made minimum dialog size smaller (hopefully support screens down to approx 1200 x 760)
-//    added shopw/hide fullPath on inputTreeBox
-//    added exit button and confirmation for remove all
-// 2013-04-01 - 1.1 (for PI1.8rc4)
-//    Correct width of labels
-// - Assign all controls to the dialog, according to
-//   http://pixinsight.com/forum/index.php?topic=5252.msg36173#msg36173
-// - Added control files to follow PI conventions
 
 // Prepare for future developments
 
