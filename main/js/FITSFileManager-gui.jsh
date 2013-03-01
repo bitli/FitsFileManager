@@ -245,7 +245,7 @@ function MainDialog(engine, guiParameters) {
 
    this.showFullPath = false;
 
-   var labelWidth = this.font.width( "MMMMMMMMMMM" ) ;
+   var labelWidth = this.font.width( "MMMMMMMMMMMMMM" ) ;
 
    this.setMinWidth(MainDialogMinimumWidth);
    this.setMinHeight(MainDialogMinimumHeight);

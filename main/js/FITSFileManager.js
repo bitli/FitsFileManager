@@ -139,6 +139,11 @@
 //    made minimum dialog size smaller (hopefully support screens down to approx 1200 x 760)
 //    added shopw/hide fullPath on inputTreeBox
 //    added exit button and confirmation for remove all
+// 2013-04-01 - 1.1 (for PI1.8rc4)
+//    Correct width of labels
+// - Assign all controls to the dialog, according to
+//   http://pixinsight.com/forum/index.php?topic=5252.msg36173#msg36173
+// - Added control files to follow PI conventions
 
 // Prepare for future developments
 
