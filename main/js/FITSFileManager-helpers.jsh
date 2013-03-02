@@ -545,11 +545,8 @@ var ffM_variables = (function() {
                return null;
             } else {
                if (ruleParameters.abs) { valueF = Math.abs(valueF);}
-               var roundedValueF = Math.round(valueF);
-               // Work around a PJSR bug in 1.8RC4test
-               if (roundedValueF === -0) {
-                  roundedValueF = 0;
-               }
+               // Force the value to be an Int32 as far as Math.format is concerned
+               var roundedValueF = Math.round(valueF) | 0;
                try {
                   return format(ruleParameters.format, Math.round( valueF));
                } catch (e) {
@@ -607,15 +604,9 @@ var ffM_variables = (function() {
                return null;
             } else {
                try {
-                  var roundedValueF1 =  Math.round( valueF1);
-                  var roundedValueF2 =  Math.round( valueF2);
-                  // Work around a PJSR bug in 1.8RC4test
-                  if (roundedValueF1 === -0) {
-                     roundedValueF1 = 0;
-                  }
-                  if (roundedValueF2 === -0) {
-                     roundedValueF2 = 0;
-                  }
+                  // Force the value to be an Int32 as far as Math.format is concerned
+                  var roundedValueF1 =  Math.round( valueF1) | 0;
+                  var roundedValueF2 =  Math.round( valueF2) | 0;
                   return format(ruleParameters.format, roundedValueF1, roundedValueF2);
                } catch (e) {
                   // TODO Find better way to communicate error to caller
