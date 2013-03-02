@@ -42,7 +42,7 @@ var FitsKeysDialogMinimumWidth = 400;
 var FitsKeysDialogPreferedHeight = 600;
 var FitsKeysDialogPreferedWidth = 800;
 
-var MaxErrorsDisplayed = 20;
+var MaxErrorsDisplayed = 15;
 
 // ------------------------------------------------------------------------------------------------------------------------
 // Section Group - support to switch between SectionBar and a group box
@@ -526,15 +526,19 @@ function MainDialog(engine, guiParameters) {
       ffM_Configuration.setActiveConfigurationName(configurationName);
       that.configurationDescription_Label.text	=  ffM_Configuration.getActiveConfigurationElement().description;
 
-      that.engine.setConfiguration(ffM_Configuration.createWorkingConfiguration());
-      that.engine.rebuildAll();
+      try {
+         that.cursor = new Cursor( StdCursor_Hourglass );
+         that.engine.setConfiguration(ffM_Configuration.createWorkingConfiguration());
+         that.engine.rebuildAll();
 
-
-      // TODO - Merge with action on add files and manage configurations
-      that.rebuildFilesTreeBox();
-      that.updateButtonState();
-      that.updateTotal();
-      that.refreshTargetFiles();
+         // TODO - Merge with action on add files and manage configurations
+         that.rebuildFilesTreeBox();
+         that.updateButtonState();
+         that.updateTotal();
+         that.refreshTargetFiles();
+      } finally {
+         that.dialog.cursor = new Cursor( StdCursor_Arrow );
+      }
 
    }
    this.configurationSelection_ComboBox = new ffM_GUI_config.ConfigurationSelection_ComboBox(this, [], configurationSelectedCallback);
@@ -571,15 +575,22 @@ function MainDialog(engine, guiParameters) {
 
          this.dialog.configurationDescription_Label.text	=  ffM_Configuration.getActiveConfigurationElement().description;
 
-         engine.setConfiguration(ffM_Configuration.createWorkingConfiguration());
-         engine.rebuildAll();
+         try {
+            this.dialog.cursor = new Cursor( StdCursor_Hourglass );
+            engine.setConfiguration(ffM_Configuration.createWorkingConfiguration());
+
+            engine.rebuildAll();
 
 
-         // TODO - Merge with action on add files and select configuration
-         this.dialog.rebuildFilesTreeBox();
-         this.dialog.updateButtonState();
-         this.dialog.updateTotal();
-         this.dialog.refreshTargetFiles();
+            // TODO - Merge with action on add files and select configuration
+            this.dialog.rebuildFilesTreeBox();
+            this.dialog.updateButtonState();
+            this.dialog.updateTotal();
+            this.dialog.refreshTargetFiles();
+         } finally {
+            this.dialog.cursor = new Cursor( StdCursor_Arrow );
+         }
+
       }
    }
 
@@ -1381,17 +1392,23 @@ function MainDialog(engine, guiParameters) {
 #ifdef DEBUG
       debug("addFilesAction - adding " + fileNames.length + " files");
 #endif
-      this.engine.addFiles(fileNames);
+      try {
+         this.cursor = new Cursor( StdCursor_Hourglass );
 
-      this.rebuildFilesTreeBox();
-      //this.adjustToContents();
-      this.dialog.updateButtonState();
-      this.dialog.updateTotal();
+         this.engine.addFiles(fileNames);
 
-      this.refreshTargetFiles();
+         this.rebuildFilesTreeBox();
+         //this.adjustToContents();
+         this.dialog.updateButtonState();
+         this.dialog.updateTotal();
+
+         this.refreshTargetFiles();
 #ifdef DEBUG
-      debug("addFilesAction - added " + fileNames.length + " files");
+         debug("addFilesAction - added " + fileNames.length + " files");
 #endif
+      } finally {
+         this.cursor = new Cursor( StdCursor_Arrow );
+      }
    }
 
 
@@ -1442,6 +1459,7 @@ function MainDialog(engine, guiParameters) {
 #ifdef DEBUG
       debug("refreshTargetFiles() called");
 #endif
+
       var listOfFiles = this.makeListOfCheckedFiles();
 
       this.engine.buildTargetFiles(listOfFiles);
@@ -1499,7 +1517,6 @@ function MainDialog(engine, guiParameters) {
       }
       this.outputSummaryLabel.text = barResultTitle;
       this.barResult.setCollapsedTitle("Resulting operations - " + barResultTitle);
-
 
     }
 
