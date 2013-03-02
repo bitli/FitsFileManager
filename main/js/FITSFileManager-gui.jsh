@@ -43,8 +43,9 @@ var FitsKeysDialogPreferedWidth = 800;
 
 // ------------------------------------------------------------------------------------------------------------------------
 // Section Group - support to switch between SectionBar and a group box
+// (section bar seems to cause problems with resizing,
+// so does group box, but apparently only on Mac or small screen)
 // ------------------------------------------------------------------------------------------------------------------------
-
 
 #ifdef USE_SECTION_BAR
 function makeSectionGroup(parent, content, title, initialyCollapsed) {
@@ -56,12 +57,16 @@ function makeSectionGroup(parent, content, title, initialyCollapsed) {
 #else
 var dummySectionPrototype = {
     setCollapsedTitle: function(title) { return; },
+    // Keep track of the 'groupBox' used as a section
     setSection: function(section) { this.section = section; },
     addSection: function(sizer, weight) {
       sizer.add(this.section, weight);
    },
 }
-// The content is a group box
+// The 'content' is a group box, the content is kept as a propery
+// of the section object, which is itself kept as a property of
+// the calling object, so that the groupBox is referenced by the
+// property chain, not only by a Sizer.
 function makeSectionGroup(parent, content, title, initialyCollapsed) {
    // Return an object that fake a section bar, without any functionality,
    // show just the GroupBox with title
@@ -92,7 +97,8 @@ function SectionBar( parent, initialyCollapsed ) {
    this.collapsedTitle = "";
    this.expandedTitle = "";
 
-#ifgteq __PI_BUILD__ 854
+//#ifgteq __PI_BUILD__ 854
+#ifdef NOT_DEFINED
    var bgColor = Settings.readGlobal( "InterfaceWindow/SectionBarColor", DataType_UInt32 );
    var fgColor = Settings.readGlobal( "InterfaceWindow/SectionBarTextColor", DataType_UInt32 );
 #else
@@ -120,16 +126,16 @@ function SectionBar( parent, initialyCollapsed ) {
       this.parent.toggleSection();
    };
 
-   var hSizer = new HorizontalSizer;
-   hSizer.addSpacing( 4 );
-   hSizer.add( this.label );
-   hSizer.addStretch();
-   hSizer.add( this.button );
-   hSizer.addSpacing( 4 );
+   this.hSizer = new HorizontalSizer;
+   this.hSizer.addSpacing( 4 );
+   this.hSizer.add( this.label );
+   this.hSizer.addStretch();
+   this.hSizer.add( this.button );
+   this.hSizer.addSpacing( 4 );
 
    this.sizer = new VerticalSizer;
    this.sizer.addSpacing( 1 );
-   this.sizer.add( hSizer );
+   this.sizer.add( this.hSizer );
    this.sizer.addSpacing( 1 );
 
    this.adjustToContents();
@@ -264,12 +270,12 @@ function MainDialog(engine, guiParameters) {
    //----------------------------------------------------------------------------------
    // -- HelpLabel
    //----------------------------------------------------------------------------------
-   var helpLabel = new Label( this );
-   helpLabel.frameStyle = FrameStyle_Box;
-   helpLabel.margin = 4;
-   helpLabel.wordWrapping = true;
-   helpLabel.useRichText = true;
-   helpLabel.text = Text.H.HELP_LABEL;
+   this.helpLabel = new Label( this );
+   this.helpLabel.frameStyle = FrameStyle_Box;
+   this.helpLabel.margin = 4;
+   this.helpLabel.wordWrapping = true;
+   this.helpLabel.useRichText = true;
+   this.helpLabel.text = Text.H.HELP_LABEL;
 
 
    //----------------------------------------------------------------------------------
@@ -753,13 +759,13 @@ function MainDialog(engine, guiParameters) {
    this.configurationSelection_sizer = new HorizontalSizer;
    this.configurationSelection_sizer.margin = 4;
    this.configurationSelection_sizer.spacing = 2;
-   var label = new Label();
-   label.setFixedWidth(labelWidth);
-   label.text		= "Configuration: ";
-   label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
+   this.configurationLabel = new Label();
+   this.configurationLabel.setFixedWidth(labelWidth);
+   this.configurationLabel.text		= "Configuration: ";
+   this.configurationLabel.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
 
-   this.configurationSelection_sizer.add( label );
+   this.configurationSelection_sizer.add( this.configurationLabel );
    this.configurationSelection_sizer.add( this.configurationSelection_ComboBox );
    this.configurationSelection_sizer.addSpacing(5);
    this.configurationSelection_ComboBox.minWidth = configurationNameMinWidth;
@@ -773,12 +779,12 @@ function MainDialog(engine, guiParameters) {
    this.targetFileTemplate_Edit_sizer = new HorizontalSizer;
    this.targetFileTemplate_Edit_sizer.margin = 4;
    this.targetFileTemplate_Edit_sizer.spacing = 2;
-   var label = new Label();
-   label.setFixedWidth(labelWidth);
-   label.text		= "Target file template: ";
-   label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
+   this.targetFileTemplateLabel = new Label();
+   this.targetFileTemplateLabel.setFixedWidth(labelWidth);
+   this.targetFileTemplateLabel.text		= "Target file template: ";
+   this.targetFileTemplateLabel.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
-   this.targetFileTemplate_Edit_sizer.add( label );
+   this.targetFileTemplate_Edit_sizer.add( this.targetFileTemplateLabel );
    this.targetFileTemplate_Edit_sizer.add( this.targetFileTemplate_ComboBox,100 );
 
 
@@ -786,24 +792,24 @@ function MainDialog(engine, guiParameters) {
    this.regexp_ComboBox_sizer = new HorizontalSizer;
    this.regexp_ComboBox_sizer.margin = 4;
    this.regexp_ComboBox_sizer.spacing = 2;
-   var label = new Label();
-   label.setFixedWidth(labelWidth);;
-   label.text		= "File name RegExp: ";
-   label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
+   this.regExpLabel = new Label();
+   this.regExpLabel.setFixedWidth(labelWidth);;
+   this.regExpLabel.text		= "File name RegExp: ";
+   this.regExpLabel.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
-   this.regexp_ComboBox_sizer.add( label );
+   this.regexp_ComboBox_sizer.add( this.regExpLabel );
    this.regexp_ComboBox_sizer.add( this.regexp_ComboBox,100 );
 
 
    this.groupTemplate_ComboBox_sizer = new HorizontalSizer;
    this.groupTemplate_ComboBox_sizer.margin = 4;
    this.groupTemplate_ComboBox_sizer.spacing = 2;
-   var label = new Label();
-   label.setFixedWidth(labelWidth);
-   label.text		= "Group template: ";
-   label.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
+   this.groupTemplateLabel = new Label();
+   this.groupTemplateLabel.setFixedWidth(labelWidth);
+   this.groupTemplateLabel.text		= "Group template: ";
+   this.groupTemplateLabel.textAlignment	= TextAlign_Right | TextAlign_VertCenter;
 
-   this.groupTemplate_ComboBox_sizer.add( label );
+   this.groupTemplate_ComboBox_sizer.add( this.groupTemplateLabel );
    this.groupTemplate_ComboBox_sizer.add( this.groupTemplate_ComboBox,100);
 
 
@@ -1167,7 +1173,7 @@ function MainDialog(engine, guiParameters) {
    this.sizer = new VerticalSizer;
    this.sizer.margin = 4;
    this.sizer.spacing = 6;
-   this.sizer.add( helpLabel );
+   this.sizer.add( this.helpLabel );
    this.barInput.addSection(this.sizer, 50);
    this.barRules.addSection(this.sizer,0);
    this.barOutput.addSection(this.sizer,0);
