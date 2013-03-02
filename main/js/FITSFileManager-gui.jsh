@@ -17,9 +17,11 @@ var CompletionDialog_doneLeave= 3;
 // These sizes show depend on the screen size and font used
 
 // Tree box for file lists minimum sizes, do not set too large to avoid problem on small screens
+// BEWARE do not set too large to avoid problem on small screens or Linux/Mac, the user can make it larger
+// If too small, the text overwrite the buttons or labels below it
 var TreeboxWindowMinWidth = 700;
-var InputTreeboxMinHeight = 200;
-var TransformTreeBoxMinHeight = 200;
+var InputTreeboxMinHeight = 100;
+var TransformTreeBoxMinHeight = 100;
 
 // Main dialog minimum size, required on Linux to avoid overlap on small window
 // Should be derived from sizes of tree box or autoadjust
@@ -46,6 +48,8 @@ var FitsKeysDialogPreferedWidth = 800;
 // (section bar seems to cause problems with resizing,
 // so does group box, but apparently only on Mac or small screen)
 // ------------------------------------------------------------------------------------------------------------------------
+
+//#define USE_SECTION_BAR
 
 #ifdef USE_SECTION_BAR
 function makeSectionGroup(parent, content, title, initialyCollapsed) {
@@ -97,10 +101,9 @@ function SectionBar( parent, initialyCollapsed ) {
    this.collapsedTitle = "";
    this.expandedTitle = "";
 
-//#ifgteq __PI_BUILD__ 854
-#ifdef NOT_DEFINED
-   var bgColor = Settings.readGlobal( "InterfaceWindow/SectionBarColor", DataType_UInt32 );
-   var fgColor = Settings.readGlobal( "InterfaceWindow/SectionBarTextColor", DataType_UInt32 );
+#ifgteq __PI_BUILD__ 900
+   var bgColor = Settings.readGlobal( "/Global/Preferences/ColorsAndFonts/InterfaceWindow/SectionBarColor", DataType_UInt32 );
+   var fgColor = Settings.readGlobal( "/Global/Preferences/ColorsAndFonts/InterfaceWindow/SectionBarTextColor", DataType_UInt32 );
 #else
    // PJSR access to global settings is broken in PI 1.7
    var bgColor = Color.rgbaColor( 192, 192, 168, 255 );
@@ -308,9 +311,14 @@ function MainDialog(engine, guiParameters) {
 
 
    // -- Actions for input file list ---------------------------------------------------------------------------------------
+   this.actionControl = new Control(this);
+   this.actionControl.sizer = new HorizontalSizer;
+
+   // All buttons are properties of the dialog for easier reference, but they are added to the
+   // "row" Control
 
    // -- Open FITS keyword dialog
-   this.keyButton = new ToolButton( this );
+   this.keyButton = new ToolButton( this.actionControl );
    this.keyButton.icon = new Bitmap( ":/images/icons/text.png" );
    this.keyButton.toolTip = Text.H.KEY_BUTTON_TOOLTIP;
    this.keyButton.onClick = function() {
@@ -323,7 +331,7 @@ function MainDialog(engine, guiParameters) {
 
 
    // --  Add files
-   this.filesAdd_Button = new ToolButton( this );
+   this.filesAdd_Button = new ToolButton( this.actionControl );
    this.filesAdd_Button.icon = new Bitmap( ":/images/image_container/add_files.png" );
    this.filesAdd_Button.toolTip = "Add files";
    this.filesAdd_Button.onClick = function() {
@@ -339,7 +347,7 @@ function MainDialog(engine, guiParameters) {
 
 
    // -- Add Directory
-   this.dirAdd_Button = new ToolButton( this );
+   this.dirAdd_Button = new ToolButton( this.actionControl );
    this.dirAdd_Button.icon = new Bitmap( ":/images/icons/folders.png" );
    this.dirAdd_Button.toolTip =Text.H.DIRADD_BUTTON_TOOLTIP;
    this.dirAdd_Button.onClick = function()
@@ -365,7 +373,7 @@ function MainDialog(engine, guiParameters) {
 
 
    // -- Check selected files
-   this.checkSelected_Button = new ToolButton( this );
+   this.checkSelected_Button = new ToolButton( this.actionControl );
    this.checkSelected_Button.icon = new Bitmap( ":/images/process_explorer/expand_all.png" );
    this.checkSelected_Button.toolTip = Text.H.CHECK_SELECTED_BUTTON_TOOLTIP;
    this.checkSelected_Button.onClick = function() {
@@ -380,7 +388,7 @@ function MainDialog(engine, guiParameters) {
    }
 
    // -- uncheck selected files
-   this.uncheckSelected_Button = new ToolButton( this );
+   this.uncheckSelected_Button = new ToolButton( this.actionControl );
    this.uncheckSelected_Button.icon = new Bitmap( ":/images/process_explorer/collapse_all.png" );
    this.uncheckSelected_Button.toolTip = Text.H.CHECK_UNSELECTED_BUTTON_TOOLTIP;
    this.uncheckSelected_Button.onClick = function() {
@@ -395,7 +403,7 @@ function MainDialog(engine, guiParameters) {
    }
 
    // -- Remove selected files
-   this.remove_files_Button = new ToolButton( this );
+   this.remove_files_Button = new ToolButton( this.actionControl );
    this.remove_files_Button.icon = new Bitmap( ":/images/close.png" );
    this.remove_files_Button.toolTip = Text.H.REMOVE_FILES_BUTTON_TOOLTIP;
    this.remove_files_Button.onClick = function() {
@@ -420,7 +428,7 @@ function MainDialog(engine, guiParameters) {
 
 
    // -- Remove all files
-   this.remove_all_files_Button = new ToolButton( this );
+   this.remove_all_files_Button = new ToolButton( this.actionControl );
    this.remove_all_files_Button.icon = new Bitmap( ":/images/close_all.png" );
    this.remove_all_files_Button.toolTip = Text.H.REMOVE_ALL_FILES_BUTTON_TOOLTIP;
    this.remove_all_files_Button.onClick = function() {
@@ -448,40 +456,39 @@ function MainDialog(engine, guiParameters) {
 
    }
 
-   this.fullPath_CheckBox = new CheckBox(this);
+   this.fullPath_CheckBox = new CheckBox(this.actionControl);
    this.fullPath_CheckBox.state = this.showFullPath ? 1 : 0;
    this.fullPath_CheckBox.onCheck = function(checked) {
       this.dialog.showFullPath = checked;
       this.dialog.rebuildFilesTreeBox();
    }
 
-   this.fullPath_Label = new Label(this);
+   this.fullPath_Label = new Label(this.actionControl);
    this.fullPath_Label.text = "Full path";
    this.fullPath_Label.textAlignment	= TextAlign_Left | TextAlign_VertCenter;
 
    // -- Total file Label ---------------------------------------------------------------------------
-   this.inputSummaryLabel = new Label( this );
+   this.inputSummaryLabel = new Label( this.actionControl );
    this.inputSummaryLabel.textAlignment = TextAlign_Right|TextAlign_VertCenter;
 
    // -- Sizer for Input Files Section
 
-   this.fileButonSizer = new HorizontalSizer;
-   this.fileButonSizer.margin = 6;
-   this.fileButonSizer.spacing = 4;
-   this.fileButonSizer.add( this.keyButton );
-   this.fileButonSizer.addSpacing( 5 );
-   this.fileButonSizer.add( this.filesAdd_Button );
-   this.fileButonSizer.add( this.dirAdd_Button );
-   this.fileButonSizer.add( this.checkSelected_Button );
-   this.fileButonSizer.add( this.uncheckSelected_Button );
-   this.fileButonSizer.addSpacing( 5 );
-   this.fileButonSizer.add( this.remove_files_Button );
-   this.fileButonSizer.add( this.remove_all_files_Button );
-   this.fileButonSizer.add( this.fullPath_CheckBox );
-   this.fileButonSizer.add( this.fullPath_Label );
-   this.fileButonSizer.addSpacing( 3 );
-   this.fileButonSizer.add( this.inputSummaryLabel );
-   this.fileButonSizer.addStretch();
+   this.actionControl.sizer.margin = 6;
+   this.actionControl.sizer.spacing = 4;
+   this.actionControl.sizer.add( this.keyButton );
+   this.actionControl.sizer.addSpacing( 5 );
+   this.actionControl.sizer.add( this.filesAdd_Button );
+   this.actionControl.sizer.add( this.dirAdd_Button );
+   this.actionControl.sizer.add( this.checkSelected_Button );
+   this.actionControl.sizer.add( this.uncheckSelected_Button );
+   this.actionControl.sizer.addSpacing( 5 );
+   this.actionControl.sizer.add( this.remove_files_Button );
+   this.actionControl.sizer.add( this.remove_all_files_Button );
+   this.actionControl.sizer.add( this.fullPath_CheckBox );
+   this.actionControl.sizer.add( this.fullPath_Label );
+   this.actionControl.sizer.addSpacing( 3 );
+   this.actionControl.sizer.add( this.inputSummaryLabel );
+   this.actionControl.sizer.addStretch();
 
 
    this.inputFiles_GroupBox = new GroupBox( this );
@@ -489,7 +496,7 @@ function MainDialog(engine, guiParameters) {
    this.inputFiles_GroupBox.sizer.margin = 4;
    this.inputFiles_GroupBox.sizer.spacing = 2;
    this.inputFiles_GroupBox.sizer.add( this.filesTreeBox,100 );
-   this.inputFiles_GroupBox.sizer.add( this.fileButonSizer );
+   this.inputFiles_GroupBox.sizer.add( this.actionControl );
 
 
 
@@ -903,17 +910,26 @@ function MainDialog(engine, guiParameters) {
       }
    }
 
-   this.outputSummaryLabel = new Label( this );
+   this.outputSummaryControl = new Control( this );
+   this.outputSummaryControl.sizer = new HorizontalSizer;
+   this.outputSummaryControl.sizer.margin = 4;
+
+   // Keep label owned by dialog for easy reference, put in control in an attempt to solve diffirences of behavior on Unix
+   this.outputSummaryLabel = new Label( this.outputSummaryControl );
    this.outputSummaryLabel.textAlignment = TextAlign_Left|TextAlign_VertCenter;
    this.outputSummaryLabel.text = "No operation";
+   this.outputSummaryControl.sizer.addSpacing(4);
+   this.outputSummaryControl.sizer.add(this.outputSummaryLabel);
+   this.outputSummaryControl.sizer.addStretch();
 
    this.outputFiles_GroupBox = new GroupBox( this );
    this.outputFiles_GroupBox.sizer = new VerticalSizer;
    this.outputFiles_GroupBox.sizer.margin = 4;
    this.outputFiles_GroupBox.sizer.spacing = 2;
    this.outputFiles_GroupBox.sizer.add( this.transform_TreeBox, 100);
-   this.outputFiles_GroupBox.sizer.add( this.outputSummaryLabel );
-
+   this.outputFiles_GroupBox.sizer.add( this.outputSummaryControl );
+   //this.outputFiles_GroupBox.adjustToContents();
+   //this.outputSummaryControl.setFixedHeight(20);
 
    this.barResult = makeSectionGroup(this, this.outputFiles_GroupBox, Text.T.RESULT_SECTION_PART_TEXT, false);
    this.barResult.setCollapsedTitle( Text.T.RESULT_SECTION_PART_TEXT + " - None" );
