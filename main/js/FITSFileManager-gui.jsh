@@ -42,6 +42,7 @@ var FitsKeysDialogMinimumWidth = 400;
 var FitsKeysDialogPreferedHeight = 600;
 var FitsKeysDialogPreferedWidth = 800;
 
+var MaxErrorsDisplayed = 20;
 
 // ------------------------------------------------------------------------------------------------------------------------
 // Section Group - support to switch between SectionBar and a group box
@@ -884,6 +885,18 @@ function MainDialog(engine, guiParameters) {
    // -- Operation list and action section
    //----------------------------------------------------------------------------------
 
+   this.showCheckErrors = function (errors) {
+      var errorText;
+      // Limit number of lines
+      if (errors.length>MaxErrorsDisplayed) {
+         errorText = errors.slice(0,MaxErrorsDisplayed-1).join("\n") + "\n and " + (errors.length-MaxErrorsDisplayed) + " other errors...";
+      } else {
+         errorText =errors.join("\n");
+      }
+      var msg = new MessageBox( errorText,
+                  "Check failed", StdIcon_Error, StdButton_Ok );
+      msg.execute();
+   }
 
    // Result operations --------------------------------------------------------------------------------------
    this.transform_TreeBox = new TreeBox( this );
@@ -946,10 +959,8 @@ function MainDialog(engine, guiParameters) {
       var listOfFiles = this.parent.makeListOfCheckedFiles();
       var errors = this.parent.engine.checkValidTargets(listOfFiles);
       if (errors.length > 0) {
-         var msg = new MessageBox( errors.join("\n"),
-                   "Check failed", StdIcon_Error, StdButton_Ok );
-         msg.execute();
-      } else if (this.parent.engine.targetFiles.length === 0) {
+         this.dialog.showCheckErrors(errors);
+       } else if (this.parent.engine.targetFiles.length === 0) {
          var msg = new MessageBox(
             "There is no file to move or copy", "Check irrelevant", StdIcon_Information, StdButton_Ok );
          msg.execute();
@@ -994,9 +1005,7 @@ function MainDialog(engine, guiParameters) {
       var listOfFiles = this.parent.makeListOfCheckedFiles();
       var errors = this.parent.engine.checkValidTargets(listOfFiles);
       if (errors.length > 0) {
-         var msg = new MessageBox( errors.join("\n"),
-                   "Check failed", StdIcon_Error, StdButton_Ok );
-         msg.execute();
+         this.dialog.showCheckErrors(errors);
          return;
       }
       try {
@@ -1033,10 +1042,8 @@ function MainDialog(engine, guiParameters) {
       var listOfFiles = this.parent.makeListOfCheckedFiles();
       var errors = this.parent.engine.checkValidTargets(listOfFiles);
       if (errors.length > 0) {
-            var msg = new MessageBox( errors.join("\n"),
-                   "Check failed", StdIcon_Error, StdButton_Ok );
-            msg.execute();
-            return;
+         this.dialog.showCheckErrors(errors);
+         return;
       }
       try {
          console.show();
@@ -1084,10 +1091,8 @@ function MainDialog(engine, guiParameters) {
       var listOfFiles = this.parent.makeListOfCheckedFiles();
       var errors = this.parent.engine.checkValidTargets(listOfFiles);
       if (errors.length > 0) {
-            var msg = new MessageBox( errors.join("\n"),
-                   "Check failed", StdIcon_Error, StdButton_Ok );
-            msg.execute();
-            return;
+         this.dialog.showCheckErrors(errors);
+         return;
       }
       try {
          console.show();

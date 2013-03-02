@@ -545,8 +545,20 @@ var ffM_variables = (function() {
                return null;
             } else {
                if (ruleParameters.abs) { valueF = Math.abs(valueF);}
-               return format(ruleParameters.format, Math.round( valueF));
-            }
+               var roundedValueF = Math.round(valueF);
+               // Work around a PJSR bug in 1.8RC4test
+               if (roundedValueF === -0) {
+                  roundedValueF = 0;
+               }
+               try {
+                  return format(ruleParameters.format, Math.round( valueF));
+               } catch (e) {
+                  // TODO Find better way to communicate error to caller
+                  Console.writeln("Error formatting '" + ruleParameters.format +
+                  "' with parameters '" + roundedValueF + "': " + e);
+                  return null;
+               }
+             }
          }
       )
    }
@@ -567,7 +579,14 @@ var ffM_variables = (function() {
                } else if (ruleParameters.case === 'DOWN') {
                   cleanedValue = cleanedValue.toLowerCase();
                }
-               return format(ruleParameters.format, cleanedValue);
+               try {
+                  return format(ruleParameters.format, cleanedValue);
+               } catch (e) {
+                  // TODO Find better way to communicate error to caller
+                  Console.writeln("Error formatting '" + ruleParameters.format +
+                  "' with parameters '" + cleanedValue + "': " + e);
+                  return null;
+               }
             }
          }
       )
@@ -587,7 +606,23 @@ var ffM_variables = (function() {
             if (isNaN(valueF1) || isNaN(valueF2)) {
                return null;
             } else {
-               return format(ruleParameters.format, Math.round( valueF1), Math.round( valueF2));
+               try {
+                  var roundedValueF1 =  Math.round( valueF1);
+                  var roundedValueF2 =  Math.round( valueF2);
+                  // Work around a PJSR bug in 1.8RC4test
+                  if (roundedValueF1 === -0) {
+                     roundedValueF1 = 0;
+                  }
+                  if (roundedValueF2 === -0) {
+                     roundedValueF2 = 0;
+                  }
+                  return format(ruleParameters.format, roundedValueF1, roundedValueF2);
+               } catch (e) {
+                  // TODO Find better way to communicate error to caller
+                  Console.writeln("Error formatting '" + ruleParameters.format +
+                  "' with parameters '" + roundedValueF1 + "', '" + roundedValueF1 + "': " + e);
+                  return null;
+               }
             }
          }
       )
