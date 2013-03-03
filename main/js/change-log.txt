@@ -13,7 +13,7 @@ FITSFileManager Script Changelog
  - Log and recover i ncase of error of formatting
  - Force Matd.round to produce integer for Format
  - Added wait cursor for long file operations
- - Made somw indow smaller to better behavior in small screen and Linux
+ - Made some window smaller to better behavior in small screen and Linux
 
 -------------------------------------------------------------------------------
 2013.02.06 - v1.0

@@ -18,7 +18,7 @@
 //#define DEBUG_FITS
 
 
-#define VERSION "1.0-tests"
+#define VERSION "1.1-tests"
 
 // Unit testing, refrain to include other files
 #include "../../main/js/FITSFileManager-fits.jsh"

@@ -11,12 +11,11 @@
 #define DEBUG true
 
 
-#define VERSION "1.0-tests"
+#define VERSION "1.1-tests"
 
 #include "../../main/js/PJSR-logging.jsh"
 
 #include "../../main/js/FITSFileManager-helpers.jsh"
-#include "../../main/js/FITSFileManager-json.jsh"
 #include "../../main/js/FITSFileManager-engine.jsh"
 #include "../../main/js/FITSFileManager-parameters.jsh"
 #include "../../main/js/FITSFileManager-gui.jsh"
