@@ -88,6 +88,9 @@
 
 // Prepare for future developments
 
+// BUG: 'T' is not considered boolean (change in FITSKeyword), maybe do workaround
+//      When clickin on outfile file, the right input file is not selected if some files where not selected
+//      Review layout in Unix and Mac
 // TODO
 // Make cleaning of FITS keyword values used in file name configurable
 // Support optional reformatting of file name as valid PI identifier
@@ -109,7 +112,6 @@
 // Make creation of HISTORY/ORIGFILE keyword optional, make name of ORIGFILE key configurable
 // Support date formatting
 // Allow choice of 'cleaned up' strings (make optiona lremove of special chraracters)
-
 // See http://heasarc.gsfc.nasa.gov/docs/software/ftools/fitsverify/
 
 

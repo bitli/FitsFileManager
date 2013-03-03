@@ -25,7 +25,8 @@ function FFM_Engine(guiParameters) {
 
    // Variables that can be reset (when doing clear all)
    this.reset = function() {
-      // Cache of file information. 3 parallel array. The order of the elements is usually NOT the same as shown in the GUI
+      // Cache of file information. 3 parallel array. The order of the elements is usually NOT the same as
+      // shown in the GUI input box or tree box, as the input box is sorted on a field
       this.inputFiles = []; // Array of the full path of the input files
       this.inputFITSKeywords = [];  // Array of 'imageKeywords' for the corresponding input file
       this.inputVariables = [];  // Array of Map of stable synthethic variables for the corresponding input file
@@ -41,8 +42,10 @@ function FFM_Engine(guiParameters) {
       // Target files is a subset of the inputFiles, each file is defined by an index
       // in input file and the corresponding new file name. Unchecked files are not
       // present in the list (the values are undefined).
-      // The targetFilesIndices is in the order of the TreeBox and contain the index  of the corresponding
-      // target file in the inputFiles array (note that not all inputFiles have a corresponging targetFile)
+      // The array includes only the selected files in the order of the TreeBox (which is not the same
+      // as the order of the 'inputFiles' array usually)
+      // The targetFilesIndices contains the index of the corresponding target file in the inputFiles
+      // array (note that not all inputFiles have a corresponging targetFile)
       // The targetFiles and errorPerFile are in the order of the inputFiles.
       // The targetFiles contains the file name without the base directory (common to all files) or null in case of error.
       // The errorPerFile contains the errors String or null if no error,
@@ -159,6 +162,29 @@ function FFM_Engine(guiParameters) {
       this.inputFITSKeywords.splice(index,1);
       this.inputVariables.splice(index,1);
    }
+
+
+   // -----------------------------------------------------------------------------------------------------
+   // ---  Lookup the index of each file in inputFiles (used to find the index of all files
+   //      in the input TreeBox and save them, to detect change of ordering)
+   this.lookupFileIndex = function(listOfFiles) {
+   // -----------------------------------------------------------------------------------------------------
+      var fileIndices = [];
+      for (var i = 0; i < listOfFiles.length; ++i) {
+         var aFile = listOfFiles[i];
+
+         var aFileIndex = this.inputFiles.indexOf(aFile);
+         if (aFileIndex < 0) {
+               throw ("SCRIPT ERROR : lookupFileIndex: file not in inputFiles: " + aFile + " (" + i + ")");
+         }
+#ifdef DEBUG
+         debug("lookupFileIndex: " + i + ": file[" + aFileIndex + "] = " + aFile);
+#endif
+         fileIndices.push(aFileIndex);
+      }
+      return fileIndices;
+   }
+
 
 
    // -----------------------------------------------------------------------------------------------------
@@ -349,6 +375,7 @@ function FFM_Engine(guiParameters) {
                }
             }
 
+            //Console.writeln("** buildTargetFiles " + inputOrderIndex + " " + inputFileIndex + " "  + " " + targetString);
             this.targetFilesIndices.push(inputFileIndex);
             if (expansionErrors.length>0) {
                this.targetFiles.push(null);
@@ -367,25 +394,11 @@ function FFM_Engine(guiParameters) {
     }
 
 
-
     // --- Check that the operations can be executed for a list of files ------------------------------
+    //     This assumes that the files are still in the same order and when they were created
     this.checkValidTargets = function(listOfFiles) {
 
       var errors = [];
-
-      // Check if files are still in the same order, otherwise the &count; may have changed
-      for (var i = 0; i < listOfFiles.length; ++i) {
-         var inputFile = listOfFiles[i];
-         var inputFileIndex = this.inputFiles.indexOf(inputFile);
-         if (inputFileIndex < 0) {
-            throw ("SCRIPT ERROR : check: file not in inputFiles: " + inputFile + " (" + i + ")");
-         }
-         if (this.targetFilesIndices.length<i ||
-            this.targetFilesIndices[i] !== inputFileIndex) {
-            // Sort order changed
-            return ["The order of some column changed since last refresh, please refresh"];
-         }
-      }
 
       for (var i = 0; i < listOfFiles.length; ++i) {
          var inputFile = listOfFiles[i];
@@ -440,19 +453,32 @@ function FFM_Engine(guiParameters) {
 
 
     // -- Make List of text accumulating the transformation rules for display --------------
-   this.makeListsOfTransforms = function() {
+   this.makeListsOfTransforms = function(listOfCheckedFiles, listOfCheckedFilesIndex) {
       var listsOfTransforms = {
          inputFileIndices: [],
          inputFiles: [],
          targetFiles: [],
          errorMessages: [],
       }
-      for (var i = 0; i<this.targetFiles.length; i++) {
+
+     this.buildTargetFiles(listOfCheckedFiles);
+
+     // There must be a file in targetFiles for each file in listOfCheckedFiles,
+     // Similarly for each index in listOfCheckedFilesIndex
+     //for (var i = 0; i<this.targetFiles.length; i++) {
+     //    Console.writeln("** makeListsOfTransforms " + listOfCheckedFiles[i] + ", " + listOfCheckedFilesIndex[i] +
+     //       ", " + this.targetFiles[i]);
+     //}
+
+     for (var i = 0; i<this.targetFiles.length; i++) {
+         //var index = listOfCheckedFilesIndex[i];
          var index = this.targetFilesIndices[i];
          var inputFile = this.inputFiles[index];
          var targetFile = this.targetFiles[i];
          var errorList = this.errorPerFile[i];
-         listsOfTransforms.inputFileIndices.push(i); // We want the index in the inputBox
+         //Console.writeln("** makeListsOfTransforms " + i + " " + index + " " + inputFile + " " + targetFile);
+         // We want the index in the input TreeBox, not in the list of targets or inputList, to skip non checked files
+         listsOfTransforms.inputFileIndices.push(listOfCheckedFilesIndex[i]);
          listsOfTransforms.inputFiles.push(inputFile);
          if (targetFile) {
             listsOfTransforms.targetFiles.push(targetFile);

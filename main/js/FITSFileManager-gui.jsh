@@ -925,10 +925,16 @@ function MainDialog(engine, guiParameters) {
    // Select the corresponding source file when the target file is selected
    // Note that the source files may not all be in the list, so
    // a lookup is required.
+   // This events occurs when the user clicked on a resulting operation line
    this.transform_TreeBox.onCurrentNodeUpdated = function(newCurrentNode) {
+      // First make sure that order is still valid, otherwise we would select the wrong file.
+      if (!this.dialog.checkInputFileIndices()) {
+         this.dialog.showCheckErrors(["The order of some column changed since last refresh, please refresh"]);
+         return;
+      }
+      // Find corresponding node in input list
       if (newCurrentNode !== null) {
-//         var index = this.childIndex(newCurrentNode);
-//         index = Math.floor(index / 2 );
+         // The index in the input file was calculated when the file was added to the transformation list
          var index = newCurrentNode.inputFileIndex;
          this.dialog.filesTreeBox.currentNode = this.dialog.filesTreeBox.child(index);
       }
@@ -967,6 +973,12 @@ function MainDialog(engine, guiParameters) {
    this.check_Button.toolTip = Text.H.CHECK_BUTTON_TOOLTIP;
    this.check_Button.enabled = true;
    this.check_Button.onClick = function() {
+      // TODO Refactor with other actions
+      if (!this.parent.checkInputFileIndices()) {
+         this.dialog.showCheckErrors(["The order of some column changed since last refresh, please refresh"]);
+         return;
+      }
+
       var listOfFiles = this.parent.makeListOfCheckedFiles();
       var errors = this.parent.engine.checkValidTargets(listOfFiles);
       if (errors.length > 0) {
@@ -1013,6 +1025,11 @@ function MainDialog(engine, guiParameters) {
    this.move_Button.toolTip = Text.H.MOVE_BUTTON_TOOLTIP;
    this.move_Button.enabled = false;
    this.move_Button.onClick = function() {
+      // TODO Refactor with other actions
+      if (!this.parent.checkInputFileIndices()) {
+         this.dialog.showCheckErrors(["The order of some column changed since last refresh, please refresh"]);
+         return;
+      }
       var listOfFiles = this.parent.makeListOfCheckedFiles();
       var errors = this.parent.engine.checkValidTargets(listOfFiles);
       if (errors.length > 0) {
@@ -1050,6 +1067,11 @@ function MainDialog(engine, guiParameters) {
    this.copy_Button.toolTip = Text.H.COPY_BUTTON_TOOLTIP;
    this.copy_Button.enabled = false;
    this.copy_Button.onClick = function() {
+      // TODO Refactor with other actions
+      if (!this.parent.checkInputFileIndices()) {
+         this.dialog.showCheckErrors(["The order of some column changed since last refresh, please refresh"]);
+         return;
+      }
       var listOfFiles = this.parent.makeListOfCheckedFiles();
       var errors = this.parent.engine.checkValidTargets(listOfFiles);
       if (errors.length > 0) {
@@ -1099,6 +1121,11 @@ function MainDialog(engine, guiParameters) {
    this.loadSave_Button.toolTip = Text.H.LOADSAVE_BUTTON_TOOLTIP;
    this.loadSave_Button.enabled = false;
    this.loadSave_Button.onClick = function() {
+      // TODO Refactor with other actions
+      if (!this.parent.checkInputFileIndices()) {
+         this.dialog.showCheckErrors(["The order of some column changed since last refresh, please refresh"]);
+         return;
+      }
       var listOfFiles = this.parent.makeListOfCheckedFiles();
       var errors = this.parent.engine.checkValidTargets(listOfFiles);
       if (errors.length > 0) {
@@ -1435,21 +1462,51 @@ function MainDialog(engine, guiParameters) {
    }
 
 
-   // -- Return an array of the files that with chekd box ticked
+   // -- Return an array of the files that have the check box ticked, in the order of the input TreeBox
+   //    See also refreshTargetFiles
    this.makeListOfCheckedFiles = function() {
       var listOfFiles = [];
 
       for (var iTreeBox = 0; iTreeBox < this.filesTreeBox.numberOfChildren; ++iTreeBox) {
 
          if ( this.filesTreeBox.child(iTreeBox).checked ) {
-            // Select name in tree box, find corresponding file in inputFiles
-//            var nameInTreeBox = this.filesTreeBox.child(iTreeBox).text(0);
+            // Select name in tree box (from a field, as the text itself may have been modified
+            // for display purpose), find corresponding file in inputFiles
             var nameInTreeBox = this.filesTreeBox.child(iTreeBox).fullFileName;
             listOfFiles.push(nameInTreeBox);
          }
       }
-
       return listOfFiles;
+   }
+
+   // -- Make a list of all files in the input TreeBox
+   this.makeListOfInputFiles = function() {
+      var listOfFiles = [];
+
+      for (var iTreeBox = 0; iTreeBox < this.filesTreeBox.numberOfChildren; ++iTreeBox) {
+         var nameInTreeBox = this.filesTreeBox.child(iTreeBox).fullFileName;
+         listOfFiles.push(nameInTreeBox);
+      }
+      return listOfFiles;
+   }
+
+   // -- Mark each input node with its current index in the input TreeBox
+   this.markInputFileIndices = function() {
+      var listOfInputFiles = this.makeListOfInputFiles();
+      for (var iTreeBox = 0; iTreeBox < this.filesTreeBox.numberOfChildren; ++iTreeBox) {
+         this.filesTreeBox.child(iTreeBox).treeBoxIndex = iTreeBox;
+      }
+   }
+
+   // -- Check that tree box are still in the same order as during the mark
+   this.checkInputFileIndices = function() {
+      var listOfInputFiles = this.makeListOfInputFiles();
+      for (var iTreeBox = 0; iTreeBox < this.filesTreeBox.numberOfChildren; ++iTreeBox) {
+         if (this.filesTreeBox.child(iTreeBox).treeBoxIndex !== iTreeBox) {
+            return false;
+         }
+      }
+      return true;
    }
 
 
@@ -1460,20 +1517,34 @@ function MainDialog(engine, guiParameters) {
       debug("refreshTargetFiles() called");
 #endif
 
-      var listOfFiles = this.makeListOfCheckedFiles();
+      this.markInputFileIndices();
 
-      this.engine.buildTargetFiles(listOfFiles);
+      // See also makeListOfCheckedFiles
+      // Make a list of the checked files, with a parallel list of their indices in the source TreeBox
+      var listOfCheckedFiles = [];
+      var listOfCheckedFilesIndex = [];
+
+      for (var iTreeBox = 0; iTreeBox < this.filesTreeBox.numberOfChildren; ++iTreeBox) {
+
+         if ( this.filesTreeBox.child(iTreeBox).checked ) {
+            // Select name in tree box (from a field, as the text itself may have been modified
+            // for display purpose), find corresponding file in inputFiles
+            var nameInTreeBox = this.filesTreeBox.child(iTreeBox).fullFileName;
+            listOfCheckedFiles.push(nameInTreeBox);
+            listOfCheckedFilesIndex.push(iTreeBox);
+         }
+      }
 
 
       // List of text accumulating the transformation rules for display
-      var listsOfTransforms = this.engine.makeListsOfTransforms();
+      var listsOfTransforms = this.engine.makeListsOfTransforms(listOfCheckedFiles, listOfCheckedFilesIndex);
 
       this.transform_TreeBox.clear();
       var firstNode = null;
       for (var i=0; i<listsOfTransforms.inputFiles.length; i++) {
          var inputFile = listsOfTransforms.inputFiles[i];
          var inputFileIndex =  listsOfTransforms.inputFileIndices[i];
-         //Console.writeln(i + " " + inputFileIndex + " " + inputFile);
+         //Console.writeln("** refreshTargetFiles " + i + " " + inputFileIndex + " " + inputFile);
          var targetFile =  listsOfTransforms.targetFiles[i];
          var errorMessage = listsOfTransforms.errorMessages[i];
 
