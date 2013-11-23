@@ -11,7 +11,7 @@
 #define DEBUG true
 
 
-#define VERSION "1.1-tests"
+#define VERSION "1.2-tests"
 
 #include "../../main/js/PJSR-logging.jsh"
 

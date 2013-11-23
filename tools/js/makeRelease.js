@@ -3,11 +3,13 @@
 // makeRelease
 
 // Script to consolidate all scripts of one project and setup version,
-// to make a single file easier for distribution
+// to make a single file easier for distribution.
+
+// Adapt VERSION below and execute the script, check output on the console.
 
 #include <pjsr/DataType.jsh>
 
-#define VERSION "1.1"
+#define VERSION "1.2"
 #define ROOT_FILE_NAME "FITSFileManager.js"
 #define ROOT_FILE_DIR "../../main/js"
 #define TARGET_FILE_DIR "../../../releases"
