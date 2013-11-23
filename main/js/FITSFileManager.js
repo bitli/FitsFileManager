@@ -55,7 +55,7 @@
 // Thanks to Nikolay for sharing the original FITSKey
 
 // NOTE : The parameters have their own version number in FITSFileManger-parameters.jsh
-#define VERSION   "1.1"
+#define VERSION   "1.2"
 #define TITLE     "FITSFileManager"
 
 // --- Debugging control ----------------

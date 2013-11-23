@@ -320,7 +320,7 @@ function MainDialog(engine, guiParameters) {
 
    // -- Open FITS keyword dialog
    this.keyButton = new ToolButton( this.actionControl );
-   this.keyButton.icon = new Bitmap( ":/images/icons/text.png" );
+   this.keyButton.icon = ":/icons/document-text.png" ;
    this.keyButton.toolTip = Text.H.KEY_BUTTON_TOOLTIP;
    this.keyButton.onClick = function() {
    if (this.dialog.engine.keywordsSet.size()) {
@@ -333,8 +333,8 @@ function MainDialog(engine, guiParameters) {
 
    // --  Add files
    this.filesAdd_Button = new ToolButton( this.actionControl );
-   this.filesAdd_Button.icon = new Bitmap( ":/images/image_container/add_files.png" );
-   this.filesAdd_Button.toolTip = "Add files";
+   this.filesAdd_Button.icon = new Bitmap( ":/image-container/add-item.png" );
+   this.filesAdd_Button.toolTip = "Add file(s)";
    this.filesAdd_Button.onClick = function() {
          var ofd = new OpenFileDialog;
          ofd.multipleSelections = true;
@@ -349,7 +349,7 @@ function MainDialog(engine, guiParameters) {
 
    // -- Add Directory
    this.dirAdd_Button = new ToolButton( this.actionControl );
-   this.dirAdd_Button.icon = new Bitmap( ":/images/icons/folders.png" );
+   this.dirAdd_Button.icon = ":/image-container/add-files.png";
    this.dirAdd_Button.toolTip =Text.H.DIRADD_BUTTON_TOOLTIP;
    this.dirAdd_Button.onClick = function()
       {
@@ -375,7 +375,7 @@ function MainDialog(engine, guiParameters) {
 
    // -- Check selected files
    this.checkSelected_Button = new ToolButton( this.actionControl );
-   this.checkSelected_Button.icon = new Bitmap( ":/images/process_explorer/expand_all.png" );
+   this.checkSelected_Button.icon = ":/browser/expand.png" ;
    this.checkSelected_Button.toolTip = Text.H.CHECK_SELECTED_BUTTON_TOOLTIP;
    this.checkSelected_Button.onClick = function() {
 #ifdef DEBUG
@@ -390,7 +390,7 @@ function MainDialog(engine, guiParameters) {
 
    // -- uncheck selected files
    this.uncheckSelected_Button = new ToolButton( this.actionControl );
-   this.uncheckSelected_Button.icon = new Bitmap( ":/images/process_explorer/collapse_all.png" );
+   this.uncheckSelected_Button.icon = ":/browser/collapse.png";
    this.uncheckSelected_Button.toolTip = Text.H.CHECK_UNSELECTED_BUTTON_TOOLTIP;
    this.uncheckSelected_Button.onClick = function() {
 #ifdef DEBUG
@@ -405,7 +405,7 @@ function MainDialog(engine, guiParameters) {
 
    // -- Remove selected files
    this.remove_files_Button = new ToolButton( this.actionControl );
-   this.remove_files_Button.icon = new Bitmap( ":/images/close.png" );
+   this.remove_files_Button.icon = ":/toolbar/file-close.png";
    this.remove_files_Button.toolTip = Text.H.REMOVE_FILES_BUTTON_TOOLTIP;
    this.remove_files_Button.onClick = function() {
 #ifdef DEBUG
@@ -430,7 +430,7 @@ function MainDialog(engine, guiParameters) {
 
    // -- Remove all files
    this.remove_all_files_Button = new ToolButton( this.actionControl );
-   this.remove_all_files_Button.icon = new Bitmap( ":/images/close_all.png" );
+   this.remove_all_files_Button.icon = ":/toolbar/file-close-all.png";
    this.remove_all_files_Button.toolTip = Text.H.REMOVE_ALL_FILES_BUTTON_TOOLTIP;
    this.remove_all_files_Button.onClick = function() {
 #ifdef DEBUG
@@ -864,7 +864,7 @@ function MainDialog(engine, guiParameters) {
    this.outputDir_Edit.toolTip = Text.H.OUTPUTDIR_TOOLTIP;
 
    this.outputDirSelect_Button = new ToolButton( this );
-   this.outputDirSelect_Button.icon = new Bitmap( ":/images/icons/select.png" );
+   this.outputDirSelect_Button.icon = ":/browser/select-file.png";
    this.outputDirSelect_Button.toolTip = Text.H.OUTPUTDIR_SELECT_TOOLTIP;
    this.outputDirSelect_Button.onClick = function() {
       var gdd = new GetDirectoryDialog;
@@ -1196,7 +1196,7 @@ function MainDialog(engine, guiParameters) {
 
    // Help buton
    this.helpButton = new ToolButton( this );
-   this.helpButton.icon = new Bitmap( ":/images/interface/browseDocumentationButton.png" );
+   this.helpButton.icon = ":/process-interface/browse-documentation.png";
    this.helpButton.toolTip = Text.H.HELP_BUTTON_TOOLTIP;
    this.helpDialog = new HelpDialog(this);
    this.helpButton.onClick = function() {

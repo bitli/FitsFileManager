@@ -230,22 +230,22 @@ var ffM_GUI_support = (function (){
 
      var buttons = [
         {
-           icon: ":/images/interface/prevButton.png",
+           icon: ":/browser/move-up.png",
            toolTip: "Move item up",
            action: upAction
            },
         {
-           icon: ":/images/interface/nextButton.png",
+           icon: ":/browser/move-down.png",
            toolTip:  "Move item down",
            action: downAction
         },
         {
-           icon: ":/images/icons/add.png",
+           icon: ":/icons/add.png",
            toolTip:  "Add new item",
            action: addAction
         },
         {
-           icon: ":/images/icons/cancel.png",
+           icon: ":/icons/remove.png",
            toolTip:  "Delete item",
            action: deleteAction
         },
@@ -1247,7 +1247,7 @@ var ffM_GUI_config = (function (){
 
       this.addConfigurationButton = new ToolButton( this.nameRow );
       this.nameRow.sizer.add(this.addConfigurationButton);
-      this.addConfigurationButton.icon = new Bitmap( ":/images/icons/copy.png" );
+      this.addConfigurationButton.icon = ":/file-explorer/copy.png" ;
       this.addConfigurationButton.toolTip = "Add a configuration (duplicate current one)";
       this.addConfigurationButton.onClick = function() {
          configurationDuplicateCallback(that.currentConfigurationName);
@@ -1255,7 +1255,7 @@ var ffM_GUI_config = (function (){
 
       this.removeConfigurationButton = new ToolButton( this.nameRow );
       this.nameRow.sizer.add(this.removeConfigurationButton);
-      this.removeConfigurationButton.icon = new Bitmap( ":/images/icons/cancel.png" );
+      this.removeConfigurationButton.icon = ":/file-explorer/delete.png" ;
       this.removeConfigurationButton.toolTip = "Delete the current configuration";
       this.removeConfigurationButton.onClick = function() {
          var msg = new MessageBox( "Do you want to delete the configuration '" +that.currentConfigurationName + "' ?",
