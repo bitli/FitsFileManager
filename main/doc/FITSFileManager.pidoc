@@ -1,0 +1,112 @@
+\documentclass PIScriptDoc
+
+\script {
+   FITSFileManager
+}
+
+\keywords {
+   documentation, reference documentation. PIDoc
+}
+
+\author {
+   Jean-Marc Lugrin, PI user
+}
+
+\copyright {
+   2014, Jean-Marc Lugrin
+}
+
+\brief {
+   This script executes a process icon while changing a parameter value. Each execution will create one or more new images with a unique identifier. The images may be saved to a file or a preview of the target image.
+}
+
+\description {
+
+   % \center \image FITSFileManagerWindow.png
+
+   FITSFileManager allows you to copy or move FITS image files to new locations, generating the new location path from a template with the replacement of variables with values extracted from FITS keys and other information.
+
+   You select the files to move/copy (files can be individually checked or un-checked) and select a predefined template or enter a new template to generate the target path using variables to substitute values  based on the source image file name, FITS keywords or synthethic variables.  Various other parameters can be adapted to fine tune the path generation.  The list of transformation is updated as you type templates and other parameters. The synthetic variables are defined in a 'configuration' that you may edit.
+   }
+
+
+\usage {
+
+   \subsection { Variables } {
+      The variables have the general form \c { '&name:present?missing;' }, although most of the time they have simply the form \c { '&name;' }. The 'name' identifies the variable, it may be a FITS key or a synthetic variable name.
+\list {
+      { The optional 'present' part is the string that will be used as the replacement value if the variable has a value. Usually \c { :present } is not specified and the value of the variable is used as the replacement string. You can also  have an empty 'present' value (as \c { '&TELESCOP:;' }), in which case the variable is checked for presence (an error is generated if the variable is missing) but its value does not contribute to the target path. }
+      { The optional '?missing' part is used if the variable is not present in the file (for example \c { '&OBJECT?unknown;'}).  You can also have an empty 'missing' value (like \c { '&binning?;'}) in which case there is no error if the variable   has no value. }
+      { The synthetic variables are described in the section 'target template' below. They are built from the FITS keywords (following rules specified in a 'configuration') from the number of the file being processed or from the a regular expression applied to the file name. }
+   }
+   The source file regular expression can be used, for example, to extract the part of the file name  before the first dash and use it as a prefix for all files.
+
+   The files are processed in the order they appear in the table, the variable \c { '&rank;'} provides the image number to help generating a unique file file. In addition a 'group' string can be generated using from the 'group' template. A \c { '&count;'} variable is increased for each different group (for example each target directory if the group template contained the target directory). The values are cleaned up of special characters, so that they form legal file names.
+   }
+
+   \subsection { Target template } { Define how the target file path will be generated. The text of this field is used as the output path, except that the variables are replaced by their value according to the current 'configuration'  The variables include the FITS keywords and the synthetic variables defined in the configuration. A typical configuration contains the following keywords (your actual configuration may be different):
+
+      \definition {
+         {\c{&binning;} } { Binning from XBINNING and YBINNING as integers, like 2x2. }
+         {\c{&exposure;} } { The exposure from EXPOSURE, but as an integer (assume seconds). }
+         {\c{&extension;} } { The extension of the source file (with the dot.), will use input extension if not specified }
+         {\c{&filename;} } { The file name part of the source file. }
+         {\c{&filter;} } { The filter name from FILTER as lower case trimmed normalized name. }
+         {\c{&night;} } { An integer identifying the night, requires JD and LONG-OBS - EXPERIMENTAL. }
+         {\c{&temp;} } { The SET-TEMP temperature in C as an integer. }
+         {\c{&type;} } { The IMAGETYP normalized to 'flat', 'bias', 'dark', 'light'. }
+         {\c{&0; &1;, ...}  } { The corresponding match from the source file name regular expression field. }
+      }
+
+      The following keywords are dynamic (their values depends on the file order) and are always present:
+
+      \definition {
+         {\c{&count;} } { The number of the file being moved/copied int the current group. }
+         {\c{&rank;} } { The number of the file in the order of the input file list. }
+      }
+   You can enter the template or select one of the predefined one and optionaly modify it.
+
+   Example of template: \code { &1;_&binning;_&temp;C_&type;_&exposure;s_&filter;_&count;&extension; }
+   }
+
+    \subsection { Source filename reg exp } { Defines a regular expression (without the surrounding slashes) that will be applied to all file names, without the extension. The 'match' array resulting from the regular expression matching can be used in the target file name template as numbered variables. '&0;' represent the whole matched expression, '&&1' the first group, and so on. In case of error the field turns red.
+You can enter the regexp or select one of the predefined one and optionally modify it.
+
+   See https:\/\/developer.mozilla.org\/en-US\/docs\/JavaScript\/Guide\/Regular_Expressions for more informations on regular expresssions.
+
+   Example of regular expression: \code {(\[^-_.\]+)(?:\[._-\]|$) } }
+
+   \subsection { Group template}  { Defines the template to generate a group name used by the synthetic variable '&count;'. Each FITS image generate a group name exactly as it generates a path, but using the group template.  A count of image will be kept for each different group name and can be used as the variable '&count;' in the target path template. All variables can be used in the group template, except &count;. In addition you can use the following variable:
+
+      \definition {
+         {\c{&targetDir;}}{The directory part of the target file name.
+         % BIZARE
+      Leave blank or use a fixed name to have a single global counter.
+         }
+      }
+      Example of group templates:
+      \definition {
+      {\c{'&targetDir;'}}{counts images in each target directory. }
+      {\c{'&filter;'}}{counts the images separetely for each filter (independently of the target directory).}
+      }
+
+      You can enter the template or select one of the predefined one and optionaly modify it.
+
+      Example of group definition: \code { &targetdir; }
+   }
+
+   \subsection { Configuration of mappings} {  The configuration defines how the synthetic variables are created, for example the FITS key to use, the format of the value, specific operations like changing case or renaming filter names. FITSFileManager keeps track of multiple configurations, only one at a time may be active. Currently the list of configuration is fixed (this will be made more dynamic in the future). It is expected that most users could use the default configuration, or may be the default with some simple adjustments. It is also possible to have a set of configuration for different image type, but currently you must still change the configuration or the template between image types.  Some cofiguration options may require more advanced understanding of regular expressions and the FITS key words.
+
+   Click on the Manage configurations... button to change or edit the configuration.
+   }
+
+   \subsection { Operations} { The operations Copy/Move copy or move the files directly, without adding any FITS keywords.  The operation Load/SaveAs loads each image temporarily in the workspace and save it to the new location. An ORIGFILE keyword with the original file name is added if it is not already present.
+
+   The operation buttons may be disabled if the operation is not possible (for example if the output directory is not specified). }
+
+}
+
+
+\make[noauthors]
+
+
