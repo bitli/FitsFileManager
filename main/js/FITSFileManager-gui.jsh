@@ -847,11 +847,198 @@ function MainDialog(engine, guiParameters) {
    this.rules_GroupBox.adjustToContents();
    this.rules_GroupBox.setFixedHeight();
 
-   this.barRules = makeSectionGroup(this, this.rules_GroupBox,"Rules",false);
+   this.barRules = makeSectionGroup(this, this.rules_GroupBox,"Renaming rules",false);
+
+#ifdef FITSKES
+   //----------------------------------------------------------------------------------
+   // -- FITS keyword operations section
+   //----------------------------------------------------------------------------------
+
+   this.fits_GroupBox = new GroupBox( this );
+
+   this.fits_GroupBox.sizer = new VerticalSizer;
+   this.fits_GroupBox.sizer.margin = 4;
+   this.fits_GroupBox.sizer.spacing = 2;
+
+ /*  this.fits_GroupBox.sizer.add( this.configurationSelection_sizer );
+   this.fits_GroupBox.sizer.add( this.targetFileTemplate_Edit_sizer, 100);
+   this.fits_GroupBox.sizer.add( this.regexp_ComboBox_sizer );
+   this.fits_GroupBox.sizer.add( this.groupTemplate_ComboBox_sizer );
+*/
+
+   this.fits_TreeBox = new TreeBox(this);
+   this.fits_GroupBox.sizer.add(this.fits_TreeBox);
+
+   this.fits_TreeBox.rootDecoration = false;
+   this.fits_TreeBox.numberOfColumns = 4;
+   this.fits_TreeBox.multipleSelection = false;
+   this.fits_TreeBox.headerVisible = true;
+   this.fits_TreeBox.headerSorting = false;
+
+   //this.fits_TreeBox.sort(0,sorted); // DO NOT SEEMS TO WORK
+
+   this.fits_TreeBox.style = Frame.FrameStyleSunken;
+
+   this.fits_TreeBox.toolTip = "TBD";
+
+   this.fits_TreeBox.setHeaderText(0, "operation");
+   this.fits_TreeBox.setHeaderText(1, "keyword");
+   this.fits_TreeBox.setHeaderText(2, "type");
+   this.fits_TreeBox.setHeaderText(3, "value");
+   this.fits_TreeBox.setHeaderText(4, "comment");
+   this.fits_TreeBox.setColumnWidth(0,50);
+   this.fits_TreeBox.setColumnWidth(1,150);
+   this.fits_TreeBox.setColumnWidth(2,50);
+   this.fits_TreeBox.setColumnWidth(3,300);
+   this.fits_TreeBox.setColumnWidth(3,600);
+
+
+   var listModel = new Array;
+   var elementFactory = function elementFactory() {
+         return "";
+   }
+    // Create a node based on the model described in modelDescription
+   var makeNode = function(treeBox, nodeModel, index) {
+      //Log.debug('ManagedList_Box: makeNode -',Log.pp(nodeModel),Log.pp(modelDescription));
+      var node = new TreeBoxNode( treeBox, index);
+      /*for (var i=0; i<modelDescription.length;i++){
+         node.setText(i, nodeModel[modelDescription[i].propertyName].toString());
+      }*/
+    /*  var operation_ComboBox = new ComboBox( this );
+      operation_ComboBox.toolTip = "Operation of FITS keyword";
+      operation_ComboBox.addItem( "One" , new Bitmap( ":/images/icons/select.png" ));
+      operation_ComboBox.addItem( "Two", new Bitmap( ":/images/icons/ok.png" ) );
+      operation_ComboBox.addItem( "Three", new Bitmap( ":/images/icons/cancel.png" ) );
+*/
+     //node.setXXX(o,
+     for (var i=0; i<4;i++){
+         node.setText(i, i.toString());
+      }
+      return node;
+   }
+
+
+   // The list model is changed (the model is an array that is updated in place)
+   this.modelListChanged = function(newModelList) {
+
+      // Clear current list display
+      var i;
+      var nmbNodes = this.fits_TreeBox.numberOfChildren;
+      for (i=nmbNodes; i>0; i--) {
+         this.fits_TreeBox.remove(i-1);
+      }
+      // Update variable tracking current model
+      listModel = newModelList;
+
+      // Add new nodes
+      for (i=0; i<listModel.length; i++) {
+         // Just making the nodes adds them to the fits_TreeBox
+         makeNode(this.fits_TreeBox, listModel[i], i);
+      }
+   }
+   // Create initial model
+   this.modelListChanged(new Array ); //initialListModel);
+
+   // -- Internal actions
+   var upAction = function() {
+     var nodeToMove,  nodeIndex, element1, element2;
+     if (that.fits_TreeBox.selectedNodes.length>0) {
+        nodeToMove = that.fits_TreeBox.selectedNodes[0];
+        nodeIndex = that.fits_TreeBox.childIndex(nodeToMove);
+        if (nodeIndex>0) {
+           // Update model
+           element1 = listModel[nodeIndex-1];
+           element2 = listModel[nodeIndex];
+           listModel.splice(nodeIndex-1, 2, element2, element1);
+           // update UI
+           that.fits_TreeBox.remove(nodeIndex);
+           that.fits_TreeBox.insert(nodeIndex-1,nodeToMove);
+           that.fits_TreeBox.currentNode = nodeToMove;
+        }
+     }
+   }
+   var downAction = function() {
+     var nodeToMove,  nodeIndex, element1, element2;
+     if (that.fits_TreeBox.selectedNodes.length>0) {
+        nodeToMove = that.fits_TreeBox.selectedNodes[0];
+        nodeIndex = that.fits_TreeBox.childIndex(nodeToMove);
+        if (nodeIndex<that.fits_TreeBox.numberOfChildren-1) {
+           // Update model
+           element1 = listModel[nodeIndex];
+           element2 = listModel[nodeIndex+1];
+           listModel.splice(nodeIndex, 2, element2, element1);
+           // update UI
+           that.fits_TreeBox.remove(nodeIndex);
+           that.fits_TreeBox.insert(nodeIndex+1,nodeToMove);
+           that.fits_TreeBox.currentNode = nodeToMove;
+        }
+     }
+   }
+   var addAction = function() {
+     var nodeBeforeNew, newNode;
+     var nodeIndex = that.fits_TreeBox.numberOfChildren;
+     if (that.fits_TreeBox.selectedNodes.length>0) {
+        nodeBeforeNew = that.fits_TreeBox.selectedNodes[0];
+        nodeIndex = that.fits_TreeBox.childIndex(nodeBeforeNew) + 1;
+     }
+     // Create node
+     var element = elementFactory();
+     if (element !== null) {
+        // insert node in model then ui
+        listModel.splice(nodeIndex, 0, element);
+        newNode = makeNode(that.fits_TreeBox, element, nodeIndex);
+        that.fits_TreeBox.currentNode = newNode;
+        that.fits_TreeBox.onNodeSelectionUpdated();
+     }
+   }
+
+   var deleteAction = function() {
+     var nodeToDelete,  nodeIndex;
+     if (that.fits_TreeBox.selectedNodes.length>0) {
+        nodeToDelete = that.fits_TreeBox.selectedNodes[0];
+        nodeIndex = that.fits_TreeBox.childIndex(nodeToDelete);
+        listModel.splice(nodeIndex,1);
+        that.fits_TreeBox.remove(nodeIndex);
+     }
+   }
+
+
+    var buttons = [
+        {
+           icon: ":/browser/move-up.png",
+           toolTip: "Move item up",
+           action: upAction
+           },
+        {
+           icon: ":/browser/move-down.png",
+           toolTip:  "Move item down",
+           action: downAction
+        },
+        {
+           icon: ":/icons/add.png",
+           toolTip:  "Add new item",
+           action: addAction
+        },
+        {
+           icon: ":/icons/remove.png",
+           toolTip:  "Delete item",
+           action: deleteAction
+        },
+     ];
+
+
+     var iconButtonBar = new ffM_GUI_support.IconButtonBar(this, buttons);
+     this.fits_GroupBox.sizer.add(iconButtonBar);
 
 
 
+   // More or less futile attempt to avoid bad small layout on unix
+   this.fits_GroupBox.adjustToContents();
+   this.fits_GroupBox.setFixedHeight();
 
+   this.barFITS = makeSectionGroup(this, this.fits_GroupBox,"FITS keywords operations",false);
+
+#endif
 
    //----------------------------------------------------------------------------------
    // -- Output directory section
@@ -1198,9 +1385,13 @@ function MainDialog(engine, guiParameters) {
    this.helpButton = new ToolButton( this );
    this.helpButton.icon = ":/process-interface/browse-documentation.png";
    this.helpButton.toolTip = Text.H.HELP_BUTTON_TOOLTIP;
-   this.helpDialog = new HelpDialog(this);
    this.helpButton.onClick = function() {
-      this.dialog.helpDialog.execute();
+      if ( !Dialog.browseScriptDocumentation( "FITSFileManager" ) )
+            (new MessageBox( "<p>Documentation has not been installed.</p>",
+               TITLE + "." + VERSION,
+               StdIcon_Error,
+               StdButton_Ok
+            )).execute();
    }
 
 
@@ -1235,6 +1426,9 @@ function MainDialog(engine, guiParameters) {
    this.sizer.add( this.helpLabel );
    this.barInput.addSection(this.sizer, 50);
    this.barRules.addSection(this.sizer,0);
+#ifdef FITSKEYS
+   this.barFITS.addSection(this.sizer,0);
+#endif
    this.barOutput.addSection(this.sizer,0);
    this.barResult.addSection(this.sizer, 50);
    this.sizer.add( this.buttonSizer );
@@ -1616,35 +1810,6 @@ function MainDialog(engine, guiParameters) {
 MainDialog.prototype = new Dialog;
 
 
-
-
-// ========================================================================================================================
-// Documentation dialog
-// ========================================================================================================================
-
-// See http://pixinsight.com/developer/pcl/doc/20120901/html/classpcl_1_1Console.html
-// for formatting instructions
-
-function HelpDialog( parentDialog, engine ) {
-   this.__base__ = Dialog;
-   this.__base__();
-
-   this.windowTitle = "FITSFileManager Help";
-
-   this.helpBox = new TextBox( this );
-   this.helpBox.readOnly = true;
-   this.helpBox.text = Text.H.HELP_TEXT;
-   this.helpBox.setMinSize( 800, 400 );
-   this.helpBox.caretPosition = 0;
-
-   this.sizer = new HorizontalSizer;
-   this.sizer.margin = 6;
-   this.sizer.add( this.helpBox );
-   this.setVariableSize();
-   this.adjustToContents();
-}
-
-HelpDialog.prototype = new Dialog;
 
 
 // ========================================================================================================================

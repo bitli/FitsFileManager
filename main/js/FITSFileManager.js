@@ -3,15 +3,15 @@
 #feature-id    Utilities > FITSFileManager
 
 #feature-info Copy and move files based on FITS keys.<br/>\
-   Written by Jean-Marc Lugrin (c) 2012,2013.
+   Written by Jean-Marc Lugrin (c) 2012-2014.
 
 // ==================================================================================================
 // The complete source code is hosted at https://bitbucket.org/bitli/fitsfilemanager
 // with test scripts
 // ==================================================================================================
 
-// Copyright (c) 2012-2013 Jean-Marc Lugrin
-// Copyright (c) 2003-2012 Pleiades Astrophoto S.L.
+// Copyright (c) 2012-2014 Jean-Marc Lugrin
+// Copyright (c) 2003-2014 Pleiades Astrophoto S.L.
 //
 // Redistribution and use in both source and binary forms, with or without
 // modification, is permitted provided that the following conditions are met:
@@ -55,7 +55,7 @@
 // Thanks to Nikolay for sharing the original FITSKey
 
 // NOTE : The parameters have their own version number in FITSFileManger-parameters.jsh
-#define VERSION   "1.2"
+#define VERSION   "1.3"
 #define TITLE     "FITSFileManager"
 
 // --- Debugging control ----------------

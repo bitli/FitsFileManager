@@ -1326,7 +1326,7 @@ var ffM_GUI_config = (function (){
       this.__base__(parent);
       var that = this;
 
-      this.title = "Built in variable parameters";
+      this.title = "Format of the built-in variable parameters";
       this.sizer = new HorizontalSizer;
 
       var labelWidth = this.font.width( "MMMMMMMMMMMM: " );
@@ -1343,8 +1343,8 @@ var ffM_GUI_config = (function (){
       this.sizer.add(this.colLayout1_Control);
       this.colLayout1_Control.sizer = new VerticalSizer;
 
-      var rankFormat = new TextEntryRow(this.colLayout1_Control, rowStyle, "&rank; format",
-      "Enter a valid C format string for the &rank; value, like '%3.3d'\nYou can also add text around like 'N%3.3d'",
+      var rankFormat = new TextEntryRow(this.colLayout1_Control, rowStyle, "rank",
+      "Enter a valid C format string for the &rank; value, like '%3.3d'\nYou can also add text around the value, like 'N%3.3d'",
       "format", propertyTypes.FREE_TEXT, null);
       this.colLayout1_Control.sizer.add(rankFormat);
 
@@ -1353,8 +1353,8 @@ var ffM_GUI_config = (function (){
       this.sizer.add(this.colLayout2_Control);
       this.colLayout2_Control.sizer = new VerticalSizer;
 
-      var countFormat = new TextEntryRow(this.colLayout2_Control, rowStyle, "&count format",
-      "Enter a valid C format string for the &count; value, like '%3.3d'\nYou can also add text around like 'group-%d'",
+      var countFormat = new TextEntryRow(this.colLayout2_Control, rowStyle, "count",
+      "Enter a valid C format string for the &count; value, like '%3.3d'\nYou can also add text around the value like 'group-%d'",
       "format", propertyTypes.FREE_TEXT, null);
       this.colLayout2_Control.sizer.add(countFormat);
 

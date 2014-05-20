@@ -567,6 +567,8 @@ function FFM_Engine(guiParameters) {
       return text;
    };
 
+
+// NOT TESTED, LIKELY INCORRECT
 #ifdef IMPLEMENTS_FITS_EXPORT
    // -- Export the keywords of a list of files
    this.exportFITSKeywords = function() {
