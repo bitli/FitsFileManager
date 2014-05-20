@@ -194,6 +194,16 @@ function loadSaveFile( sourceFilePath, targetFilePath ) {
    }
    var kw = new FITSKeyword( "HISTORY", "", "PI FitsFileManager renamed as " + File.extractName(targetFilePath) + File.extractExtension(targetFilePath));
    keywords.push( kw );
+
+// FOR TESTS #define ADHOC_KW
+#ifdef ADHOC_KW
+   // ADHOC keywords operations
+   Console.writeln("ADHOC PROCESSING OF KEYWORDS");
+   ensureKeyword(keywords,  new FITSKeyword( "IMAGETYP", "Bias Frame", "Bias, dark, flat or light"));
+   ensureKeyword(keywords,  new FITSKeyword( "FILTER", "halpha", "Optical filter used to take the image"));
+   ensureKeyword(keywords,  new FITSKeyword( "XBINNING", "1", "Binning factor in X"));
+   ensureKeyword(keywords,  new FITSKeyword( "YBINNING", "1", "Binning factor in Y"));
+#endif
    image.keywords = keywords;
 
    image.saveAs(targetFilePath,  false, false, false, false);
@@ -201,6 +211,62 @@ function loadSaveFile( sourceFilePath, targetFilePath ) {
    image.forceClose();
 
 }
+
+// set the keyword to the provided value, override if present, create if not
+function setKeyword(keywords, kw) {
+   for (var i=0; i<keywords.length; i++) {
+      if (keywords[i].name === kw.name) {
+         keywords[i].value = kw[i].value;
+         return;
+      }
+   }
+   Console.writeln("Adding " + kw.name + ": '" + kw.value + "'");
+   keywords.push( kw );
+}
+
+// Ensure that the keyword, if present, has the specified value (log warning otherwise), add it if needed
+function ensureKeyword(keywords, kw) {
+   for (var i=0; i<keywords.length; i++) {
+      if (keywords[i].name === kw.name) {
+         if (keywords[i].value != kw.value) {
+            Console.writeln("WARNING - Keyword " + kw.name + " does not have the expected value " + kw.value + " but " + keywords[i].value + ", leave as is." );
+         }
+         return;
+      }
+   }
+   Console.writeln("Adding " + kw.name + ": '" + kw.value + "'");
+   keywords.push( kw );
+}
+
+// Add keyword, log warning if already present
+function addNewKeyword(keywords, kw) {
+   for (var i=0; i<kw.length; i++) {
+      if (keywords[i].name === kw.name) {
+         Console.writeln("WARNING - Keyword " + kw.name + " already present");
+         return;
+      }
+   }
+   Console.writeln("Adding " + kw.name + ": '" + kw.value + "'");
+   keywords.push( kw );
+}
+
+// Add keyword at end even if already present (for COMMENT and HISTORY)
+function appendKeyword(keywords, kw) {
+   Console.writeln("Adding " + kw.name + ": '" + kw.value + "'");
+   keywords.push( kw );
+}
+
+function removeKeywords(keywords, kw) {
+   for (var i =kw.length-1; i>=0; i--) {
+      if (keywords[i].name === kw.name) {
+         Console.writeln("Removing " + kw.name);
+         keywords.splice(i,1);
+         return;
+      }
+   }
+}
+
+
 
 
 
