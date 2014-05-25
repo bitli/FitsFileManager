@@ -82,42 +82,7 @@
 // Padding format
 #define FFM_COUNT_PAD 4
 
-
-
-
-
-// Prepare for future developments
-
-// BUG: 'T' is not considered boolean (change in FITSKeyword), maybe do workaround
-//      When clickin on outfile file, the right input file is not selected if some files where not selected
-//      Review layout in Unix and Mac
-// TODO
-// Make cleaning of FITS keyword values used in file name configurable
-// Support optional reformatting of file name as valid PI identifier
-// Add mark of sequence of text to ignore if missing variable value (in parentheses for example)
-// Enhance control of ordering (support for ordering of non string values if possible)
-// Add a way to use directory of source file as variable  &filedir, &filedirparent for template matching and group names
-// Create a log file to record the operations
-// Support export of FITS keywords as CSV or tab delimite
-// Request confirmation for move (or move and copy)
-// Possibility to add FITS keywords to copied files (to replace erroneous values or add missing ones)
-// Possibility to check FITS header for suspect values and consistency (for example with size)
-// May be allow to preview or open a selected file
-// Possibly alternate configuration depending on IMAGETYP
-// Batch mode (non GUI)
-// Normalize directory (remove .., redundant /)
-// Check # of images in file (when using load image), or use direct writes to update fits headers
-// Enhance 'night' with accepting other dates and possibly midnight offset
-// Management of alternate source keywords for synthethic keywords, possibly default values in keyword mapping
-// Make creation of HISTORY/ORIGFILE keyword optional, make name of ORIGFILE key configurable
-// Support date formatting
-// Allow choice of 'cleaned up' strings (make optional remove of special chraracters)
-// See http://heasarc.gsfc.nasa.gov/docs/software/ftools/fitsverify/
-// Optional paramters in parameter configuration (like: are always optinal)
-// filepath paramter
-// CHeck reason of order, possibility to parse &var; in regexp list
-
-
+// TODO: See file todo.txt
 
 #include "PJSR-logging.jsh"
 

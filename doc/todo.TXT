@@ -1,0 +1,64 @@
+//FITSFileManager - todo.txt
+
+
+GUI
+   Make the 'text' button (for FITS keyword presentation) more visible, possibly on the right.
+   May be allow to preview or open a selected file
+   ++ select all, -- deselect all
+   reset all, reset to defaults for each field
+
+
+FITS keyword export
+   Support export of FITS keywords as CSV or tab delimite
+   Possibility to add FITS keywords to copied files (to replace erroneous values or add missing ones)
+      Delete if present (support wild cards)
+      Rename keyword
+      Overwrite value (can use original one to normalize)
+      Add if missing, keep if present
+      Add comment
+      Ensure present or fail
+      Ensure not present or fail
+   Possibility to check FITS header for suspect values and consistency (for example with size)
+
+
+   
+Configurations
+   Make cleaning of FITS keyword values used in file name configurable
+   Support optional reformatting of file name as valid PI identifier
+   Rework extraction of file part:
+       A resolver for file parts (parth, name, extension) with configurable name cleaning (replacement of spaces and special characters)
+       Preconfigured extractions (regexp) for header name part, remove numbers, remove filter, extract directory part, extract filter part,...
+   Add default value in configuration (would also ignore separator)
+   Option to collapse separators (--) if missing part
+   Alternate template depending on IMAGETYP
+   Enhance 'night' with accepting other dates and possibly midnight offset
+   support for alternate source keywords for synthethic keywords, possibly default values in keyword mapping
+   Support date formatting
+   Make synthethic values from other synthetic values
+   Option to select file by file name as BPP, generate keyword (
+
+Depending on PJSR enhnancements:
+  Enhance control of ordering (support for ordering of non string values if possible)   
+
+Operations
+   Request confirmation for move (or move and copy)
+   Support in place rename
+   Batch mode (non GUI)
+   Normalize directory (remove .., redundant /)
+   Check # of images in file (when using load image), possibility ot extract sepcific one or all of them.
+   Operation with overwrite of FITS header (no copy/move))
+   Make creation of HISTORY/ORIGFILE keyword optional, make name of ORIGFILE key configurable
+   maybe support for CR2
+  
+Results
+   Create a log file to record the operations
+     
+See http://heasarc.gsfc.nasa.gov/docs/software/ftools/fitsverify/
+
+
+
+
+
+
+
+
