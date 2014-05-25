@@ -143,21 +143,6 @@ output directory is not specified).</p>\
 return {
 H: {
 
-  // Combine help for global help
-  HELP_TEXT: (
-      "<html>" +
-      "<h1><font color=\"#06F\">FITSFileManager</font></h1>" + BASE_HELP_TEXT +
-      "<h3><font color=\"#06F\">Variables</font></h3/>" + VARIABLE_HELP_TEXT +
-      "<h3><font color=\"#06F\">Target template</font></h3/>" + TARGET_TEMPLATE_TOOLTIP_A + TARGET_TEMPLATE_TOOLTIP_C +\
-      "Example of template:\<br/><tt>&nbsp;&nbsp;&nbsp;&amp;1;_&amp;binning;_&amp;temp;C_&amp;type;_&amp;exposure;s_&amp;filter;_&amp;count;&amp;extension;</tt>"+
-      "<h3><font color=\"#06F\">Source filename reg exp</font></h3>" + SOURCE_FILENAME_REGEXP_TOOLTIP +
-      "Example of regular expression:<br/><tt>&nbsp;&nbsp;&nbsp;([^-_.]+)(?:[._-]|$)</tt><p>" +
-      "<h3><font color=\"#06F\">Group template</font></h3>" +  GROUP_TEMPLATE_TOOLTIP +
-      "Example of group definition:<br/><tt>&nbsp;&nbsp;&nbsp;&amp;targetdir;</tt><p> " +
-      "<h3><font color=\"#06F\">Configuration of mappings</font></h3>" +  HELP_CONFIGURATION +
-      "<h3><font color=\"#06F\">Operations</font></h3>" + HELP_OPERATIONS +
-      "</html>"),
-
    TARGET_FILE_TEMPLATE_TOOLTIP: (
       TARGET_TEMPLATE_TOOLTIP_A+TARGET_TEMPLATE_TOOLTIP_B+TARGET_TEMPLATE_TOOLTIP_C),
 

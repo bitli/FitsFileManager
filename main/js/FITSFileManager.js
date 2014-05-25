@@ -111,9 +111,11 @@
 // Management of alternate source keywords for synthethic keywords, possibly default values in keyword mapping
 // Make creation of HISTORY/ORIGFILE keyword optional, make name of ORIGFILE key configurable
 // Support date formatting
-// Allow choice of 'cleaned up' strings (make optiona lremove of special chraracters)
+// Allow choice of 'cleaned up' strings (make optional remove of special chraracters)
 // See http://heasarc.gsfc.nasa.gov/docs/software/ftools/fitsverify/
-
+// Optional paramters in parameter configuration (like: are always optinal)
+// filepath paramter
+// CHeck reason of order, possibility to parse &var; in regexp list
 
 
 
