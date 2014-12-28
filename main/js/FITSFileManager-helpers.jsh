@@ -26,27 +26,28 @@ function regExpToString(re) {
 }
 
 
-// Parse a regexp WITH the '/' and flags, throw exception in case of error
+// Parse a well formed RegExp string (WITH the '/' and flags), throw exception in case of error,
+// return a RegExp object or null if nul lwas received.
 function regExpFromString(reString) {
    if (reString === null) {
       return null;
    }
    if (typeof reString !=='string') {
-      throw "PROGRAMMING ERROR - Invalid regexp string, got " + typeof reString;
+      throw "PROGRAMMING ERROR - Invalid regexp string, got a '" + typeof reString + "', expected a 'string'"
    }
 
    if (reString.length===0) {
       return null;
    } else if (reString.length<2) {
-      throw "Invalid regular expression - too small"
+      throw "Invalid regular expression - '" + reString + "' is emtpy or too small, need at least two / (slashes)"
    } else {
       var reChar = reString.charCodeAt(0);
       if (reChar !== 47) {
-         throw "Invalid regular expression - dot not start with /"
+         throw "Invalid regular expression - '" + reString + "' does not start with a / (slash)"
       }
       var lastSlash = reString.lastIndexOf("/");
       if (lastSlash<=0 || lastSlash>reString.length) {
-         throw "Invalid regular expression - no terminating /"
+         throw "Invalid regular expression - '" + reString + "' has no terminating / (slash)"
       }
       var rePart = reString.substring(1,lastSlash);
       var flagsPart = reString.substring(lastSlash+1);
@@ -55,8 +56,11 @@ function regExpFromString(reString) {
    }
 }
 
-// Parse a regular expression typed by the user. If it does not start wit /,
-// assume that it is surrounded with / and has no flag.
+// Parse a regular expression typed by the user. If it does not start with /,
+// add the surrounding slashed and assumes that it has no flag.
+// If staring with a /, assume that it is a valid regexp in string format, with
+// terminating slash and possible options.
+// Return it as a RegExp object (return null if null was received).
 function regExpFromUserString(reString) {
    if (reString === null) {
       return null;
@@ -294,9 +298,9 @@ var ffM_LookupConverter = (function() {
      }
    };
 
-   // Create a lookup converter
+   // Create a regular expression lookup converter
    // Parameters:
-   //      conversionTable: Array  of {regexp:, replacement:}, teh regexp is a string
+   //      conversionTable: Array  of {regexp:, replacement:}, the regexp must be formatted as a string
    // Return: A converter object that convert a string according to the rules.
    return {
       makeLookupConverter: function makeLookupConverter (conversionTable) {
@@ -310,6 +314,7 @@ var ffM_LookupConverter = (function() {
          var compiledConversionTable = [];
          for (var i=0; i<conversionTable.length; i++) {
             var conversionEntry = conversionTable[i];
+            //Console.writeln("DEBUG: makeLookupConverter -conversionEntry - " + i + " regexp " + conversionEntry.regexp + " replacement " + conversionEntry.replacement);
             var conversionRegExp = regExpFromString(conversionEntry.regexp);
             var conversionResultTemplate = conversionEntry.replacement;
             var conversionResultFunction;
@@ -328,7 +333,7 @@ var ffM_LookupConverter = (function() {
                      var replaceHandler = function(fullString, p1, offset, string) {
                         var matchIndex = + p1; // Convert to index
                         if (matchIndex>= matchedGroups.length) {
-                           // TODO Generate error in a more firendly way
+                           // TODO Generate error in a more friendly way
                            return "BACKREFERENCETOOLARGE"; // Cannot replace, index too large
                         } else {
                            // Cleanup the returned value to avoid special characters
