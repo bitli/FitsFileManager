@@ -238,10 +238,10 @@ var ffM_Configuration = (function() {
    // patch in the differences
    var defaultConf = defaultConfigurationSet[0];
 
-   // CAHA version
+   // Default configuration for images originated in the CAHA (http://www.caha.es/) observatory
    var userConf = deepCopyData(defaultConf);
    userConf.name = "User CAHA";
-   userConf.description = "Test configuration based on CAHA image";
+   userConf.description = "A default configuration based on images from CAHA via PixInsight";
    // Just the differences from the base configuration - which is about everything
    userConf.variableList =
          [ { name: "type",
@@ -365,6 +365,162 @@ var ffM_Configuration = (function() {
 
    defaultConfigurationSet.push(userConf);
 
+
+   // Default configuration for images originated in the CAHA (http://www.caha.es/) observatory
+   var iTelescopeConf = deepCopyData(defaultConf);
+   iTelescopeConf.name = "iTelescope";
+   iTelescopeConf.description = "A default configuration based on images from iTelescope T16 in nov 2014";
+   // Just the differences from the base configuration - which is about everything
+   iTelescopeConf.variableList =
+         [ { name: "type",
+             description: "Type of image (flat, bias, ...)",
+             show: true,
+             resolver: "RegExpList",
+             parameters:
+               { RegExpList:
+                   { key: "IMAGETYP",
+                     reChecks:
+                       [ { regexp: '/flat/i',
+                           replacement: "flat"
+                         },
+                         { regexp: '/bias/i',
+                           replacement: "bias"
+                         },
+                         { regexp: '/offset/i',
+                           replacement: "bias"
+                         },
+                         { regexp: '/dark/i',
+                           replacement: "dark"
+                         },
+                         { regexp: '/light/i',
+                           replacement: "light"
+                         },
+                         { regexp: '/science/i',
+                           replacement: "light"
+                         },
+                         { regexp: '/.*/',
+                           replacement: "&0;"
+                         },
+                       ]
+                   }
+               }
+           },
+           { name: "filter",
+             description: "Filter (clear, red, ...)",
+             show: true,
+             resolver: "RegExpList",
+             parameters:
+               { RegExpList:
+                   { key: "FILTER",
+                     reChecks:
+                       [ { regexp: '/green/i',
+                           replacement: "G"
+                         },
+                         { regexp: '/blue/i',
+                           replacement: "B"
+                         },
+                         { regexp: '/red/i',
+                           replacement: "R"
+                         },
+                         { regexp: '/clear/i',
+                           replacement: "C"
+                         },
+                         { regexp: '/luminance/i',
+                           replacement: "L"
+                         },
+                         { regexp: '/^ *V */',
+                           replacement: "V"
+                         },
+                         { regexp: '/.*/',
+                           replacement: "&0;"
+                         }
+                       ]
+                       ,
+                   }
+               }
+           },
+           { name: "exposure",
+             description: "Exposure in seconds",
+             show: true,
+             resolver: "Integer",
+             parameters:
+               { Integer:
+                   { key: "EXPTIME", // also EXPOSURE
+                     abs: true,
+                     format: "%4.4d",
+                   }
+               }
+           },
+           { name: "temp",
+             description: "Temperature in C",
+             show: true,
+             resolver: "Integer",
+             parameters:
+               { Integer:
+                   { key: "CCDTEMP", // Also CCDTEMP and CCD-TEMP",
+                     abs: true,
+                     format: "%3.3d"
+                   }
+               }
+           },
+           { name: "binning",
+             description: "Binning as 1x1, 2x2, ...",
+             show: true,
+             resolver: "IntegerPair",
+             parameters:
+               { IntegerPair:
+                   { key1: "CDELT1",
+                     key2: "CDELT2",
+                     format: "%dx%d"
+                   }
+               }
+           },
+           { name: "object",
+             description: "Name of target object",
+             show: true,
+             resolver: "Text",
+             parameters:
+               {Text:
+                   {key:"OBJECT",
+                    format:"%ls",
+                    case:"UP"
+                   }
+               }
+           },
+           { name: "night",
+             description: "night (experimental)",
+             show: true,
+             resolver: "Night",
+             parameters:
+               { Night:
+                   { keyLongObs: "LONG-OBS",
+                     keyJD: "JD"
+                   }
+               }
+           },
+           { name: "filename",
+             description: "Input file name",
+             show: false,
+             resolver: "FileName",
+             parameters:
+               { FileName:
+                   {
+                   }
+               }
+           },
+           { name: "extension",
+             description: "Input file extension",
+             show: false,
+             resolver: "FileExtension",
+             parameters:
+               { FileExtension:
+                   {
+                   }
+               }
+           }
+         ];
+
+   defaultConfigurationSet.push(iTelescopeConf);
 
 
 
