@@ -46,42 +46,42 @@
 // ---------------------------------------------------------------------------------------------------------------------
 // Definition of ConfigurationSet data
 // ---------------------------------------------------------------------------------------------------------------------
-// The configuration is a set of rules that define how to parse a FITS file to
-// generate the synthetic variables.
-// The configurations are named and grouped in a ConfigurationSet. Only one Configuration
+// A Configuration is a set of rules that define how to parse a FITS file to
+// generate the synthetic variables. 
+// The Configurations have a name and are grouped in a ConfigurationSet. Only one Configuration
 // is active at a time.
-// The coniguration object is a 'pure data' representation of the rules (so they can be serialized),
-// it contains only strings, numbers, objects and arrays (regexp are represented as strings!).
-// Some utility methods in this module support common functions, but it is expected that the
-// methods directly operate on the configuration data.
-// The ConfigurationSet is a singleton read/writen by the parameters module. A copy is manipulated by the
-// Configuration Dialog and replace the singleton if the Dialog exit woth OK.
+// The Configuration object is a 'pure data' representation of the rules, so they can be serialized easily,
+// it contains only strings, numbers, objects (used as map) and arrays. Regexp are represented as strings.
+// There are some utility methods to support common functions on a Configuration, but usually the data of 
+// a Configuration is manipulated directly by the methods that use it.
+// The ConfigurationSet is a singleton read/writen by this module. A copy of the ConfigurationSet is manipulated
+// by the Configuration Dialog and replace the singleton only if the Dialog exits with a status OK.
 // One configuration is the 'current' configuration. It is a copy if the selected configuration
-// and can be complemented by data used for processing (typcially the implementation of the resolvers).
-// That copy is not modified by the ConfigurationDialog or saved as parameter. If a new current configuration
-// is selected, a copy of the new configuration will replace the 'current configuration' and all derived
-// data will be recalculated.
+// and can be complemented by data used for processing (typically the implementation of the resolvers).
+// That copy is not modified by the ConfigurationDialog or saved as parameter. If another Configuration
+// is selected, a new copy of the selected Configuration will replace the 'current configuration' and all derived
+// data will be recalculated. 
 
 
 
 
-
+// ffM_Configuration module (make local name space)
 var ffM_Configuration = (function() {
 
    var i;
 
    // Default ConfigurationSet, serve also as example of the structure.
-
+   // The structure is like:s
    // --------------------------------------------------------------------------------------------------
-   // configurationSet data (ordered list of configurations, the order does not matter for the semantic)
-   //    [cpnfiguration]
+   // configurationSet data (an ordered list of Configurations, the order does not matter for the semantic)
+   //    [configuration]
 
-   // configuration data (the variables is an ordered list)
+   // configuration data (the variables is an ordered list, they are processed in order)
    //    {name: aString, description: aString, variableList: [variables]}
 
    // variable:
    //    {name: aString, description: aString, resolver: aName, parameters: {resolverName: {}}}
-   // (the content of the 'parameters' object depends on the resolver, it has own key which is the
+   // (the content of the 'parameters' object depends on the resolver, it has one key which is the
    //  name of the resolver, allowing to keep data for inactive resolvers)
    // ---------------------------------------------------------------------------------------------------------------------
 
@@ -234,7 +234,7 @@ var ffM_Configuration = (function() {
 
    ];
 
-   // Duplicate the default configuration ,
+   // Duplicate the default configuration,
    // patch in the differences
    var defaultConf = defaultConfigurationSet[0];
 
@@ -531,7 +531,8 @@ var ffM_Configuration = (function() {
    var configurationTable = defaultConfigurationSet;
 
    // The active configuration name
-   // The engine work on a COPY of the active configuration, this is why we keep the name only
+   // The engine works on a COPY of the active configuration, this is why we keep only
+   // track the name of the active configuration.
    var activeConfigurationName = null;
 
 
@@ -587,7 +588,7 @@ var ffM_Configuration = (function() {
 #endif
 
       // TODO Should be moved
-      // Rebuild the list of all sythetic variables that can be shown in an Input files window.
+      // Rebuild the list of all synthetic variables that can be shown in the GUI.
       var activeConfiguration = getConfigurationByName(configurationTable,nameOfNewActiveConfiguration);
       syntheticVariableNames = [];
       syntheticVariableComments = [];
@@ -629,6 +630,7 @@ var ffM_Configuration = (function() {
       return getConfigurationByName(configurationTable,activeConfigurationName);
    }
 
+   // Replace the current ConfigurationSet by a new ConfigurationSet, activate a new Configuration
    var replaceConfigurationTable = function(newConfigurationTable, nameOfNewActiveConfiguration) {
       configurationTable = newConfigurationTable;
       setActiveConfigurationName(nameOfNewActiveConfiguration);
@@ -700,7 +702,7 @@ var ffM_Configuration = (function() {
 // ====================================================================================================================
 
 // The object FFM_GUIParameters keeps track of the parameters that are saved between executions
-// (or that should be saved)
+// This include the Configurations and many processing options
 function FFM_GUIParameters() {
    // Called at end of constructor
    this.initializeParametersToDefaults = function () {
@@ -711,7 +713,7 @@ function FFM_GUIParameters() {
       // Default regular expression to parse file name
       this.sourceFileNameRegExp = FFM_DEFAULT_SOURCE_FILENAME_REGEXP;
 
-      this.orderBy = "&rank;" // UNUSED
+      this.orderBy = "&rank;" // UNUSED - TODO Remove or clarify
 
 
       // Initialiy the first configuration is the default
@@ -726,15 +728,15 @@ function FFM_GUIParameters() {
       this.targetFileNameCompiledTemplate = ffM_template.analyzeTemplate(templateErrors, FFM_DEFAULT_TARGET_FILENAME_TEMPLATE);
       this.groupByCompiledTemplate = ffM_template.analyzeTemplate(templateErrors, FFM_DEFAULT_GROUP_TEMPLATE);
       if (templateErrors.length>0) {
-         throw "PROGRAMMING ERROR - default built in templates invalid";
+         throw "PROGRAMMING ERROR - default built-in template is invalid";
       }
 
       // Prepare list of regexp, groupBy template and target file template for use by the user interface.
-      // The first element of the list is the last one selected by the user, the others are predefiend elements
+      // The first element of the list is the last one selected by the user, the others are pre-defined elements
       // (currently hardcoded here - could eventually be made editable)
       // There are two parallel arrays, one for the values, and one for a comment displayed in the selection box
       this.targetFileItemListText = [
-            this.targetFileNameCompiledTemplate.templateString, // Must be adapted after parameter loading
+            this.targetFileNameCompiledTemplate.templateString, // Will be adapted after parameter loading
             FFM_DEFAULT_TARGET_FILENAME_TEMPLATE,
             "&type;/&1;_&binning;_&temp;C_&exposure;s_&filter;_&count;&extension;",
             "&OBJECT;_&filter;_&count;&extension;",
@@ -751,7 +753,7 @@ function FFM_GUIParameters() {
       ];
 
       this.regexpItemListText = [
-         regExpToString(this.sourceFileNameRegExp), // Must be adapted after parameter loading
+         regExpToString(this.sourceFileNameRegExp), // Will be adapted after parameter loading
          FFM_DEFAULT_SOURCE_FILENAME_REGEXP,
          "/.*/"
       ];
@@ -763,7 +765,7 @@ function FFM_GUIParameters() {
 
 
       this.groupItemListText = [
-            this.groupByCompiledTemplate.templateString, // Must be adapted after parameter loading
+            this.groupByCompiledTemplate.templateString, // Will be adapted after parameter loading
             FFM_DEFAULT_GROUP_TEMPLATE,
             "&filter;",
             "&type?;&filter?;",
@@ -782,25 +784,25 @@ function FFM_GUIParameters() {
    }
 
 
-   // For debugging and logging - result MUST be escaped if written to the console
+   // For debugging and logging - the returned string MUST be escaped if written to the console
    this.toString = function() {
       var s = "GUIParameters:\n";
       s += "  targetFileNameTemplate:         " + this.targetFileNameCompiledTemplate.templateString + "\n";
       s += "  sourceFileNameRegExp:           " + regExpToString(this.sourceFileNameRegExp) + "\n";
       s += "  orderBy:                        " + this.orderBy + "\n";
       s += "  groupByTemplate:                " + this.groupByCompiledTemplate.templateString + "\n";
-      s += "  currentConfigurationIndex:          " + this.currentConfigurationIndex + "\n";
+      s += "  currentConfigurationIndex:      " + this.currentConfigurationIndex + "\n";
       return s;
    }
 
    this.initializeParametersToDefaults();
 
-
 }
+
 
 FFM_GUIParameters.prototype.loadSettings = function() {
 
-
+    // TODO Better log in case of error loading the configuration, at least indicate that something went wrong
    function load( key, type )
    {
       var setting = Settings.read( FFM_SETTINGS_KEY_BASE + key, type );
@@ -824,7 +826,7 @@ FFM_GUIParameters.prototype.loadSettings = function() {
    if ( (parameterVersion = load( "version",    DataType_Double )) !== null ) {
       if (parameterVersion > PARAMETERS_VERSION) {
          Console.show();
-         Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' have paramter version ", parameterVersion, " later than script parameter version ", PARAMETERS_VERSION, ", settings ignored");
+         Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' have parameter version ", parameterVersion, " which is higher than the version supported by the scirpt (", PARAMETERS_VERSION, "), settings ignored");
          Console.flush();
       } else {
          if ( (o = load( "targetFileNameTemplate",    DataType_String )) !== null ) {

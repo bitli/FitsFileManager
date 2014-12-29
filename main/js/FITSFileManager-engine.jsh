@@ -7,7 +7,7 @@
 // ------------------------------------------------------------------------------------------------------------------------
 // Engine
 // Own and manage the file lists, their variables and the generation of the target file names.
-// Own the current 'compiled' configuration, the rules currently active with prepared parsers and lookup methods
+// Own the current 'compiled' Configuration, the rules currently active with prepared parsers and lookup methods
 // ------------------------------------------------------------------------------------------------------------------------
 
 function FFM_Engine(guiParameters) {
@@ -25,13 +25,13 @@ function FFM_Engine(guiParameters) {
 
    // Variables that can be reset (when doing clear all)
    this.reset = function() {
-      // Cache of file information. 3 parallel array. The order of the elements is usually NOT the same as
-      // shown in the GUI input box or tree box, as the input box is sorted on a field
+      // Cache of file information. 3 parallel array. The order of the elements is usually NOT the same as the order
+      // shown in the GUI input box or tree box, as the input box is sorted on a field.
       this.inputFiles = []; // Array of the full path of the input files
       this.inputFITSKeywords = [];  // Array of 'imageKeywords' for the corresponding input file
       this.inputVariables = [];  // Array of Map of stable synthethic variables for the corresponding input file
 
-      // Global FITS key information - (the index of the name in keywordsSet.allValueKeywordNameList give also the column offset in the GUI)
+      // Global FITS key information - (the index of the name in keywordsSet.allValueKeywordNameList gives also the column offset in the GUI)
       this.keywordsSet = ffM_FITS_Keywords.makeKeywordsSet();   // array of names of all accumulated FITS keywords from all files
       this.shownFITSKeyNames = {}; // A FITSKeyWord is shown in the source file table if its name is a key of this object
 
@@ -39,9 +39,9 @@ function FFM_Engine(guiParameters) {
     };
 
     this.resetTarget = function () {
-      // Target files is a subset of the inputFiles, each file is defined by an index
+      // The target files is a subset of the inputFiles, each file is defined by an index
       // in input file and the corresponding new file name. Unchecked files are not
-      // present in the list (the values are undefined).
+      // present in the list (the corresponding values are undefined).
       // The array includes only the selected files in the order of the TreeBox (which is not the same
       // as the order of the 'inputFiles' array usually)
       // The targetFilesIndices contains the index of the corresponding target file in the inputFiles
@@ -60,23 +60,24 @@ function FFM_Engine(guiParameters) {
 
 
    // -- Set the rules to load variables from images and context information
-   // Called at initialization and in case of change
+   // Called at initialization and in case of change of configuration with a COPY of the active configuration
     this.setConfiguration = function(configuration) {
 #ifdef DEBUG
       debug("FFM_Engine.setConfiguration - " + configuration.name);
 #endif
       this.currentConfiguration = configuration; // This is a working copy;
 
+      // Complete the configuration (which is pure data) with the code to create the synthetic keywords
       ffM_variables.installParsers(this.currentConfiguration);
 
-      // We add default keywords, we do not remove old ones
+      // We add default keywords to show, we do not remove the previous ones
       // Set 'is visible' for the list of default keywords
-      var defaultShownKeywords = ["IMAGETYP","FILTER","OBJECT"]; // TODO configuration.defaultShownKeywords;
+      var defaultShownKeywords = ["IMAGETYP","FILTER","OBJECT"]; // TODO use or create configuration.defaultShownKeywords;
       for (var i = 0; i < defaultShownKeywords.length; ++i) {
          var name = defaultShownKeywords[i];
          this.shownFITSKeyNames[name] = true;
       }
-      // Use the 'shown' attribute in the configuration
+      // Use the 'shown' attribute in the configuration to create the list of shown synthethic keywords
       this.shownSyntheticKeyNames = {};
       var vl = this.currentConfiguration.variableList;
       for (var i = 0; i<vl.length;i++) {
@@ -103,7 +104,7 @@ function FFM_Engine(guiParameters) {
    }
 
 
-   // Rebuild after change of configuration  (GUI ,ust also refresh itself))
+   // Rebuild after change of configuration (the GUI must also refresh itself))
    this.rebuildAll = function() {
       for (var i=0; i<this.inputFiles.length; i++) {
          var fileName = this.inputFiles[i];
@@ -111,14 +112,14 @@ function FFM_Engine(guiParameters) {
          // Create the synthethic variables using the desired rules
          this.inputVariables[i] = ffM_variables.makeSyntheticVariables(this.inputFiles[i],
             this.inputFITSKeywords[i],
-             this.currentConfiguration.variableList)
+            this.currentConfiguration.variableList)
        }
    }
 
 
 
 
-   // -- Add a list of files
+   // -- Add a list of input files, parse their keywordsa and generate their synthetic variables
    this.addFiles = function (fileNames) {
 
 #ifdef DEBUG
@@ -216,7 +217,7 @@ function FFM_Engine(guiParameters) {
       debug("buildTargetFiles: targetDirectoryTemplate = '" + targetDirectoryTemplate + "', targetNameTemplate = '" +  targetNameTemplate + "'");
 #endif
 
-      // Compile directory template (copy others)
+      // Compile directory template and copy others templates
       var templateErrors = [];
       var targetDirectoryCompiledTemplate = ffM_template.analyzeTemplate(templateErrors,targetDirectoryTemplate);
       var groupByCompiledTemplate = guiParameters.groupByCompiledTemplate;
@@ -242,7 +243,7 @@ function FFM_Engine(guiParameters) {
       var countString;
       var fitsKeywords;
 
-      // Replace variables, rank and regexp results (accessed by lexical scope)
+      // Get value of named variables, of 'rank', regexp results or FITS keywords (accessed by lexical scope)
       var targetDirectoryVariableResolver = function(v) {
                if (variables.hasOwnProperty(v)) {
                   return variables[v];
@@ -256,7 +257,7 @@ function FFM_Engine(guiParameters) {
       };
 
 
-      // Replace variables, rank, regexp results and targetDir (accessed by lexical scope)
+      // Get value of named variables, of 'rank', 'targetDir', regexp results or FITS keywords (accessed by lexical scope)
       var groupByVariableResolver = function(v) {
                if (variables.hasOwnProperty(v)) {
                   return variables[v];
@@ -271,7 +272,7 @@ function FFM_Engine(guiParameters) {
                }
       };
 
-      // Replace variables, rank, regexp results and count (accessed by lexical scope)
+      // Get value of named variables, of 'rank', 'count', regexp results or FITS keywords (accessed by lexical scope)
       var targetFileVariableResolver = function(v) {
                if (variables.hasOwnProperty(v)) {
                   return variables[v];
@@ -287,7 +288,7 @@ function FFM_Engine(guiParameters) {
       };
 
 
-      // Calculate transformation for each file, in order (order is important for the group functionality)
+      // Calculate the transformation of each file name, in order (order is important for the group functionality)
 
       for (var inputOrderIndex = 0; inputOrderIndex < listOfFiles.length; ++inputOrderIndex) {
 
@@ -305,14 +306,14 @@ function FFM_Engine(guiParameters) {
 
             var inputFileName =  File.extractName(inputFile);
 
-            // synthetic variables are preclaculated at when the file is added and explictely recalculated if
-            // the configuration is changed, so we use the precalculated values.
+            // The stable synthetic variables are preclaculated when the file is added to the input list and 
+            // explictely recalculated if the configuration is changed, so we use the precalculated values.
             variables = this.inputVariables[inputFileIndex];
             // FITS keywords are also stable in a file
             fitsKeywords = this.inputFITSKeywords[inputFileIndex];
 
             // Some variables cannot be precalculated when the file is loaded, because
-            // they depend on properties that vary in the main dialog, like the regular expression to
+            // they depend on properties that can be changed in the main dialog, like the regular expression to
             // parse file names or the order of the files or other data that may change after file is loaded.
 
             // Variable to represent parts of the input file name, as parsed by a user specified regexp.
@@ -334,7 +335,7 @@ function FFM_Engine(guiParameters) {
             rankString = format(this.currentConfiguration.builtins.rank.format,inputOrderIndex);
 
 
-            // Do the template operations (keeping track of error)
+            // Do the template operations (building new name) , keeping track of errors
 
             expansionErrors = [];
             var targetDirectory = targetDirectoryCompiledTemplate.expandTemplate(expansionErrors,targetDirectoryVariableResolver);
@@ -343,15 +344,15 @@ function FFM_Engine(guiParameters) {
 #endif
 
             if (expansionErrors.length ===0) {
-            // Expand the groupByTemplate to form the id of the counter (targetDir may be used)
+            // Expand the groupByTemplate to form the id of the counter (targetDir may be used in the group template)
                group = groupByCompiledTemplate.expandTemplate(expansionErrors,groupByVariableResolver);
 #ifdef DEBUG
                debug("buildTargetFiles: expanded group = " + group + ", errors: " + expansionErrors.join(","));
 #endif
                if (expansionErrors.length === 0) {
 
-                  // The count variable must be handeld especially
-                  //   &count;    The number of file in the same group
+                  // The count variable must be handled especially
+                  //   &count;    The index of the file in its group, the group being defined by the group template above
                   count = 0;
                   if (countingGroups.hasOwnProperty(group)) {
                    count = countingGroups[group];

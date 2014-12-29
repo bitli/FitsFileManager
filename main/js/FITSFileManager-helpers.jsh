@@ -16,18 +16,23 @@
 // --- RegExp utility functions
 
 
-// Return the RE as if it would be in source (with / and flags)
+// Return the RE as if it would be in source (with / and flags) or null for a null parameter
 function regExpToString(re) {
    if (re === null) {
       return "";
    } else {
-      return re.toSource();
+      var reStr = re.toSource();
+      // This should not occur, trying to find a rare error
+      if (typeof reStr !=='string') {
+         throw "PROGRAMMING ERROR - Unexpected result of regexp.toSource(), got a '" + typeof reStr + "', expected a 'string'"
+      }
+      retrn reStr;
    }
 }
 
 
 // Parse a well formed RegExp string (WITH the '/' and flags), throw exception in case of error,
-// return a RegExp object or null if nul lwas received.
+// return a RegExp object or null for a null parameter.
 function regExpFromString(reString) {
    if (reString === null) {
       return null;
@@ -77,7 +82,7 @@ function regExpFromUserString(reString) {
 }
 
 
-// Create a unique name with the same prefix
+// Create a unique name with the same prefix than a list of existing similar name
 function createUniqueName(baseName, existingNames) {
    var reSuffix = /^[^_]+_(\d+)/;
    var reNoSuffix = /_\d+$/;
@@ -269,9 +274,6 @@ function removeKeywords(keywords, kw) {
       }
    }
 }
-
-
-
 
 
 

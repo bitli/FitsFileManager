@@ -14,6 +14,8 @@
 // Throws: Error if bad format
 // The value of a FITSKeyword value is the empty string if the keyword had no value
 // Code adapted from FitsKey and other scripts
+// TODO - Support CONTINUE ?
+// TODO - Support blank comment as a continuation of a previous coomment ?
 // ------------------------------------------------------------------------------------------------------------------------
 var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
 
@@ -56,83 +58,83 @@ var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
    f.openForReading( fitsFilePath );
    try {
 
-   var keywords = [];
-   for ( ;; ) {
-      var rawData = f.read( DataType_ByteArray, 80 );
+      var keywords = [];
+      for ( ;; ) {
+         var rawData = f.read( DataType_ByteArray, 80 );
 #ifdef DEBUG_FITS
-      debug("ffM_loadFITSKeywordsList: line - '" + rawData.toString() + "'");
+         debug("ffM_loadFITSKeywordsList: line - '" + rawData.toString() + "'");
 #endif
 
-      var name = rawData.toString( 0, 8 );
-      if ( name.toUpperCase() === "END     " ) { // end of HDU keyword list?
-         break;
-      }
-      if ( f.isEOF ) {
-         throw new Error( "Unexpected end of file reading FITS keywords, file: " + fitsFilePath );
-      }
-
-      var value = "";
-      var comment = "";
-      var hasValue = false;
-
-      // value separator (an equal sign at byte 8) present?
-      if ( rawData.at( 8 ) === 61 ) {
-         // This is a valued keyword
-         hasValue = true;
-         // find comment separator slash
-         var cmtPos = searchCommentSeparator( rawData );
-         if ( cmtPos < 0) {
-            // no comment separator
-            cmtPos = 80;
+         var name = rawData.toString( 0, 8 );
+         if ( name.toUpperCase() === "END     " ) { // end of HDU keyword list?
+            break;
          }
-         // value substring
-         value = rawData.toString( 9, cmtPos-9 );
-         if ( cmtPos < 80 ) {
-            // comment substring
-            comment = rawData.toString( cmtPos+1, 80-cmtPos-1 );
+         if ( f.isEOF ) {
+            throw new Error( "Unexpected end of file reading FITS keywords, file: " + fitsFilePath );
          }
-      } else if (name === 'HIERARCH') {
-         var viPos = searchHierarchValueIndicator(rawData);
-         if (viPos > 0) {
+
+         var value = "";
+         var comment = "";
+         var hasValue = false;
+
+         // value separator (an equal sign at byte 8) present?
+         if ( rawData.at( 8 ) === 61 ) {
+            // This is a valued keyword
             hasValue = true;
-            name = rawData.toString(9, viPos-10);
             // find comment separator slash
             var cmtPos = searchCommentSeparator( rawData );
-            if ( cmtPos < 0 ) {
+            if ( cmtPos < 0) {
                // no comment separator
                cmtPos = 80;
             }
             // value substring
-            value = rawData.toString( viPos+1, cmtPos-viPos-1 );
+            value = rawData.toString( 9, cmtPos-9 );
             if ( cmtPos < 80 ) {
                // comment substring
                comment = rawData.toString( cmtPos+1, 80-cmtPos-1 );
             }
+         } else if (name === 'HIERARCH') {
+            var viPos = searchHierarchValueIndicator(rawData);
+            if (viPos > 0) {
+               hasValue = true;
+               name = rawData.toString(9, viPos-10);
+               // find comment separator slash
+               var cmtPos = searchCommentSeparator( rawData );
+               if ( cmtPos < 0 ) {
+                  // no comment separator
+                  cmtPos = 80;
+               }
+               // value substring
+               value = rawData.toString( viPos+1, cmtPos-viPos-1 );
+               if ( cmtPos < 80 ) {
+                  // comment substring
+                  comment = rawData.toString( cmtPos+1, 80-cmtPos-1 );
+               }
+            }
          }
-      }
 
-      // If no value in this keyword
-      if (! hasValue) {
-         comment = rawData.toString( 8, 80-8 ).trim();
-      }
-
-
-      // Perform a naive sanity check: a valid FITS file must begin with a SIMPLE=T keyword.
-      if ( keywords.length === 0 ) {
-         if ( name !== "SIMPLE  " && value.trim() !== 'T' ) {
-            throw new Error( "File does not seem to be a valid FITS file (SIMPLE T not found): " + fitsFilePath );
+         // If no value in this keyword
+         if (! hasValue) {
+            comment = rawData.toString( 8, 80-8 ).trim();
          }
-      }
 
-      // Add new keyword.
-      var fitsKeyWord = new FITSKeyword( name, value, comment);
-      fitsKeyWord.trim();
-      keywords.push(fitsKeyWord);
+
+         // Perform a naive sanity check: a valid FITS file must begin with a SIMPLE=T keyword.
+         if ( keywords.length === 0 ) {
+            if ( name !== "SIMPLE  " && value.trim() !== 'T' ) {
+               throw new Error( "File does not seem to be a valid FITS file (SIMPLE T not found): " + fitsFilePath );
+            }
+         }
+
+         // Add new keyword.
+         var fitsKeyWord = new FITSKeyword( name, value, comment);
+         fitsKeyWord.trim();
+         keywords.push(fitsKeyWord);
 #ifdef DEBUG_SHOW_FITS
-      debug("ffM_loadFITSKeywordsList: - " + fitsKeyWord);
+         debug("ffM_loadFITSKeywordsList: - " + fitsKeyWord);
 #endif
 
-   }
+      }
    } finally {
    f.close();
    }
@@ -198,7 +200,7 @@ var ffM_FITS_Keywords = (function() {
             if (!fitsKeyFromList.isNull) {
                name = fitsKeyFromList.name;
                // IMPORTANT: FitsKey is shared with the list
-               // TODO Check for duplicates (not supported)
+               // TODO Check for duplicates (not supported, should be a warning)
                imageKeywords.fitsKeywordsMap[name] = fitsKeyFromList;
             }
          }
@@ -273,7 +275,8 @@ var ffM_FITS_Keywords = (function() {
 
 
    // ------------------------------------------------------------------------------------------------------------------------
-   // KeywordsSet support - Keeps track of all values keywords in a set of files, in a specific order
+   // KeywordsSet support - Keeps track of the name of all values keywords used a set of files, in discovery mode
+   // (used mostly to show the same list of keywords to the users for all images, to make GUI more predictable)
    // ------------------------------------------------------------------------------------------------------------------------
    // private prototype
    var keywordsSetPrototype = {
@@ -303,7 +306,7 @@ var ffM_FITS_Keywords = (function() {
    var makeKeywordsSet = function makeKeywordsSet () {
       var keywordsSet = Object.create(keywordsSetPrototype);
       keywordsSet.allValueKeywordNameList = [];
-      keywordsSet.allValueKeywordNames = {}; // Name to index
+      keywordsSet.allValueKeywordNames = {}; // Keyword name to keyword index (position in list)
       return keywordsSet;
    }
 
