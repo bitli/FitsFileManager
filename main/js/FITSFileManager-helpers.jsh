@@ -23,10 +23,10 @@ function regExpToString(re) {
    } else {
       var reStr = re.toSource();
       // This should not occur, trying to find a rare error
-      if (typeof reStr !=='string') {
-         throw "PROGRAMMING ERROR - Unexpected result of regexp.toSource(), got a '" + typeof reStr + "', expected a 'string'"
-      }
-      retrn reStr;
+//      if (typeof reStr !=='string') {
+//         throw "PROGRAMMING ERROR - Unexpected result of regexp.toSource(), got a '" + typeof reStr + "', expected a 'string'"
+//      }
+      return reStr;
    }
 }
 
