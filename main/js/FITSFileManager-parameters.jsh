@@ -47,12 +47,12 @@
 // Definition of ConfigurationSet data
 // ---------------------------------------------------------------------------------------------------------------------
 // A Configuration is a set of rules that define how to parse a FITS file to
-// generate the synthetic variables. 
+// generate the synthetic variables.
 // The Configurations have a name and are grouped in a ConfigurationSet. Only one Configuration
 // is active at a time.
 // The Configuration object is a 'pure data' representation of the rules, so they can be serialized easily,
 // it contains only strings, numbers, objects (used as map) and arrays. Regexp are represented as strings.
-// There are some utility methods to support common functions on a Configuration, but usually the data of 
+// There are some utility methods to support common functions on a Configuration, but usually the data of
 // a Configuration is manipulated directly by the methods that use it.
 // The ConfigurationSet is a singleton read/writen by this module. A copy of the ConfigurationSet is manipulated
 // by the Configuration Dialog and replace the singleton only if the Dialog exits with a status OK.
@@ -60,7 +60,7 @@
 // and can be complemented by data used for processing (typically the implementation of the resolvers).
 // That copy is not modified by the ConfigurationDialog or saved as parameter. If another Configuration
 // is selected, a new copy of the selected Configuration will replace the 'current configuration' and all derived
-// data will be recalculated. 
+// data will be recalculated.
 
 
 
@@ -413,29 +413,31 @@ var ffM_Configuration = (function() {
                { RegExpList:
                    { key: "FILTER",
                      reChecks:
-                       [ { regexp: '/green/i',
+                       [ { regexp: '/^V$/',
                            replacement: "G"
+                         },
+                         { regexp: '/green/i',
+                           replacement: "G"
+                         },
+                         { regexp: '/^B$/',
+                           replacement: "B"
                          },
                          { regexp: '/blue/i',
                            replacement: "B"
                          },
+                         { regexp: '/^R$/',
+                           replacement: "R"
+                         },
                          { regexp: '/red/i',
                            replacement: "R"
                          },
-                         { regexp: '/clear/i',
-                           replacement: "C"
-                         },
                          { regexp: '/luminance/i',
                            replacement: "L"
-                         },
-                         { regexp: '/^ *V */',
-                           replacement: "V"
                          },
                          { regexp: '/.*/',
                            replacement: "&0;"
                          }
                        ]
-                       ,
                    }
                }
            },
@@ -457,7 +459,7 @@ var ffM_Configuration = (function() {
              resolver: "Integer",
              parameters:
                { Integer:
-                   { key: "CCDTEMP", // Also CCDTEMP and CCD-TEMP",
+                   { key: "CCD-TEMP", // Also CCDTEMP and CCD-TEMP",
                      abs: true,
                      format: "%3.3d"
                    }
@@ -469,8 +471,8 @@ var ffM_Configuration = (function() {
              resolver: "IntegerPair",
              parameters:
                { IntegerPair:
-                   { key1: "CDELT1",
-                     key2: "CDELT2",
+                   { key1: "XBINNING",
+                     key2: "YBINNING",
                      format: "%dx%d"
                    }
                }

@@ -306,7 +306,7 @@ function FFM_Engine(guiParameters) {
 
             var inputFileName =  File.extractName(inputFile);
 
-            // The stable synthetic variables are preclaculated when the file is added to the input list and 
+            // The stable synthetic variables are preclaculated when the file is added to the input list and
             // explictely recalculated if the configuration is changed, so we use the precalculated values.
             variables = this.inputVariables[inputFileIndex];
             // FITS keywords are also stable in a file
@@ -527,9 +527,9 @@ function FFM_Engine(guiParameters) {
 
          // TO BE ON SAFE SIDE, was already checked
          if (File.exists(targetFile)) {
-         for ( var u = 1; ; ++u )  {
-            for( var n = u.toString(); n.length < 4 ; n = "0" + n);
-            // TODO This does not take 'extension' into account
+            for ( var u = 1; ; ++u )  {
+               for( var n = u.toString(); n.length < 4 ; n = "0" + n);
+               // TODO This does not take 'extension' into account
                var tryFilePath = File.appendToName( targetFile, '-' + n );
 #ifdef DEBUG
                debug("executeFileOperations: tryFilePath= " + tryFilePath );
