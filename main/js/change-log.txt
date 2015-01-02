@@ -2,6 +2,11 @@
 FITSFileManager Script Changelog
 ===============================================================================
 
+2015.1.2 - v1.3
+- Added defaults for iTelescope
+- Small corrections and changes for PI 1.8 1123
+- Moved doc to PIDOC
+- Internal - supprot to add/replace keywords
 
 -------------------------------------------------------------------------------
 2013.10.23 - v1.2
