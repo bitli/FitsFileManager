@@ -664,6 +664,15 @@ function MainDialog(engine, guiParameters) {
       debug("regexp_ComboBox: onEditTextUpdated " + this.editText);
 #endif
 
+      for (var it = 0; it<guiParameters.regexpItemListText.length; it++) {
+         if (this.editText === ("'" + guiParameters.regexpItemListText[it] +  "' - " + guiParameters.regexpItemListComment[it])) {
+#ifdef DEBUG
+            debug("regexp_ComboBox: onEditTextUpdated - skip onEditTextUpdated, likely an onItemSelected");
+#endif
+            return;
+         }
+      }
+
       var re = this.editText.trim();
       if (re.length === 0) {
          guiParameters.sourceFileNameRegExp = null;
@@ -694,7 +703,7 @@ function MainDialog(engine, guiParameters) {
       if (this.currentItem >= guiParameters.regexpItemListText.length) {
          return;  // protect as when a 'CR' is typed in the field, currentItem may be outside of array
       }
-      var text = regExpToString(guiParameters.regexpItemListText[this.currentItem]);
+      var text = guiParameters.regexpItemListText[this.currentItem];
       this.dialog.regexp_ComboBox.editText = text;
       var re = text.trim();
       if (re.length === 0) {

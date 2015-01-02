@@ -743,25 +743,29 @@ function FFM_GUIParameters() {
             "&type;/&1;_&binning;_&temp;C_&exposure;s_&filter;_&count;&extension;",
             "&OBJECT;_&filter;_&count;&extension;",
             "&1;_&type?light;_&filter?clear;_&count;&extension;",
+            "&object;_&telescope;_&1;_&binning;_&temp;C_&exposure;s_&filter;_&PIERSIDE;_&count;_cal&extension;",
             ""
       ];
       this.targetFileItemListComment = [
             "last",
             "detailled, using part of file name",
             "directory by type",
-            "Object and filter",
+            "object and filter",
             "type and filter with defaults",
+            "iTelescope calibrated image",
             "(clear)"
       ];
 
       this.regexpItemListText = [
          regExpToString(this.sourceFileNameRegExp), // Will be adapted after parameter loading
-         FFM_DEFAULT_SOURCE_FILENAME_REGEXP,
+         regExpToString(FFM_DEFAULT_SOURCE_FILENAME_REGEXP),
+         "/-([0-9]+)-/",
          "/.*/"
       ];
       this.regexpItemListComment = [
          "last",
          "extract name",
+         "extract date part for iTelescope template",
          "(everything)"
       ];
 
