@@ -212,6 +212,7 @@ H: {
 
    LOADSAVE_BUTTON_TOOLTIP:  ("Load the checked files and save them in the output directory.\n" +
          "BEWARE: Not supported for files containing multiple HDU (multiple images).\n"+
+         "        Data will be interpreted by PI, PEDESTAL may become irrelevant or ignored.\n"+
          "Add ORIGFILE keyword with original file name if not already present.\n" +
          "Add HISTORY keyword with new file name.\n"),
 

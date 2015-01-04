@@ -369,7 +369,7 @@ var ffM_Configuration = (function() {
    // Default configuration for images originated in the CAHA (http://www.caha.es/) observatory
    var iTelescopeConf = deepCopyData(defaultConf);
    iTelescopeConf.name = "iTelescope";
-   iTelescopeConf.description = "A default configuration based on images from iTelescope T16 in nov 2014";
+   iTelescopeConf.description = "A default configuration for iTelescope";
    // Just the differences from the base configuration - which is about everything
    iTelescopeConf.variableList =
          [ { name: "type",
@@ -485,7 +485,7 @@ var ffM_Configuration = (function() {
                {Text:
                    {key:"OBJECT",
                     format:"%ls",
-                    case:"UP"
+                    "case":"UP"
                    }
                }
            },
@@ -519,7 +519,27 @@ var ffM_Configuration = (function() {
                    {
                    }
                }
-           }
+           },
+           { name :"telescope",
+             description: "iTelescope id",
+             show: true,
+             resolver: "RegExpList",
+             parameters:
+                 { Text:
+                    {  key:"TELESCOP",
+                       format:"%ls",
+                       "case": "UP"
+                     },
+                    RegExpList:
+                    {  key: "OBSERVAT",
+                       reChecks:
+                       [  {  regexp: "/ (T[0-9]+)/",
+                           replacement: "&1;"
+                          }
+                       ]
+                    }
+                  }
+            }
          ];
 
    defaultConfigurationSet.push(iTelescopeConf);
