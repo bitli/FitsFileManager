@@ -338,9 +338,13 @@ var ffM_LookupConverter = (function() {
                            // TODO Generate error in a more friendly way
                            return "BACKREFERENCETOOLARGE"; // Cannot replace, index too large
                         } else {
-                           // Cleanup the returned value to avoid special characters
-                           return ffM_variables.filterFITSValue(matchedGroups[matchIndex]);
-                        }
+                           // Cleanup the returned value to avoid special characters in file names
+                            var cleanedBackReference =  ffM_variables.filterFITSValue(matchedGroups[matchIndex]);
+                           // If the match is empty after cleanup, we get a null. In this case
+                           // use an empty string to avoid error in the caller.
+                           // TODO Return as error like BACKREFERENCETOOLARGE above
+                           return (cleanedBackReference === null) ? '' : cleanedBackReference; 
+                       }
                      };
 
                     return conversionResultTemplate.replace(allBackReferenceNumberRegExp,replaceHandler);

@@ -6,7 +6,9 @@ FITSFileManager Script Changelog
 - Added defaults for iTelescope
 - Small corrections and changes for PI 1.8 1123
 - Moved doc to PIDOC
-- Internal - supprot to add/replace keywords
+- Internal - support to add/replace keywords
+- Corrected exception thown if content of replacement pattern was empty in
+  file regexp
 
 -------------------------------------------------------------------------------
 2013.10.23 - v1.2
