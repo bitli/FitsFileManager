@@ -91,7 +91,7 @@ function createUniqueName(baseName, existingNames) {
    var reSuffix = /^[^_]+_(\d+)/;
    for (var i=0; i<existingNames.length;i++) {
       var exisitingName = existingNames[i];
-      var existingNameWithoutSuffix = exisitingName.replace(reNoSuffix,'');
+      var existingNameWithoutSuffix = existingName.replace(reNoSuffix,'');
       if (existingNameWithoutSuffix === baseWithoutSuffix) {
          var suffixMatch = exisitingName.match(reSuffix);
          if (suffixMatch) {
