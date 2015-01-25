@@ -749,7 +749,7 @@ var ffM_variables = (function() {
       debug("resolver factory Integer for :",Log.pp(parameters));
 #endif
      return (
-         function parseInteger(ruleParameters,imageKeywords,imageVariables,inputFile) {
+         function parseInteger(ruleParameters,imageKeywords,imageVariables,inputFile,mutableErrorList) {
             var valueString = imageKeywords.getValue(ruleParameters.key);
             // Accept float also
             var valueF =  parseFloat(valueString);
@@ -776,12 +776,17 @@ var ffM_variables = (function() {
       debug("resolver factory Text for :",Log.pp(parameters));
 #endif
      return (
-         function parseText(ruleParameters,imageKeywords,imageVariables,inputFile) {
+         function parseText(ruleParameters,imageKeywords,imageVariables,inputFile,mutableErrorList) {
             var valueString = imageKeywords.getValue(ruleParameters.key);
             if (valueString === null) {
                return null;
             } else {
                var cleanedValue = filterFITSValue(valueString);
+               if (cleanedValue === null) {
+                  mutableErrorList.push("Value of key " + ruleParameters.key +
+                  " is empty afer trimming/removing illegal characters, was '" + valueString + "'");
+                  return null;
+               }
                if (ruleParameters.case === 'UP') {
                   cleanedValue = cleanedValue.toUpperCase();
                } else if (ruleParameters.case === 'DOWN') {
@@ -804,7 +809,7 @@ var ffM_variables = (function() {
       debug("resolver factory IntegerPair for :",Log.pp(parameters));
 #endif
      return (
-         function parseIntegerPair(ruleParameters,imageKeywords,imageVariables,inputFile) {
+         function parseIntegerPair(ruleParameters,imageKeywords,imageVariables,inputFile,mutableErrorList) {
             var valueString1 = imageKeywords.getValue(ruleParameters.key1);
             var valueString2 = imageKeywords.getValue(ruleParameters.key2);
             // Accept float also
@@ -833,7 +838,7 @@ var ffM_variables = (function() {
       debug("resolver factory Constant for :",Log.pp(parameters));
 #endif
      return (
-         function parseConstant(ruleParameters,imageKeywords,imageVariables,inputFile) {
+         function parseConstant(ruleParameters,imageKeywords,imageVariables,inputFile,mutableErrorList) {
             return ruleParameters.value;
          }
       )
@@ -867,6 +872,12 @@ var ffM_variables = (function() {
                }
                 // Make sure we do not generate baroque file names (should probably done at file name generation only)
                var cleanedValue = filterFITSValue(formattedDate);
+               if (cleanedValue === null) {
+                  mutableErrorList.push("Value of formatted date of " + ruleParameters.key +
+                     " is empty afer trimming/removing illegal characters, was '" + formattedDate + "'");
+                  return null;
+               }
+
                return cleanedValue;
             }
 
@@ -882,7 +893,7 @@ var ffM_variables = (function() {
       debug("resolver factory RegExpList for :",Log.pp(parameters));
 #endif
       return (
-         function parseRegExpList(ruleParameters,imageKeywords,imageVariables,inputFile) {
+         function parseRegExpList(ruleParameters,imageKeywords,imageVariables,inputFile,mutableErrorList) {
             var value = imageKeywords.getUnquotedValue(ruleParameters.key);
             if (value === null) return null;
             // Console.writeln("DEBUG value is '" + value + "'");
@@ -896,7 +907,7 @@ var ffM_variables = (function() {
      debug("resolver factory FileName for :",Log.pp(parameters));
 #endif
      return (
-         function parseFileName(ruleParameters,imageKeywords,imageVariables,inputFile) {
+         function parseFileName(ruleParameters,imageKeywords,imageVariables,inputFile,mutableErrorList) {
             return  File.extractName(inputFile);
          }
       )
@@ -907,7 +918,7 @@ var ffM_variables = (function() {
       debug("resolver factory FileExtension for :",Log.pp(parameters));
 #endif
      return (
-         function parseFileExtension(ruleParameters,imageKeywords,imageVariables,inputFile) {
+         function parseFileExtension(ruleParameters,imageKeywords,imageVariables,inputFile,mutableErrorList) {
             return  File.extractExtension(inputFile);
          }
       )
@@ -918,7 +929,7 @@ var ffM_variables = (function() {
       debug("resolver factory Night for :",Log.pp(parameters));
 #endif
      return (
-         function parseNight(ruleParameters,imageKeywords,imageVariables,inputFile) {
+         function parseNight(ruleParameters,imageKeywords,imageVariables,inputFile,mutableErrorList) {
             var longObs = imageKeywords.getValue(ruleParameters.keyLongObs); // East in degree
             // longObs = -110;
             // TODO Support default longObs

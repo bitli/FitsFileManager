@@ -500,6 +500,17 @@ var ffM_Configuration = (function() {
                    }
                }
            },
+           { name: "dateobs",
+             description: "Date of observation",
+             show: true,
+             resolver: "DateTime",
+             parameters:
+               { DateTime:
+                   { key: "DATE-OBS",
+                     format: "%y%m%d"
+                   }
+               }
+           },
            { name: "filename",
              description: "Input file name",
              show: false,
@@ -763,7 +774,7 @@ function FFM_GUIParameters() {
             "&type;/&1;_&binning;_&temp;C_&exposure;s_&filter;_&count;&extension;",
             "&OBJECT;_&filter;_&count;&extension;",
             "&1;_&type?light;_&filter?clear;_&count;&extension;",
-            "&object;_&telescope;_&1;_&binning;_&temp;C_&exposure;s_&filter;_&PIERSIDE;_&count;_cal&extension;",
+            "&object;_&telescope;_&dateobs;_&binning;_&temp;C_&exposure;s_&filter;_&PIERSIDE;_&count;_cal&extension;",
             ""
       ];
       this.targetFileItemListComment = [
@@ -785,7 +796,7 @@ function FFM_GUIParameters() {
       this.regexpItemListComment = [
          "last",
          "extract name",
-         "extract date part for iTelescope template",
+         "extract date part from file in iTelescope file format",
          "(everything)"
       ];
 
