@@ -529,8 +529,31 @@ var ffM_allTests = {
      // pT_assertEquals("string",guiParameters.targetFileNameCompiledTemplate);
    },
 
+   // ---------------------------------------------------------------------------------------------------------
+   // Test of helper functions
+   // ---------------------------------------------------------------------------------------------------------
 
+   testJulianDay: function() {
+      var jd = julianDay(new Date(2015,0,23,23,52));
+      pT_assertEquals(2457046,jd);
+   },
 
+   testDateFormatter: function() {
+      var date = new Date(2015,112,23,22,67,32,15); // end in 15 ms
+
+      pT_assertEquals("Nothing, % is escaped.",formatDate("Nothing, %% is escaped.", date));
+      pT_assertEquals("Year Y:2024, y:24.",formatDate("Year Y:%Y, y:%y.", date));
+      pT_assertEquals("YY-MM-DD hh:mm:ss.lll: 2024-05-23 23:07:32.015",formatDate("YY-MM-DD hh:mm:ss.lll: %Y-%m-%d %H:%M:%S.%L", date));
+      pT_assertEquals("Julian day: 2460454.",formatDate("Julian day: %j.", date));
+   },
+
+   testDateParser: function() {
+      pT_assertEquals(new Date(1995,12,23,13,45,32).getTime(),parseFITSDateTime("1995-12-23T13:45:32").getTime());
+      pT_assertEquals(new Date(1995,12,23,13,45,32,432).getTime(),parseFITSDateTime("1995-12-23T13:45:32.432").getTime());
+      pT_assertEquals(new Date(1995,12,23,13,45,32,430).getTime(),parseFITSDateTime("1995-12-23T13:45:32.43").getTime());
+      pT_assertEquals(new Date(1995,12,23,13,45,32,900).getTime(),parseFITSDateTime("1995-12-23T13:45:32.9").getTime());
+      pT_assertEquals(new Date(2012,2,28).getTime(),parseFITSDateTime("2012-02-28").getTime());
+   }
 
 }
 

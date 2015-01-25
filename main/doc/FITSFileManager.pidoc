@@ -171,12 +171,13 @@
                {Text}{The value of a FITS key used as text, but with characters not allowed in file names filtered.}
                {Integer}{The value of a FITS key interpreted as an integer.}
                {IntegerPair}{The value of two FITS key interpreted as a pair of integer (for example size or binning).}
+               {DateTime}{The value of a FITS key interpreted as a date or time.}
                {RegExpList}{The value of a FITS key is tested agains list of regexp, the first match defines the value. This is typically used to normalize the name of a filter or image type.}
                {Constant}{A fixed value value.}
                {FileName}{The original file name.}
                {FileExtension}{The original file extension.}
             }
-        You can change the name, description and its default presence in the file tables for all parameters. Additional paramters are presented depending of the \e{resolver}. Most resolvers have a field to define the \e{format} of the variable.
+         You can change the name, description and its default presence in the file tables for all parameters. Additional parameters are presented depending of the \e{resolver}. Most resolvers have a field to define the \e{format} of the variable.
 
          The area \e{built-in variable formats} is used to specify the format of the built-in synthethic variables \c{&rank;} and \c{&code;}.
     }

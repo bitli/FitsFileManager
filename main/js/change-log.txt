@@ -3,6 +3,7 @@ FITSFileManager Script Changelog
 ===============================================================================
 
 2015.1.2 - v1.3
+- Added support for date/time fields and format
 - Added defaults for iTelescope
 - Small corrections and changes for PI 1.8 1123
 - Moved doc to PIDOC

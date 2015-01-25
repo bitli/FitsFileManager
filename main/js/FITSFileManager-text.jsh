@@ -235,8 +235,9 @@ H: {
 
    VARIABLE_RESOLVER_TOOLTIP: ("Select one of the variable resolution algorithm:<dl>"+
       "<dt>Text</dt><dd>The text of the FITS key, filtered from special characters.</dd>" +
-      "<dt>Integer</dt><dd>A FITSS keyword value parsed as an integer value</dd>"+
+      "<dt>Integer</dt><dd>A FITS keyword value parsed as an integer value</dd>"+
       "<dt>IntegerPair</dt><dd>Two FITS keyword values parsed as two integers value</dd>" +
+      "<dt>DateTime</dt><dd>A FITS keyword values parsed as date or date and time</dd>" +
       "<dt>RegExpList</dt><dd>A FITS keyword and a list of regular expression and replacements</dd>" +
       "<dt>Constant</dt><dd>A fixed value (for test or parameterization)</dd>" +
       "<dt>Night</dt><dd>An algorithm to help classify by night (used mostly for sorting)</dd>" +

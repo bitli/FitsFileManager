@@ -469,7 +469,7 @@ var ffM_GUI_config = (function (){
            that.text_Edit.enabled = false;
         } else {
            if (! target.hasOwnProperty(property)) {
-              throw "Entry '" + name + "' does not have property '" + property + "': " + Log.pp(target);
+              throw "TextEntryRow.updateTarget: Entry '" + name + "' does not have property '" + property + "': " + Log.pp(target);
            }
            that.text_Edit.text = propertyType.propertyToText(target[property]);
            that.text_Edit.enabled = true;
@@ -524,7 +524,7 @@ var ffM_GUI_config = (function (){
            that.bool_CheckBox.enabled = false;
         } else {
            if (! target.hasOwnProperty(property)) {
-              throw "Entry '" + name + "' does not have property '" + property + "': " + Log.pp(target);
+              throw "BooleanEntryRow.updateTarget: Entry '" + name + "' does not have property '" + property + "': " + Log.pp(target);
            }
            that.bool_CheckBox.checked = target[property];
            that.bool_CheckBox.enabled = true;
@@ -604,7 +604,7 @@ var ffM_GUI_config = (function (){
             }
         } else {
             if (! target.hasOwnProperty(property)) {
-               throw "Entry '" + name + "' does not have property '" + property + "': " + Log.pp(target);
+               throw "CheckListEntryRow.updateTarget: Entry '" + name + "' does not have property '" + property + "': " + Log.pp(target);
             }
             var code = target[property];
             for (var i=0; i<that.checkBoxes.length;i ++) {
@@ -955,7 +955,49 @@ var ffM_GUI_config = (function (){
   }
   IntegerPairValueResolverControl.prototype = new Control;
 
-  // ..............................................................................................
+   // ..............................................................................................
+
+  function DateTimeValueResolverControl(parent, resolverName, rowStyle) {
+     this.__base__ = Control;
+     this.__base__(parent);
+
+     this.resolverName = resolverName;
+
+     this.sizer = new VerticalSizer;
+
+     // FITS Key
+     this.keyRow = new TextEntryRow(this, rowStyle, "FITS key",
+      "The name of a FITS key that will provide the date value\n"+
+      "or date/time value in FITS format as 'YYYY-MM-DDThh:mm:ss[.sss. . . ]",
+      "key", propertyTypes.FREE_TEXT, null);
+     this.sizer.add(this.keyRow);
+
+     this.formatRow = new TextEntryRow(this, rowStyle, "Format",
+     "A valid date or date/time format, as %Y-%m%dT%h:%m%s.%L for 2014-03-21T12:34:21.321\n" +
+     "%y for 2 digit year, %j for julian day, %% for %\n" +
+     "Usually used as %Y%m%d to add the date to the file name",
+     "format", propertyTypes.FREE_TEXT, null);
+     this.sizer.add(this.formatRow);
+
+     this.initialize = function(variableDefinition) {
+        if (!variableDefinition.parameters.hasOwnProperty(resolverName)) {
+           variableDefinition.parameters[resolverName] = deepCopyData(ffM_Resolver.resolverByName(resolverName).initial);
+        }
+     }
+
+     this.populate = function(variableDefinition) {
+        // Should probably be somewhere else
+        this.initialize(variableDefinition);
+        this.keyRow.updateTarget(variableDefinition.parameters[resolverName]);
+        this.formatRow.updateTarget(variableDefinition.parameters[resolverName]);
+     }
+     this.leave = function() {
+        // Nothing the clean
+     }
+  }
+  DateTimeValueResolverControl.prototype = new Control;
+
+// ..............................................................................................
 
   function NightResolverControl(parent, resolverName, rowStyle) {
      this.__base__ = Control;
@@ -1109,6 +1151,8 @@ var ffM_GUI_config = (function (){
      this.addNewResolverControl(new IntegerValueResolverControl(this.variableDetails_GroupBox, 'Integer', rowStyle));
 
      this.addNewResolverControl(new IntegerPairValueResolverControl(this.variableDetails_GroupBox, 'IntegerPair', rowStyle));
+     
+     this.addNewResolverControl(new DateTimeValueResolverControl(this.variableDetails_GroupBox, 'DateTime', rowStyle));
 
      this.addNewResolverControl(new MapFirstRegExpControl(this.variableDetails_GroupBox,'RegExpList', rowStyle));
 

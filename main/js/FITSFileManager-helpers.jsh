@@ -105,6 +105,137 @@ function createUniqueName(baseName, existingNames) {
    return baseWithoutSuffix +"_" +(largestSuffix+1)
 }
 
+// --- Date formatting support
+// Calculate the julian day (truncated) from a javascript date
+function julianDay(date) {
+    return Math.floor((date.getTime() / 86400000) + 2440587.5);
+}
+
+/*
+Format a timestamp (a javascript Date) according to the following rules:
+
+The format string consists of zero or more conversion specifications and 
+ordinary characters.
+A conversion specification consists of a % character and a terminating 
+conversion character that determines the conversion specification's behaviour. 
+All ordinary characters are copied unchanged into the array. 
+If copying takes place between objects that overlap, the behaviour is undefined. 
+Each conversion specification is replaced by appropriate characters as described 
+in the following list. 
+
+The appropriate characters are determined by the 
+program's locale and by the values contained in the structure pointed to by timptr.
+
+Local timezone information is used as though strftime() called tzset().
+
+%d
+    is replaced by the day of the month as a decimal number [01,31]. 
+%H
+    is replaced by the hour (24-hour clock) as a decimal number [00,23]. 
+%j  
+    is replaced by the julian day 
+%L  
+    is replaced by the milliseconds padded to 3 digits
+%m
+    is replaced by the month as a decimal number [01,12]. 
+%M
+    is replaced by the minute as a decimal number [00,59]. 
+%S
+    is replaced by the second as a decimal number [00,61]. 
+%y
+    is replaced by the year without century as a decimal number [00,99]. 
+%Y
+    is replaced by the year with century as a decimal number. 
+%%
+    is replaced by %. 
+
+If a conversion specification does not correspond to any of the above, the format character itself is output.
+
+*/
+
+function formatDate(format, timestamp) {
+    // Accept % followed by any char or % (to allow to escape %)
+    var formatChr = /%([a-zA-Z%])/gi;
+    
+    var formats = {
+       'd': function() {
+            return _pad(timestamp.getDate(),2);
+        },
+       'H': function() {
+            return _pad(timestamp.getHours(),2);
+        },
+       'j': function() {
+            return julianDay(timestamp);
+        },
+       'L': function() {
+            return _pad(timestamp.getMilliseconds (),3);
+        },
+       'm': function() {
+            return _pad(timestamp.getMonth()+1,2);
+        },
+       'M': function() {
+            return _pad(timestamp.getMinutes(),2);
+        },
+       'S': function() {
+            return _pad(timestamp.getSeconds(),2);
+        },
+       'y': function() {
+            return (timestamp.getFullYear()).toString().substring(2);
+        },
+       'Y': function() {
+            return timestamp.getFullYear();
+        },
+    }
+    
+    var _pad = function(n, c) {
+      n = String(n);
+      while (n.length < c) {
+         n = '0' + n;
+      }
+      return n;
+   };
+
+    function processFormatChar(fullIgnored, chr) {
+        //console.log('FMT ' + chr );
+        return formats[chr] ? formats[chr]() : chr;
+    }
+    
+    return format.replace(formatChr, processFormatChar);
+}
+
+// Parse date or date time string, see FITS standard
+// Date format is YYYY-MM-DDThh:mm:ss[.sss. . . ]
+// optionally restricted to the date part (without the letter T). 
+// They year must be four digits.
+// The letter T is not checked in parsing to accept slightly erroneous data
+// The subsecond part may be any (reasonable) precision
+function parseFITSDateTime(dateTimeString) {
+   // The first 3 fields must alwaqys be present, the time part is option, in it the fraction is itself optional.
+   var matchDateTime = /(\d\d\d\d)-(\d\d)-(\d\d)(?:.(\d\d):(\d\d):(\d\d)(?:.(\d+))?)?/;
+   var res = matchDateTime.exec(dateTimeString);
+    if (res === null) {
+      throw "Cannot parse date/time '" + dateTimeString + "', format YYYY-MM-DDThh:mm:ss[.sss. . . ]";
+   }
+   // Allow missing time component
+   var h=res[4], m=res[5], s=res[6];
+   if (res[4]===undefined && res[5]===undefined && res[6]===undefined) {
+      h=0; m=0; s=0;
+   }
+
+   // Convert optional fraction part to milliseconds
+   var ms = 0;
+   if (res[7] !== undefined) {
+      var mspart = parseInt(res[7]);
+      if (Number.isNaN(ms)) {
+         throw "Cannot parse date/time '" + dateTimeString + "', bad ms field, format YYYY-MM-DDThh:mm:ss[.sss. . . ]";
+      }
+      ms = Math.floor(mspart / Math.pow(10, res[7].length) * 1000.0);
+      // Console.writeln("*** parseFITSDateTime mspart " + ms + " L " + res[7].length + " P " + Math.pow(10, res[7].length) + " ms " + ms);
+  }
+   return new Date(res[1],res[2],res[3],h,m,s, ms);
+}
+
+ 
 
 //=========================================================================================================================
 // Object data support
@@ -392,6 +523,8 @@ var ffM_Resolver = (function(){
             initial:{key1: '?', key2: '?', format:'%dx%d'}, control: null, parserFactory:null},
       {name: 'Constant', description: 'Constant value',
             initial:{value: ''}, control: null, parserFactory:null},
+      {name: 'DateTime', description: 'Date or date+time value',
+            initial:{key: '?', format: '%Y%m%d'}, control: null, parserFactory:null},
       {name: 'FileName', description: 'Source file name',
             initial:{}, control: null, parserFactory:null},
       {name: 'FileExtension', description: 'Source file extension',
@@ -706,6 +839,43 @@ var ffM_variables = (function() {
          }
       )
    }
+
+   ffM_Resolver.resolverByName('DateTime').parserFactory = function(configuration, parameters){
+#ifdef DEBUG
+      debug("resolver factory DateTime for :",Log.pp(parameters));
+#endif
+     return (
+         function parseDateTimeFormat(ruleParameters,imageKeywords,imageVariables,inputFile) {
+            var formattedDate, dateTime;
+            var dateString = imageKeywords.getValue(ruleParameters.key);
+            if (dateString === null) {
+               return null;
+            } else {
+               
+              try {
+                dateTime = parseFITSDateTime(dateString);
+               } catch (e) {
+                  // TODO Find better way to communicate error to caller
+                  Console.writeln("Error parsing " + ruleParameters.key + ": " + e);
+                  return null;
+               }
+ 
+               try {
+                  formattedDate = formatDate(ruleParameters.format, dateTime);
+               } catch (e) {
+                  // TODO Find better way to communicate error to caller
+                  Console.writeln("Error formatting date/time with format '" + ruleParameters.format + "': " + e);
+                  return null;
+               }
+                // Make sure we do not generate baroque file names (should probably done at file name generation only)
+               var cleanedValue = filterFITSValue(formattedDate);
+               return cleanedValue;
+            }
+
+         }
+      )
+   }
+
 
    ffM_Resolver.resolverByName('RegExpList').parserFactory = function(configuration, parameters) {
       // Prepare lookup converter
