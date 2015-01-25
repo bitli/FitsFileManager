@@ -30,6 +30,8 @@ function FFM_Engine(guiParameters) {
       this.inputFiles = []; // Array of the full path of the input files
       this.inputFITSKeywords = [];  // Array of 'imageKeywords' for the corresponding input file
       this.inputVariables = [];  // Array of Map of stable synthethic variables for the corresponding input file
+      this.inputErrors = []; // Array of errors discovered durin the addition of the file (typically error parsing the
+                            //   FITS keys), so that they can be shown if the file is used
 
       // Global FITS key information - (the index of the name in keywordsSet.allValueKeywordNameList gives also the column offset in the GUI)
       this.keywordsSet = ffM_FITS_Keywords.makeKeywordsSet();   // array of names of all accumulated FITS keywords from all files
@@ -48,7 +50,7 @@ function FFM_Engine(guiParameters) {
       // array (note that not all inputFiles have a corresponging targetFile)
       // The targetFiles and errorPerFile are in the order of the inputFiles.
       // The targetFiles contains the file name without the base directory (common to all files) or null in case of error.
-      // The errorPerFile contains the errors String or null if no error,
+      // The errorPerFile contains the the error message as a String in case of error or null if no error,
       this.targetFilesIndices = [];
       this.targetFiles = [];
       this.errorPerFile = [];
@@ -110,16 +112,18 @@ function FFM_Engine(guiParameters) {
          var fileName = this.inputFiles[i];
          this.inputFITSKeywords[i] = ffM_FITS_Keywords.makeImageKeywordsfromFile(fileName);
          // Create the synthethic variables using the desired rules
+         this.inputErrors[i] = [];
          this.inputVariables[i] = ffM_variables.makeSyntheticVariables(this.inputFiles[i],
             this.inputFITSKeywords[i],
-            this.currentConfiguration.variableList)
+            this.currentConfiguration.variableList,
+            this.inputErrors[i])
        }
    }
 
 
 
 
-   // -- Add a list of input files, parse their keywordsa and generate their synthetic variables
+   // -- Add a list of input files, parse their keywordsa and generate the value of their synthetic variables
    this.addFiles = function (fileNames) {
 
 #ifdef DEBUG
@@ -138,10 +142,12 @@ function FFM_Engine(guiParameters) {
             this.inputFiles.push(fileNames[i]);
             this.inputFITSKeywords.push(imageKeywords);
             // Create the synthethic variables using the desired rules
+            var errorList = new Array;
             var variables = ffM_variables.makeSyntheticVariables(fileNames[i], imageKeywords,
-                this.currentConfiguration.variableList);
+                this.currentConfiguration.variableList, errorList);
 
             this.inputVariables.push(variables);
+            this.inputErrors.push(errorList);
             nmbFilesAdded++;
          } else {
             nmbFilesDuplicated ++;
@@ -162,6 +168,7 @@ function FFM_Engine(guiParameters) {
       this.inputFiles.splice(index,1);
       this.inputFITSKeywords.splice(index,1);
       this.inputVariables.splice(index,1);
+      this.inputErrors.splice(index,1);
    }
 
 
@@ -304,83 +311,91 @@ function FFM_Engine(guiParameters) {
             debug("buildTargetFiles: " + inputOrderIndex + ": processing inputFile[" + inputFileIndex + "] = " + inputFile);
 #endif
 
-            var inputFileName =  File.extractName(inputFile);
+            var errorList = this.inputErrors[inputFileIndex].slice(0);
+            // Check if there was any error during the load of the file (analysis of synthetic variables)
+            if (errorList.length === 0) {
+              
 
-            // The stable synthetic variables are preclaculated when the file is added to the input list and
-            // explictely recalculated if the configuration is changed, so we use the precalculated values.
-            variables = this.inputVariables[inputFileIndex];
-            // FITS keywords are also stable in a file
-            fitsKeywords = this.inputFITSKeywords[inputFileIndex];
+               // No error in input file loading , attempt to generate template
 
-            // Some variables cannot be precalculated when the file is loaded, because
-            // they depend on properties that can be changed in the main dialog, like the regular expression to
-            // parse file names or the order of the files or other data that may change after file is loaded.
+               var inputFileName =  File.extractName(inputFile);
 
-            // Variable to represent parts of the input file name, as parsed by a user specified regexp.
-             //   &1; &2;, ... The corresponding match from the sourceFileNameRegExp
-            var regexpVariables = [];
-            if (guiParameters.sourceFileNameRegExp !== null) {
-               var inputFileNameMatch = guiParameters.sourceFileNameRegExp.exec(inputFileName);
-#ifdef DEBUG
-               debug ("buildTargetFiles: inputFileNameMatch= " + inputFileNameMatch);
-#endif
-               if (inputFileNameMatch !== null) {
-                  for (var j = 0; j<inputFileNameMatch.length; j++) {
-                     regexpVariables[j.toString()] = inputFileNameMatch[j]
+               // The values of the stable synthetic variables are precalculated when the file is added 
+               // to the input list and explictely recalculated if the configuration is changed, so we can directly use the 
+               // precalculated variable bindings.
+               variables = this.inputVariables[inputFileIndex];
+               // FITS keywords are also stable in a file
+               fitsKeywords = this.inputFITSKeywords[inputFileIndex];
+
+               // Some variables cannot be precalculated when the file is loaded, because
+               // they depend on properties that can be changed in the main dialog, like the regular expression to
+               // parse file names or the order of the files or other data that may change after file is loaded.
+
+               // Variable to represent parts of the input file name, as parsed by a user specified regexp.
+                //   &1; &2;, ... The corresponding match from the sourceFileNameRegExp
+               var regexpVariables = [];
+               if (guiParameters.sourceFileNameRegExp !== null) {
+                  var inputFileNameMatch = guiParameters.sourceFileNameRegExp.exec(inputFileName);
+   #ifdef DEBUG
+                  debug ("buildTargetFiles: inputFileNameMatch= " + inputFileNameMatch);
+   #endif
+                  if (inputFileNameMatch !== null) {
+                     for (var j = 0; j<inputFileNameMatch.length; j++) {
+                        regexpVariables[j.toString()] = inputFileNameMatch[j]
+                     }
                   }
                }
-            }
 
-            //   &rank;      The rank in the list of files of the file being moved/copied
-            rankString = format(this.currentConfiguration.builtins.rank.format,inputOrderIndex);
+               //   &rank;      The rank in the list of files of the file being moved/copied
+               rankString = format(this.currentConfiguration.builtins.rank.format,inputOrderIndex);
 
 
-            // Do the template operations (building new name) , keeping track of errors
+               // Do the template operations (build  the new file name), keeping track of errors
 
-            expansionErrors = [];
-            var targetDirectory = targetDirectoryCompiledTemplate.expandTemplate(expansionErrors,targetDirectoryVariableResolver);
-#ifdef DEBUG
-            debug("buildTargetFiles: expanded targetDirectory = " + targetDirectory + ", errors = " + expansionErrors);
-#endif
+               var targetDirectory = targetDirectoryCompiledTemplate.expandTemplate(errorList,targetDirectoryVariableResolver);
+   #ifdef DEBUG
+               debug("buildTargetFiles: expanded targetDirectory = " + targetDirectory + ", errors = " + errorList);
+   #endif
 
-            if (expansionErrors.length ===0) {
-            // Expand the groupByTemplate to form the id of the counter (targetDir may be used in the group template)
-               group = groupByCompiledTemplate.expandTemplate(expansionErrors,groupByVariableResolver);
-#ifdef DEBUG
-               debug("buildTargetFiles: expanded group = " + group + ", errors: " + expansionErrors.join(","));
-#endif
-               if (expansionErrors.length === 0) {
+               if (errorList.length ===0) {
+               // Expand the groupByTemplate to form the id of the counter (targetDir may be used in the group template)
+                  group = groupByCompiledTemplate.expandTemplate(errorList,groupByVariableResolver);
+   #ifdef DEBUG
+                  debug("buildTargetFiles: expanded group = " + group + ", errors: " + errorList.join(","));
+   #endif
+                  if (errorList.length === 0) {
 
-                  // The count variable must be handled especially
-                  //   &count;    The index of the file in its group, the group being defined by the group template above
-                  count = 0;
-                  if (countingGroups.hasOwnProperty(group)) {
-                   count = countingGroups[group];
-                  }
-                  count ++;
-                  countingGroups[group] = count;
-                  countString = format(this.currentConfiguration.builtins.count.format,count);
-#ifdef DEBUG
-                  debug("buildTargetFiles: for group = " + group + ", count = " + countString);
-#endif
+                     // The count variable must be handled especially
+                     //   &count;    The index of the file in its group, the group being defined by the group template above
+                     count = 0;
+                     if (countingGroups.hasOwnProperty(group)) {
+                      count = countingGroups[group];
+                     }
+                     count ++;
+                     countingGroups[group] = count;
+                     countString = format(this.currentConfiguration.builtins.count.format,count);
+   #ifdef DEBUG
+                     debug("buildTargetFiles: for group = " + group + ", count = " + countString);
+   #endif
 
-                  var targetString = targetFileNameCompiledTemplate.expandTemplate(expansionErrors,targetFileVariableResolver);
-#ifdef DEBUG
-                  debug("buildTargetFiles: expanded targetString = " + targetString + ", errors: " + expansionErrors.join(","));
-#endif
-                  // This requires that the variable 'extension' be well defined
-                  // Add a default extension
-                  if (File.extractExtension(targetString).length === 0) {
-                     targetString += variables['extension'];
+                     var targetString = targetFileNameCompiledTemplate.expandTemplate(errorList,targetFileVariableResolver);
+   #ifdef DEBUG
+                     debug("buildTargetFiles: expanded targetString = " + targetString + ", errors: " + errorList.join(","));
+   #endif
+                     // This requires that the variable 'extension' be well defined
+                     // Add a default extension
+                     if (File.extractExtension(targetString).length === 0) {
+                        targetString += variables['extension'];
+                     }
                   }
                }
             }
 
             //Console.writeln("** buildTargetFiles " + inputOrderIndex + " " + inputFileIndex + " "  + " " + targetString);
             this.targetFilesIndices.push(inputFileIndex);
-            if (expansionErrors.length>0) {
+            if (errorList.length>0) {
                this.targetFiles.push(null);
-               this.errorPerFile.push(expansionErrors.join(", "));
+               this.errorPerFile.push(errorList.join(", "));
                this.nmbFilesInError += 1;
             } else {
                this.targetFiles.push(targetString);

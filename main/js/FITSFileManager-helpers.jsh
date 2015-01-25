@@ -722,7 +722,9 @@ var ffM_template = (function() {
 
 var ffM_variables = (function() {
 
-   // -- Install all the parsers in the  configuration (must be called once only on a configuration copy)
+   // -- Install all the parsers in the configuration being copied (the configuration is a pure data object
+   // and does not contains the code like the parser, only the name of the parser). It 
+   // must be called once only when copying a configuration)
    var installParsers = function(configuration) {
 #ifdef DEBUG
       debug("ffM_variables.installParsers: for",configuration.name);
@@ -760,9 +762,8 @@ var ffM_variables = (function() {
                try {
                   return format(ruleParameters.format, Math.round( valueF));
                } catch (e) {
-                  // TODO Find better way to communicate error to caller
-                  Console.writeln("Error formatting '" + ruleParameters.format +
-                  "' with parameters '" + roundedValueF + "': " + e);
+                  mutableErrorList.push("Error formatting '" + ruleParameters.format +
+                  "' with parameters '" + roundedValueF + "' + for key " + ruleParameters.key);
                   return null;
                }
              }
@@ -789,9 +790,8 @@ var ffM_variables = (function() {
                try {
                   return format(ruleParameters.format, cleanedValue);
                } catch (e) {
-                  // TODO Find better way to communicate error to caller
-                  Console.writeln("Error formatting '" + ruleParameters.format +
-                  "' with parameters '" + cleanedValue + "': " + e);
+                  mutableErrorList.push("Error formatting '" + ruleParameters.format +
+                  "' with parameters '" + cleanedValue + "' for key " + ruleParameters.key);
                   return null;
                }
             }
@@ -819,9 +819,8 @@ var ffM_variables = (function() {
                   var roundedValueF2 =  Math.round( valueF2) | 0;
                   return format(ruleParameters.format, roundedValueF1, roundedValueF2);
                } catch (e) {
-                  // TODO Find better way to communicate error to caller
-                  Console.writeln("Error formatting '" + ruleParameters.format +
-                  "' with parameters '" + roundedValueF1 + "', '" + roundedValueF1 + "': " + e);
+                  mutableErrorList.push("Error formatting '" + ruleParameters.format +
+                  "' with parameters '" + roundedValueF1 + "', '" + roundedValueF1 + "' for keys " + ruleParameters.key1 + "/" + ruleParameters.key2);
                   return null;
                }
             }
@@ -845,7 +844,7 @@ var ffM_variables = (function() {
       debug("resolver factory DateTime for :",Log.pp(parameters));
 #endif
      return (
-         function parseDateTimeFormat(ruleParameters,imageKeywords,imageVariables,inputFile) {
+         function parseDateTimeFormat(ruleParameters,imageKeywords,imageVariables,inputFile, mutableErrorList) {
             var formattedDate, dateTime;
             var dateString = imageKeywords.getValue(ruleParameters.key);
             if (dateString === null) {
@@ -855,16 +854,15 @@ var ffM_variables = (function() {
               try {
                 dateTime = parseFITSDateTime(dateString);
                } catch (e) {
-                  // TODO Find better way to communicate error to caller
-                  Console.writeln("Error parsing " + ruleParameters.key + ": " + e);
+                  mutableErrorList.push(e + " when parsing " + ruleParameters.key);
                   return null;
                }
  
                try {
                   formattedDate = formatDate(ruleParameters.format, dateTime);
                } catch (e) {
-                  // TODO Find better way to communicate error to caller
-                  Console.writeln("Error formatting date/time with format '" + ruleParameters.format + "': " + e);
+                    mutableErrorList.push("Error formatting date/time with format '" + ruleParameters.format + 
+                     " for key " + ruleParameters.key);
                   return null;
                }
                 // Make sure we do not generate baroque file names (should probably done at file name generation only)
@@ -946,7 +944,8 @@ var ffM_variables = (function() {
    //    inputFile: Full path of input file (to extract file anme etc...)
    //    imageKeywords: A FitsFileManager imageKeyword object (all FITS keywords of the image)
    //    variableList: The variable definitions of the current rule
-    function makeSyntheticVariables(inputFile, imageKeywords, variableList) {
+   //    mutableErrorList: Array of error messages
+   function makeSyntheticVariables(inputFile, imageKeywords, variableList, mutableErrorList) {
 
       var inputFileName =  File.extractName(inputFile);
 
@@ -955,7 +954,7 @@ var ffM_variables = (function() {
       for (var i=0; i<variableList.length; i++) {
          var variableDefinition = variableList[i];
          var parameters = variableDefinition.parameters[variableDefinition.resolver];
-         variables[variableDefinition.name] = variableDefinition.parser(parameters,imageKeywords, variables, inputFile);
+         variables[variableDefinition.name] = variableDefinition.parser(parameters,imageKeywords, variables, inputFile, mutableErrorList);
       }
 
 #ifdef DEBUG
