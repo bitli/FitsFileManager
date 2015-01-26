@@ -532,7 +532,7 @@ var ffM_Configuration = (function() {
                }
            },
            { name :"telescope",
-             description: "iTelescope id",
+             description: "iTelescope telescope identifier",
              show: true,
              resolver: "RegExpList",
              parameters:

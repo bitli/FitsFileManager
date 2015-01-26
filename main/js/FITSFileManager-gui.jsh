@@ -674,25 +674,35 @@ function MainDialog(engine, guiParameters) {
       }
 
       var re = this.editText.trim();
+      var needRefresh = false;
       if (re.length === 0) {
+         if (guiParameters.sourceFileNameRegExp !== null) { needRefresh = true;}
          guiParameters.sourceFileNameRegExp = null;
 #ifdef DEBUG
          debug("sourceTemplate_Edit: onTextUpdated:- cancel regexp");
 #endif
       } else {
          try {
-            guiParameters.sourceFileNameRegExp = regExpFromUserString(re);
+            var regExpAsString = regExpFromUserString(re);
+            if (guiParameters.sourceFileNameRegExp !== regExpAsString) { needRefresh = true;}
+            guiParameters.sourceFileNameRegExp = regExpAsString;
             this.textColor = 0x000000;
 #ifdef DEBUG
             debug("sourceTemplate_Edit: onTextUpdated: regexp: " + guiParameters.sourceFileNameRegExp);
+
+ 
 #endif
          } catch (err) {
+            // Do not refresh in case of error in regexp, wait until corrected
             guiParameters.sourceFileNameRegExp = null;
             this.textColor = 0xFF0000;
 #ifdef DEBUG
             debug("sourceTemplate_Edit: onTextUpdated:  bad regexp - err: " + err);
 #endif
          }
+      }
+      if (needRefresh) {
+         this.dialog.refreshTargetFiles();
       }
    }
 
@@ -718,6 +728,8 @@ function MainDialog(engine, guiParameters) {
 #ifdef DEBUG
             debug("sourceTemplate_Edit: onTextUpdated: regexp: " + guiParameters.sourceFileNameRegExp);
 #endif
+            this.dialog.refreshTargetFiles();
+
          } catch (err) {
             guiParameters.sourceFileNameRegExp = null;
             this.textColor = 0xFF0000;
