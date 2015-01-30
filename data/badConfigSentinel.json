@@ -1,0 +1,737 @@
+{
+  "sentinel": "FITSFileManager.SOMETHINGWRONG",
+  "version": 1,
+  "configurations": [
+    {
+      "name": "Default",
+      "description": "Common FITS rules",
+      "variableList": [
+        {
+          "name": "type",
+          "description": "Type of image (flat, bias, ...)",
+          "show": true,
+          "resolver": "RegExpList",
+          "parameters": {
+            "RegExpList": {
+              "key": "IMAGETYP",
+              "reChecks": [
+                {
+                  "regexp": "/flat/i",
+                  "replacement": "flat"
+                },
+                {
+                  "regexp": "/bias/i",
+                  "replacement": "bias"
+                },
+                {
+                  "regexp": "/offset/i",
+                  "replacement": "bias"
+                },
+                {
+                  "regexp": "/dark/i",
+                  "replacement": "dark"
+                },
+                {
+                  "regexp": "/light/i",
+                  "replacement": "light"
+                },
+                {
+                  "regexp": "/science/i",
+                  "replacement": "light"
+                },
+                {
+                  "regexp": "/.*/",
+                  "replacement": "&0;"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "filter",
+          "description": "Filter (clear, red, ...)",
+          "show": true,
+          "resolver": "RegExpList",
+          "parameters": {
+            "RegExpList": {
+              "key": "FILTER",
+              "reChecks": [
+                {
+                  "regexp": "/green/i",
+                  "replacement": "green"
+                },
+                {
+                  "regexp": "/blue/i",
+                  "replacement": "blue"
+                },
+                {
+                  "regexp": "/red/i",
+                  "replacement": "red"
+                },
+                {
+                  "regexp": "/clear/i",
+                  "replacement": "clear"
+                },
+                {
+                  "regexp": "/luminance/i",
+                  "replacement": "luminance"
+                },
+                {
+                  "regexp": "/.*/",
+                  "replacement": "&0;"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "exposure",
+          "description": "Exposure in seconds",
+          "show": true,
+          "resolver": "Integer",
+          "parameters": {
+            "Integer": {
+              "key": "EXPTIME",
+              "abs": true,
+              "format": "%4.4d"
+            }
+          }
+        },
+        {
+          "name": "temp",
+          "description": "Temperature in C",
+          "show": true,
+          "resolver": "Integer",
+          "parameters": {
+            "Integer": {
+              "key": "SET-TEMP",
+              "abs": true,
+              "format": "%4.4d"
+            }
+          }
+        },
+        {
+          "name": "binning",
+          "description": "Binning as 1x1, 2x2, ...",
+          "show": true,
+          "resolver": "IntegerPair",
+          "parameters": {
+            "IntegerPair": {
+              "key1": "XBINNING",
+              "key2": "YBINNING",
+              "format": "%dx%d"
+            }
+          }
+        },
+        {
+          "name": "night",
+          "description": "night (experimental)",
+          "show": true,
+          "resolver": "Night",
+          "parameters": {
+            "Night": {
+              "keyLongObs": "LONG-OBS",
+              "keyJD": "JD"
+            }
+          }
+        },
+        {
+          "name": "filename",
+          "description": "Input file name",
+          "show": false,
+          "resolver": "FileName",
+          "parameters": {
+            "FileName": {}
+          }
+        },
+        {
+          "name": "extension",
+          "description": "Input file extension",
+          "show": false,
+          "resolver": "FileExtension",
+          "parameters": {
+            "FileExtension": {}
+          }
+        }
+      ],
+      "builtins": {
+        "rank": {
+          "format": "%4.4d"
+        },
+        "count": {
+          "format": "%4.4d"
+        }
+      }
+    },
+    {
+      "name": "User CAHA",
+      "description": "Test configuration based on CAHA image",
+      "variableList": [
+        {
+          "name": "type",
+          "description": "Type of image (flat, bias, ...)",
+          "show": true,
+          "resolver": "RegExpList",
+          "parameters": {
+            "RegExpList": {
+              "key": "IMAGETYP",
+              "reChecks": [
+                {
+                  "regexp": "/flat/i",
+                  "replacement": "flat"
+                },
+                {
+                  "regexp": "/bias/i",
+                  "replacement": "bias"
+                },
+                {
+                  "regexp": "/offset/i",
+                  "replacement": "bias"
+                },
+                {
+                  "regexp": "/dark/i",
+                  "replacement": "dark"
+                },
+                {
+                  "regexp": "/light/i",
+                  "replacement": "light"
+                },
+                {
+                  "regexp": "/science/i",
+                  "replacement": "light"
+                },
+                {
+                  "regexp": "/.*/",
+                  "replacement": "&0;"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "filter",
+          "description": "Filter (clear, red, ...)",
+          "show": true,
+          "resolver": "RegExpList",
+          "parameters": {
+            "RegExpList": {
+              "key": "INSFLNAM",
+              "reChecks": [
+                {
+                  "regexp": "/.*/i",
+                  "replacement": "&0;"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "exposure",
+          "description": "Exposure in seconds",
+          "show": true,
+          "resolver": "Integer",
+          "parameters": {
+            "Integer": {
+              "key": "EXPTIME",
+              "abs": true,
+              "format": "%4.4d"
+            }
+          }
+        },
+        {
+          "name": "temp",
+          "description": "Temperature in C",
+          "show": true,
+          "resolver": "Integer",
+          "parameters": {
+            "Integer": {
+              "key": "CCDTEMP",
+              "abs": true,
+              "format": "%4.4d"
+            }
+          }
+        },
+        {
+          "name": "binning",
+          "description": "Binning as 1x1, 2x2, ...",
+          "show": true,
+          "resolver": "IntegerPair",
+          "parameters": {
+            "IntegerPair": {
+              "key1": "CDELT1",
+              "key2": "CDELT2",
+              "format": "%dx%d"
+            }
+          }
+        },
+        {
+          "name": "night",
+          "description": "night (experimental)",
+          "show": true,
+          "resolver": "Night",
+          "parameters": {
+            "Night": {
+              "keyLongObs": "CAHA TEL GEOLON",
+              "keyJD": "JUL-DATE"
+            }
+          }
+        },
+        {
+          "name": "filename",
+          "description": "Input file name",
+          "show": false,
+          "resolver": "FileName",
+          "parameters": {
+            "FileName": {}
+          }
+        },
+        {
+          "name": "extension",
+          "description": "Input file extension",
+          "show": false,
+          "resolver": "FileExtension",
+          "parameters": {
+            "FileExtension": {}
+          }
+        }
+      ],
+      "builtins": {
+        "rank": {
+          "format": "%4.4d"
+        },
+        "count": {
+          "format": "%4.4d"
+        }
+      }
+    },
+    {
+      "name": "Default_1",
+      "description": "Common FITS rules",
+      "variableList": [
+        {
+          "name": "type",
+          "description": "Type of image (flat, bias, ...)",
+          "show": true,
+          "resolver": "RegExpList",
+          "parameters": {
+            "RegExpList": {
+              "key": "IMAGETYP",
+              "reChecks": [
+                {
+                  "regexp": "/flat/i",
+                  "replacement": "flat"
+                },
+                {
+                  "regexp": "/bias/i",
+                  "replacement": "bias"
+                },
+                {
+                  "regexp": "/offset/i",
+                  "replacement": "bias"
+                },
+                {
+                  "regexp": "/dark/i",
+                  "replacement": "dark"
+                },
+                {
+                  "regexp": "/light/i",
+                  "replacement": "light"
+                },
+                {
+                  "regexp": "/science/i",
+                  "replacement": "light"
+                },
+                {
+                  "regexp": "/.*/",
+                  "replacement": "&0;"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "filter",
+          "description": "Filter (clear, red, ...)",
+          "show": true,
+          "resolver": "RegExpList",
+          "parameters": {
+            "RegExpList": {
+              "key": "FILTER",
+              "reChecks": [
+                {
+                  "regexp": "/green/i",
+                  "replacement": "green"
+                },
+                {
+                  "regexp": "/blue/i",
+                  "replacement": "blue"
+                },
+                {
+                  "regexp": "/red/i",
+                  "replacement": "red"
+                },
+                {
+                  "regexp": "/clear/i",
+                  "replacement": "clear"
+                },
+                {
+                  "regexp": "/luminance/i",
+                  "replacement": "luminance"
+                },
+                {
+                  "regexp": "/.*/",
+                  "replacement": "&0;"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "exposure",
+          "description": "Exposure in seconds",
+          "show": true,
+          "resolver": "Integer",
+          "parameters": {
+            "Integer": {
+              "key": "EXPTIME",
+              "abs": true,
+              "format": "%4.4d"
+            }
+          }
+        },
+        {
+          "name": "temp",
+          "description": "Temperature in C",
+          "show": true,
+          "resolver": "Integer",
+          "parameters": {
+            "Integer": {
+              "key": "SET-TEMP",
+              "abs": true,
+              "format": "%4.4d"
+            }
+          }
+        },
+        {
+          "name": "binning",
+          "description": "Binning as 1x1, 2x2, ...",
+          "show": true,
+          "resolver": "IntegerPair",
+          "parameters": {
+            "IntegerPair": {
+              "key1": "XBINNING",
+              "key2": "YBINNING",
+              "format": "%dx%d"
+            }
+          }
+        },
+        {
+          "name": "night",
+          "description": "night (experimental)",
+          "show": true,
+          "resolver": "Night",
+          "parameters": {
+            "Night": {
+              "keyLongObs": "LONG-OBS",
+              "keyJD": "JD"
+            }
+          }
+        },
+        {
+          "name": "filename",
+          "description": "Input file name",
+          "show": false,
+          "resolver": "FileName",
+          "parameters": {
+            "FileName": {}
+          }
+        },
+        {
+          "name": "extension",
+          "description": "Input file extension",
+          "show": false,
+          "resolver": "FileExtension",
+          "parameters": {
+            "FileExtension": {}
+          }
+        },
+        {
+          "name": "dt",
+          "description": "test date",
+          "show": true,
+          "resolver": "DateTime",
+          "parameters": {
+            "Text": {
+              "key": "?",
+              "format": "%ls",
+              "case": "NONE"
+            },
+            "DateTime": {
+              "key": "DATE-OBS",
+              "format": "%Y%m%d"
+            }
+          }
+        },
+        {
+          "name": "bin",
+          "description": "bin test",
+          "show": true,
+          "resolver": "RegExpList",
+          "parameters": {
+            "Text": {
+              "key": "?",
+              "format": "%ls",
+              "case": "NONE"
+            },
+            "RegExpList": {
+              "key": "binning",
+              "reChecks": [
+                {
+                  "regexp": "/1x1/",
+                  "replacement": "un"
+                },
+                {
+                  "regexp": "/2x2/",
+                  "replacement": "deux"
+                },
+                {
+                  "regexp": "/.*/",
+                  "replacement": "autre"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "builtins": {
+        "rank": {
+          "format": "%4.4d"
+        },
+        "count": {
+          "format": "%4.4d"
+        }
+      }
+    },
+    {
+      "name": "iTelescope",
+      "description": "iTelescope rules",
+      "variableList": [
+        {
+          "name": "type",
+          "description": "Type of image (flat, bias, ...)",
+          "show": true,
+          "resolver": "RegExpList",
+          "parameters": {
+            "RegExpList": {
+              "key": "IMAGETYP",
+              "reChecks": [
+                {
+                  "regexp": "/flat/i",
+                  "replacement": "flat"
+                },
+                {
+                  "regexp": "/bias/i",
+                  "replacement": "bias"
+                },
+                {
+                  "regexp": "/offset/i",
+                  "replacement": "bias"
+                },
+                {
+                  "regexp": "/dark/i",
+                  "replacement": "dark"
+                },
+                {
+                  "regexp": "/light/i",
+                  "replacement": "light"
+                },
+                {
+                  "regexp": "/science/i",
+                  "replacement": "light"
+                },
+                {
+                  "regexp": "/.*/",
+                  "replacement": "&0;"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "filter",
+          "description": "Filter (clear, red, ...)",
+          "show": true,
+          "resolver": "RegExpList",
+          "parameters": {
+            "RegExpList": {
+              "key": "FILTER",
+              "reChecks": [
+                {
+                  "regexp": "/^V$/",
+                  "replacement": "G"
+                },
+                {
+                  "regexp": "/green/i",
+                  "replacement": "G"
+                },
+                {
+                  "regexp": "/^B$/",
+                  "replacement": "B"
+                },
+                {
+                  "regexp": "/blue/i",
+                  "replacement": "B"
+                },
+                {
+                  "regexp": "/^R$/",
+                  "replacement": "R"
+                },
+                {
+                  "regexp": "/red/i",
+                  "replacement": "R"
+                },
+                {
+                  "regexp": "/luminance/i",
+                  "replacement": "L"
+                },
+                {
+                  "regexp": "/.*/",
+                  "replacement": "&0;"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "exposure",
+          "description": "Exposure in seconds",
+          "show": true,
+          "resolver": "Integer",
+          "parameters": {
+            "Integer": {
+              "key": "EXPTIME",
+              "abs": true,
+              "format": "%4.4d"
+            }
+          }
+        },
+        {
+          "name": "temp",
+          "description": "Temperature in C",
+          "show": true,
+          "resolver": "Integer",
+          "parameters": {
+            "Integer": {
+              "key": "SET-TEMP",
+              "abs": true,
+              "format": "%3.3d"
+            }
+          }
+        },
+        {
+          "name": "binning",
+          "description": "Binning as 1x1, 2x2, ...",
+          "show": true,
+          "resolver": "IntegerPair",
+          "parameters": {
+            "IntegerPair": {
+              "key1": "XBINNING",
+              "key2": "YBINNING",
+              "format": "%dx%d"
+            }
+          }
+        },
+        {
+          "name": "night",
+          "description": "night (experimental)",
+          "show": true,
+          "resolver": "Night",
+          "parameters": {
+            "Night": {
+              "keyLongObs": "LONG-OBS",
+              "keyJD": "JD"
+            }
+          }
+        },
+        {
+          "name": "filename",
+          "description": "Input file name",
+          "show": false,
+          "resolver": "FileName",
+          "parameters": {
+            "FileName": {}
+          }
+        },
+        {
+          "name": "extension",
+          "description": "Input file extension",
+          "show": false,
+          "resolver": "FileExtension",
+          "parameters": {
+            "FileExtension": {}
+          }
+        },
+        {
+          "name": "object",
+          "description": "Object",
+          "show": true,
+          "resolver": "Text",
+          "parameters": {
+            "Text": {
+              "key": "OBJECT",
+              "format": "%ls",
+              "case": "UP"
+            }
+          }
+        },
+        {
+          "name": "telescope",
+          "description": "iTelescope id",
+          "show": true,
+          "resolver": "RegExpList",
+          "parameters": {
+            "Text": {
+              "key": "TELESCOP",
+              "format": "%ls",
+              "case": "UP"
+            },
+            "RegExpList": {
+              "key": "OBSERVAT",
+              "reChecks": [
+                {
+                  "regexp": "/ (T[0-9]+)/",
+                  "replacement": "&1;"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "dateobs",
+          "description": "Date of obeservation",
+          "show": true,
+          "resolver": "DateTime",
+          "parameters": {
+            "Text": {
+              "key": "?",
+              "format": "%ls",
+              "case": "UP"
+            },
+            "DateTime": {
+              "key": "DATE-OBS",
+              "format": "%Y%m%d"
+            }
+          }
+        }
+      ],
+      "builtins": {
+        "rank": {
+          "format": "%4.4d"
+        },
+        "count": {
+          "format": "%4.4d"
+        }
+      }
+    }
+  ]
+}

@@ -298,6 +298,46 @@ var ffM_GUI_config = (function (){
       c.sizer.margin = 6;
       c.sizer.spacing = 4;
 
+      c.load_Button = new PushButton( c );
+      c.load_Button.text = "Load...";
+      c.load_Button.enabled = true;
+      c.load_Button.onClick = function() {
+         var ofd = new OpenFileDialog;
+         ofd.multipleSelections = false;
+         ofd.caption = "Select FITSFileManager configuration file";
+         ofd.filters = [["json file", "*.json"]];
+         if ( ofd.execute() ) {
+            this.dialog.loadFilesAction(ofd.fileName);
+         }
+      }
+
+      c.saveAll_Button = new PushButton( c );
+      c.saveAll_Button.text = "Save all...";
+      c.saveAll_Button.enabled = true;
+      c.saveAll_Button.onClick = function() {
+         var ofd = new SaveFileDialog;
+         ofd.overwritePrompt = false;
+         ofd.caption = "Select FITSFileManager configuration file";
+         ofd.filters = [["json file", "*.json"]];
+         if ( ofd.execute() ) {
+            this.dialog.saveAllToFileAction(ofd.fileName);
+         }
+      }
+
+      c.saveCurrent_Button = new PushButton( c );
+      c.saveCurrent_Button.text = "Save current...";
+      c.saveCurrent_Button.enabled = true;
+      c.saveCurrent_Button.onClick = function() {
+         var ofd = new SaveFileDialog;
+         ofd.overwritePrompt = false;
+         ofd.caption = "Select FITSFileManager configuration file";
+         ofd.filters = [["json file", "*.json"]];
+         if ( ofd.execute() ) {
+            this.dialog.saveCurrentToFileAction(ofd.fileName);
+         }
+      }
+
+
       c.cancel_Button = new PushButton( c );
       c.cancel_Button.text = "Cancel";
       c.cancel_Button.enabled = true;
@@ -311,6 +351,9 @@ var ffM_GUI_config = (function (){
          parentDialog.ok();
       }
 
+      c.sizer.add(c.load_Button);
+      c.sizer.add(c.saveCurrent_Button);
+      c.sizer.add(c.saveAll_Button);
       c.sizer.addStretch();
       c.sizer.add(c.cancel_Button);
       c.sizer.add(c.ok_Button);
@@ -1232,7 +1275,7 @@ var ffM_GUI_config = (function (){
   VariableUIControl.prototype = new Control;
 
 
-   function ConfigurationGroupBox(parent, configurationSelectedCallback, configurationDuplicateCallback, configurationDeleteCallback ) {
+  function ConfigurationGroupBox(parent, configurationSelectedCallback, configurationDuplicateCallback, configurationDeleteCallback ) {
       this.__base__ = GroupBox;
       this.__base__(parent);
       var that = this;
@@ -1532,6 +1575,16 @@ var ffM_GUI_config = (function (){
         this.configurationLayoutControl.configure(this.editedConfigurationSet, this.currentConfigurationName);
         this.builtinVariable_Group.configure(this.editedConfigurationSet, this.currentConfigurationName);
         configurationSelectedCallback(this.currentConfigurationName);
+     }
+
+     this.loadFileAction = function loadFileAction(fileName) {
+        Console.writeln("LOAD");
+     }
+     this.saveCurrentToFileAction = function saveCurrentToFileAction(fileName) {
+        var result = ffM_Configuration.saveConfigurationFile(fileName, [this.selectedConfiguration]);
+     }
+     this.saveAllToFileAction = function saveAllToFileAction(fileName) {
+        var result = ffM_Configuration.saveConfigurationFile(fileName, this.editedConfigurationSet);
      }
 
 

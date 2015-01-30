@@ -8,6 +8,7 @@
 // -----------------------------------------------------------------------------------------------
 
 #include <pjsr/DataType.jsh>
+#include <pjsr/FileMode.jsh>
 
 
 // --- Configuration - Change the definitions as needed.
@@ -37,6 +38,8 @@
 // Name of key in settings
 #define FFM_SETTINGS_KEY_BASE  "FITSFileManager/"
 
+
+#define FFM_CONFIGURATION_FILE_SENTINEL "FITSFileManager.configurations"
 
 // ====================================================================================================================
 // Configuration module
@@ -89,6 +92,7 @@ var ffM_Configuration = (function() {
    [
       { name: "Default",
        description: "Common FITS rules",
+       version: PARAMETERS_VERSION,
        variableList:
          [ { name: "type",
              description: "Type of image (flat, bias, ...)",
@@ -571,7 +575,7 @@ var ffM_Configuration = (function() {
 
    // Methods used to extract commonly needed information from the ConfigurationSet
 
-   // Get the names of the all the configurations
+   // Get the names of the all the loade configurations
    var getAllConfigurationNames = function(aConfigurationTable) {
       var names = [];
       for (var i=0; i<aConfigurationTable.length; i++) {
@@ -580,7 +584,7 @@ var ffM_Configuration = (function() {
       return names;
    }
 
-   // Get the rule by name
+   // Get a configuration by name
    var getConfigurationByName = function(aConfigurationTable, name) {
       for (var i=0; i<aConfigurationTable.length; i++) {
          if (aConfigurationTable[i].name === name) return aConfigurationTable[i];
@@ -588,7 +592,7 @@ var ffM_Configuration = (function() {
       return null;
    }
 
-   // At least one configuration is required
+   // Remvoe a configuration by name, but at least one configuration must be present
    var removeConfigurationByName = function(aConfigurationTable, name) {
       if (aConfigurationTable.length>1) {
          for (var i=0; i<aConfigurationTable.length; i++) {
@@ -613,7 +617,7 @@ var ffM_Configuration = (function() {
    var syntheticVariableComments = [];
 
 
-   // The calling code must re-configure the GUI and the engine after calling this function
+   // Note: The caller must request re-configuration of the GUI and of the engine after calling this function
    var setActiveConfigurationName = function (nameOfNewActiveConfiguration) {
       activeConfigurationName = nameOfNewActiveConfiguration;
 #ifdef DEBUG
@@ -636,7 +640,7 @@ var ffM_Configuration = (function() {
 
    // -- Support for variable handling
 
-   // Model of variable - define a new variable
+   // Define a  new variable based on the model embedded in this code
    var defineVariable = function(name, description, resolver) {
       var initialValues = deepCopyData(ffM_Resolver.resolverByName(resolver).initial);
       var initialParameters = {};
@@ -650,7 +654,7 @@ var ffM_Configuration = (function() {
       }
    }
 
-   // Support for active configuration
+   // Accessors and support for managing the active configuration
 
    var getConfigurationTable = function() {
       return configurationTable;
@@ -676,6 +680,80 @@ var ffM_Configuration = (function() {
       }
       return deepCopyData(configuration);
    }
+
+
+  // Support to save/load configuration
+
+   // file = new File(filePath, FileMode_Read);
+  // var buffer = file.read( DataType_ByteArray, file.size );
+  // file.close();
+  // File.remove(filePath);
+  // var loadedText = buffer.toString();
+  // var loadedJSON = JSON.parse(loadedText);
+
+  // Load file
+  //   load, parse, check validaty
+
+  var loadConfigurationFile = function loadConfigurationFile(fileName) {
+    var file = null;
+    try {
+      file = new File(fileName, FileMode_Read);
+      var buffer = file.read( DataType_ByteArray, file.size );
+    } catch (ex) {
+      return ({messages: ["The file '" + fileName +"' is not readable."], configurations: null});
+    } finally {
+      if (file != null) file.close();
+    }
+    var loadedJSON = buffer.toString();
+    try {
+      var configurationData = JSON.parse(loadedJSON);
+    } catch (ex) {
+      return ({messages: ["File '" + fileName +"' is not a valid FITSFileManager configuration file, not JSON format."], configurations: null});
+    }
+    // Check that it is a proper configuration file 
+    if (! configurationData.hasOwnProperty("sentinel")  || configurationData.sentinel != FFM_CONFIGURATION_FILE_SENTINEL) {
+      return ({messages: ["File '" + fileName +"' is not a valid FITSFileManager configuration file, has not expected structure (missing or bad 'sentinel')."], configurations: null});      
+    }
+    if (! configurationData.hasOwnProperty("configurations") ) {
+      return ({messages: ["File '" + fileName +"' is not a valid FITSFileManager configuration file, has not expected structure (missing 'configurations')."], configurations: null});      
+    }
+    if (! configurationData.hasOwnProperty("version") ) {
+      return ({messages: ["File '" + fileName +"' is not a valid FITSFileManager configuration file, has not expected structure (missing 'version')."], configurations: null});      
+    }
+    if (configurationData.version > PARAMETERS_VERSION) {
+      return ({messages: ["File '" + fileName +"' is a FITSFileManager configuration file, but has version" +
+              configurationData.version + " higher than current verion " + PARAMETERS_VERSION + "."], configurations: null});      
+    }
+    return {messages: null, configurations: configurationData.configurations};
+  }
+
+  // Merge configurations
+  //   check what is merged,  replace or add
+
+  // Save configuration
+  //   Get single or all, format json, validate, write/overwrite file,
+  // Save a configuration table (possibly consisting of a single configuration)
+  // as a JSON file. The file has a header part in addition to the configuration
+  var saveConfigurationFile = function saveConfigurationFile(fileName, configurations) {
+    var configurationData = {sentinel: FFM_CONFIGURATION_FILE_SENTINEL, version: PARAMETERS_VERSION, configurations: configurations};
+    var configurationJSON = JSON.stringify(configurationData, null, 2);
+    var file;
+    try {
+       file = new File(fileName, FileMode_Create);
+       file.outText(configurationJSON, DataType_String8 );
+    } catch (ex) {
+       return ("The file '" + fileName +"' is not writeable: " + ex);
+    } finally {
+       if (file != null) file.close();
+    }
+    return null;
+  }
+  
+
+  // Validation:
+  //    Check type and presence,
+  //    return  configurations cpossibly adapted or null if fatal error, and list of messages
+
 
 
 
@@ -716,13 +794,15 @@ var ffM_Configuration = (function() {
       getConfigurationByName: getConfigurationByName,
       removeConfigurationByName: removeConfigurationByName,
 
+      saveConfigurationFile: saveConfigurationFile,
+      loadConfigurationFile: loadConfigurationFile,
+
       // Support for variables
       defineVariable: defineVariable,
 
-   // TODO Should probably be in the engine or variable handling,
+      // TODO Should probably be in the engine or variable handling,
       syntheticVariableNames: syntheticVariableNames,
       syntheticVariableComments: syntheticVariableComments,
-
 
 
    };
@@ -735,8 +815,9 @@ var ffM_Configuration = (function() {
 // ====================================================================================================================
 
 // The object FFM_GUIParameters keeps track of the parameters that are saved between executions
-// This include the Configurations and many processing options
+// This include the Configurations and other processing options
 function FFM_GUIParameters() {
+
    // Called at end of constructor
    this.initializeParametersToDefaults = function () {
 
@@ -768,6 +849,8 @@ function FFM_GUIParameters() {
       // The first element of the list is the last one selected by the user, the others are pre-defined elements
       // (currently hardcoded here - could eventually be made editable)
       // There are two parallel arrays, one for the values, and one for a comment displayed in the selection box
+
+      // File templates and the corresponding comments
       this.targetFileItemListText = [
             this.targetFileNameCompiledTemplate.templateString, // Will be adapted after parameter loading
             FFM_DEFAULT_TARGET_FILENAME_TEMPLATE,
@@ -787,6 +870,7 @@ function FFM_GUIParameters() {
             "(clear)"
       ];
 
+      // Regular expressions to parse file names and their corresponding comments
       this.regexpItemListText = [
          regExpToString(this.sourceFileNameRegExp), // Will be adapted after parameter loading
          regExpToString(FFM_DEFAULT_SOURCE_FILENAME_REGEXP),
@@ -801,6 +885,7 @@ function FFM_GUIParameters() {
       ];
 
 
+      // Template for generating group names and their comments
       this.groupItemListText = [
             this.groupByCompiledTemplate.templateString, // Will be adapted after parameter loading
             FFM_DEFAULT_GROUP_TEMPLATE,
@@ -816,12 +901,10 @@ function FFM_GUIParameters() {
             "none (count globally)"
       ];
 
-
-
    }
 
 
-   // For debugging and logging - the returned string MUST be escaped if written to the console
+   // For debugging and logging - the returned string MUST be escaped (for html special chararacters) if written to the console
    this.toString = function() {
       var s = "GUIParameters:\n";
       s += "  targetFileNameTemplate:         " + this.targetFileNameCompiledTemplate.templateString + "\n";
@@ -837,9 +920,12 @@ function FFM_GUIParameters() {
 }
 
 
+// Load the settings (this include the set of 'Configurations') from the PI settings of the application
+// The configurations are loaded from a JSon string in the settings
 FFM_GUIParameters.prototype.loadSettings = function() {
 
     // TODO Better log in case of error loading the configuration, at least indicate that something went wrong
+    // TODO Poissbly recover in case of error, validate the type of data
    function load( key, type )
    {
       var setting = Settings.read( FFM_SETTINGS_KEY_BASE + key, type );
@@ -866,15 +952,15 @@ FFM_GUIParameters.prototype.loadSettings = function() {
          Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' have parameter version ", parameterVersion, " which is higher than the version supported by the scirpt (", PARAMETERS_VERSION, "), settings ignored");
          Console.flush();
       } else {
-         if ( (o = load( "targetFileNameTemplate",    DataType_String )) !== null ) {
+        if ( (o = load( "targetFileNameTemplate",    DataType_String )) !== null ) {
            templateErrors = [];
            t =   ffM_template.analyzeTemplate(templateErrors,o);
            if (templateErrors.length===0) {
                this.targetFileNameCompiledTemplate = t; // Template correct
            }
 
-         };
-         if ( (o = load( "sourceFileNameRegExp",    DataType_String )) !== null ) {
+        };
+        if ( (o = load( "sourceFileNameRegExp",    DataType_String )) !== null ) {
             try {
                this.sourceFileNameRegExp = RegExpFromString(o);
             } catch (err) {
@@ -884,34 +970,35 @@ FFM_GUIParameters.prototype.loadSettings = function() {
                debug("loadSettings: bad regexp - err: " + err);
 #endif
             }
-         };
-         if ( (o = load( "orderBy",                  DataType_String )) !== null ) {
+        };
+        if ( (o = load( "orderBy",                  DataType_String )) !== null ) {
             this.orderBy = o;
-         }
-         if ( (o = load( "groupByTemplate",          DataType_String )) !== null ) {
-            templateErrors = [];
-            t = ffM_template.analyzeTemplate(templateErrors, o);
-            if (templateErrors.length ===0) {
-               this.groupByCompiledTemplate = t;
-            }
-         }
+        }
+        if ( (o = load( "groupByTemplate",          DataType_String )) !== null ) {
+          templateErrors = [];
+          t = ffM_template.analyzeTemplate(templateErrors, o);
+          if (templateErrors.length ===0) {
+            this.groupByCompiledTemplate = t;
+          }
+        }
 
-         // Restore the 'last' value in the list of predfined choices
-         this.regexpItemListText[0] = regExpToString(this.sourceFileNameRegExp);
-         this.groupItemListText[0] = this.groupByCompiledTemplate.templateString;
-         this.targetFileItemListText[0] = this.targetFileNameCompiledTemplate.templateString;
+        // Restore the 'last' value in the list of predfined choices
+        this.regexpItemListText[0] = regExpToString(this.sourceFileNameRegExp);
+        this.groupItemListText[0] = this.groupByCompiledTemplate.templateString;
+        this.targetFileItemListText[0] = this.targetFileNameCompiledTemplate.templateString;
 
-         // After 0.8
-   if (parameterVersion>0.8) {
-            if ( (o = load( "configurations",          DataType_String )) !== null ) {
-               configurations = JSON.parse(o);
-            }
-            if ( (o = load( "activeConfiguration",          DataType_String )) !== null ) {
-               activeConfigurationName = o;
-            }
-            ffM_Configuration.replaceConfigurationTable(configurations, activeConfigurationName);
-         }
-  }
+        // After 0.8
+        if (parameterVersion>0.8) {
+          if ( (o = load( "configurations",          DataType_String )) !== null ) {
+            // TODO Protect this agains error, move to a separate method
+            configurations = JSON.parse(o);
+          }
+          if ( (o = load( "activeConfiguration",          DataType_String )) !== null ) {
+             activeConfigurationName = o;
+          }
+          ffM_Configuration.replaceConfigurationTable(configurations, activeConfigurationName);
+        }
+      }
 
    } else {
       Console.show();
@@ -922,6 +1009,8 @@ FFM_GUIParameters.prototype.loadSettings = function() {
 };
 
 
+// Save the settings including the 'configuration's to the PI application settings
+// The configurations are saved as a JSon array
 FFM_GUIParameters.prototype.saveSettings = function()
 {
    function save( key, type, value ) {

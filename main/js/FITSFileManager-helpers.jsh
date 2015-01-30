@@ -447,7 +447,7 @@ var ffM_LookupConverter = (function() {
          var compiledConversionTable = [];
          for (var i=0; i<conversionTable.length; i++) {
             var conversionEntry = conversionTable[i];
-            // Console.writeln("DEBUG: makeLookupConverter - conversionEntry - " + i + " regexp " + conversionEntry.regexp + " replacement " + conversionEntry.replacement);
+            Console.writeln("DEBUG: makeLookupConverter - conversionEntry - " + i + " regexp " + conversionEntry.regexp + " replacement " + conversionEntry.replacement);
             var conversionRegExp = regExpFromString(conversionEntry.regexp);
             var conversionResultTemplate = conversionEntry.replacement;
             var conversionResultFunction;

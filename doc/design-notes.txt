@@ -1,15 +1,15 @@
 FITSFileManager - desgin-notes.txt
 
 1. Modules
+
 1.1 Main (production) sources
 FileFileManager  - main program
-  File                             Module             Description
-  PJSR-logging.jsh                 Log                For debugging 
-  FITSFileManager-json.jsh         JSON               Json support for PI 1.7
+  File                             Module               Description
+  PJSR-logging.jsh                 Log                  For debugging 
   FITSFileManager-parameters.jsh   ffM_Configuration
                                    FFM_GUIParameters
-  FITSFileManager-fits.jsh         ffM_FITS_Keywords   Load/save FITS keywords  
-  FITSFileManager-helpers.jsh                          Utility functions (String, File)
+  FITSFileManager-fits.jsh         ffM_FITS_Keywords    Load/save FITS keywords  
+  FITSFileManager-helpers.jsh                           Utility functions (String, File)
                                    ffM_LookupConverter  Factory and resolver for regexp lookup resolver
                                    ffM_Resolver         All resolvers definitions
                                    ffM_template         Teamplate analyzer
@@ -21,15 +21,19 @@ FileFileManager  - main program
   FITSFileManager-config-gui.jsh   ffM_GUI_support      UI objects independent of FITSFileManager data
                                    ffM_GUI_config       UI object for the Configuration Dialog
   FITSFileManager-gui.jsh                              methods and objects for the main Dialog
+
 1.2 Tests
 See under test directory
 
 2. Main data structures
-The processing is driven by the so called parameters (entered in the main dialog),
-active configuration (the configurations are managed in teh configuration dialog) and
-various tables to define the variable resolvers and other handlers.
+The processing is driven by the 'parameters' (entered in the main dialog), the
+'active configuration' and various stati tables used to define the variable 
+resolvers and other handlers.
+The configurations are managed in the configuration dialog.
 
-The GUI paramters and configuration are saved to the settings (they could be consolidated).
+The GUI parameters and the configurations are saved to the PI settings (they could be consolidated).
+
+Modules:
 
 FFF_GUIParamters  - current template, source file, configuration, ...
                     history or common templates, etc for GUI.
@@ -47,7 +51,9 @@ ffM_Configuration - The set of rules that define the supported synthetic variabl
                     The configuration set data format is defined in FITSFileManager-parameters.jsh.
                     The configuration dialog works on a copy of the configuration, to allow for
                     'cancel'
-The following tables drive the processing
+
+The following tables drive the processing:
+
 ffM_Resolver      - Define the ID, description, default parameter values, UI control and
                     parserFactory (or to resolve the corresponding variable) for each
                     type of variables.  Th UI control and parserFactory part are added

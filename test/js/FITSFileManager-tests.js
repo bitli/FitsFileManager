@@ -21,6 +21,7 @@
 #include "../../main/js/FITSFileManager-gui.jsh"
 
 
+#include <pjsr/FileMode.jsh>
 
 // ---------------------------------------------------------------------------------------------------------
 // Unit tests
@@ -51,7 +52,7 @@ function makeLookupConverter(aa) {
 
 var ffM_allTests = {
 
-   // Test json
+   // Test that json is present
    test_JSONstringify: function() {
       var o = {s:12, a:[1,2,3]};
       var r = JSON.stringify(o);
@@ -61,6 +62,29 @@ var ffM_allTests = {
       var o = JSON.parse('{"s":12,"a":[1,2,3]}');
       var r = JSON.stringify(o);
       pT_assertEquals('{"s":12,"a":[1,2,3]}', r);
+   },
+
+   // Test that file reading/writing works as expected
+   // It is not clear which encoding is used
+   test_JSONFile: function() {
+      var d = File.extractDirectory(#__FILE__) + "/../../data";
+      var filePath = d + "/test.json";
+
+      var js = JSON.parse('{"s":12,"a":[1,2,3]}');
+      var text = JSON.stringify(js, null, 2);
+      var file = new File(filePath,FileMode_Create);
+      file.outText(text, DataType_String8 );
+      file.close();
+
+      file = new File(filePath, FileMode_Read);
+      var buffer = file.read( DataType_ByteArray, file.size );
+      file.close();
+      File.remove(filePath);
+      var loadedText = buffer.toString();
+      var loadedJSON = JSON.parse(loadedText);
+
+      pT_assertEquals('{"s":12,"a":[1,2,3]}', JSON.stringify(loadedJSON));
+
    },
 
 
@@ -527,6 +551,52 @@ var ffM_allTests = {
       guiParameters.loadSettings();
       // TODO make some real tests
      // pT_assertEquals("string",guiParameters.targetFileNameCompiledTemplate);
+   },
+
+   testSaveLoadConfiguration: function() {
+      var d = File.extractDirectory(#__FILE__) + "/../../data";
+      var filePath = d + "/testDefault.json";
+
+      var userConf = deepCopyData(ffM_Configuration.getConfigurationTable());
+      var result = ffM_Configuration.saveConfigurationFile(filePath, userConf);
+      pT_assertNull(result);
+
+      var resultAndData = ffM_Configuration.loadConfigurationFile(filePath);
+      pT_assertNull(resultAndData.messages);
+      // Do not use pT_assertEquals, as error message is too long
+      pT_assertTrue(JSON.stringify(userConf) === JSON.stringify(resultAndData.configurations));
+   },
+
+   testLoadConfigurationNoFile: function() {
+      var d = File.extractDirectory(#__FILE__) + "/../../data";
+      var filePath = d + "/NON-EXISTANT-FILE.json";
+      var resultAndData = ffM_Configuration.loadConfigurationFile(filePath);
+      pT_assertNull(resultAndData.configurations);
+      pT_assertTrue(resultAndData.messages[0].endsWith("is not readable."));
+   },
+
+   testLoadConfigurationSyntaxError: function() {
+      var d = File.extractDirectory(#__FILE__) + "/../../data";
+      var filePath = d + "/badConfigSyntax.json";
+      var resultAndData = ffM_Configuration.loadConfigurationFile(filePath);
+      pT_assertNull(resultAndData.configurations);
+      pT_assertTrue(resultAndData.messages[0].endsWith("not JSON format."));
+   },
+
+   testLoadConfigurationSentinelError: function() {
+      var d = File.extractDirectory(#__FILE__) + "/../../data";
+      var filePath = d + "/badConfigSentinel.json";
+      var resultAndData = ffM_Configuration.loadConfigurationFile(filePath);
+      pT_assertNull(resultAndData.configurations);
+      pT_assertTrue(resultAndData.messages[0].endsWith("(missing or bad 'sentinel')."));
+   },
+
+   testLoadConfigurationVersionError: function() {
+      var d = File.extractDirectory(#__FILE__) + "/../../data";
+      var filePath = d + "/badConfigVersion.json";
+      var resultAndData = ffM_Configuration.loadConfigurationFile(filePath);
+      pT_assertNull(resultAndData.configurations);
+      pT_assertTrue(resultAndData.messages[0].endsWith("than current verion " + PARAMETERS_VERSION + "."));
    },
 
    // ---------------------------------------------------------------------------------------------------------
