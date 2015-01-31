@@ -65,7 +65,7 @@ function regExpFromString(reString) {
 // add the surrounding slashed and assumes that it has no flag.
 // If staring with a /, assume that it is a valid regexp in string format, with
 // terminating slash and possible options.
-// Return it as a RegExp object (return null if null was received).
+// Return it as a RegExp object (return null if null was received), throw an exception if regexp is invalid
 function regExpFromUserString(reString) {
    if (reString === null) {
       return null;
@@ -454,8 +454,13 @@ var ffM_LookupConverter = (function() {
          var compiledConversionTable = [];
          for (var i=0; i<conversionTable.length; i++) {
             var conversionEntry = conversionTable[i];
-            Console.writeln("DEBUG: makeLookupConverter - conversionEntry - " + i + " regexp " + conversionEntry.regexp + " replacement " + conversionEntry.replacement);
-            var conversionRegExp = regExpFromString(conversionEntry.regexp);
+            //Console.writeln("DEBUG: makeLookupConverter - conversionEntry - " + i + " regexp " + conversionEntry.regexp + " replacement " + conversionEntry.replacement);
+            try {
+               var conversionRegExp = regExpFromString(conversionEntry.regexp);
+            } catch (ex) {
+               throw("ERROR: Invalid RegExp when loading settings or configuration, likely corrupted file or settings");
+               // Difficult to replace regexp here by a default
+            }
             var conversionResultTemplate = conversionEntry.replacement;
             var conversionResultFunction;
             if (conversionResultTemplate==="&0;") {
@@ -738,10 +743,15 @@ var ffM_variables = (function() {
 #endif
       var variableList = configuration.variableList;
       for (var i=0; i<variableList.length; i++) {
-         var variableDefinition = variableList[i];
-         var resolverImpl = ffM_Resolver.resolverByName(variableDefinition.resolver);
-         var parameters = variableDefinition.parameters[variableDefinition.resolver];
-         variableDefinition.parser = resolverImpl.parserFactory(configuration, parameters);
+         try {
+            var variableDefinition = variableList[i];
+            var resolverImpl = ffM_Resolver.resolverByName(variableDefinition.resolver);
+            var parameters = variableDefinition.parameters[variableDefinition.resolver];
+            variableDefinition.parser = resolverImpl.parserFactory(configuration, parameters);
+         } catch (ex) {
+            throw "Error encountered when compiling variable " + (i+1) + 
+                " of configuration '" + configuration.name + "' " + ex;
+         }
       }
 #ifdef DEBUG
       debug("ffM_variables.installParsers: nmb parsers installed:",variableList.length);
@@ -773,7 +783,7 @@ var ffM_variables = (function() {
                   "' with parameters '" + roundedValueF + "' + for key " + ruleParameters.key);
                   return null;
                }
-             }
+            }
          }
       )
    }

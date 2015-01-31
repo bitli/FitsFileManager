@@ -2,16 +2,18 @@
 FITSFileManager Script Changelog
 ===============================================================================
 
-2015.1.2 - v1.3
+2015.2.1 - v1.3
+- Added support for loading/saving configurations
 - Added support for date/time fields and formatting
 - Added defaults for iTelescope
 - Small corrections and changes for PI 1.8 1123
 - Moved doc to PIDOC
-- Internal - support to add/replace keywords
 - Corrected exception thown if content of replacement pattern was empty in
   file regexp
 - Ensure that file transformation are dynamically updated when the file
   regexp is changed
+- Added protection and correction in case of wrong RegExp in configuration file.
+- Internal - support to add/replace keywords (not yet exposed)
 
 -------------------------------------------------------------------------------
 2013.10.23 - v1.2

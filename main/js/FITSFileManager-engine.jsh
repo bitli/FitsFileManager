@@ -63,6 +63,8 @@ function FFM_Engine(guiParameters) {
 
    // -- Set the rules to load variables from images and context information
    // Called at initialization and in case of change of configuration with a COPY of the active configuration
+   // IMPORTANT: Must be called with a COPY of the configuration to install, as we had objects that cannot be
+   // edited or saved to the active configuration
     this.setConfiguration = function(configuration) {
 #ifdef DEBUG
       debug("FFM_Engine.setConfiguration - " + configuration.name);

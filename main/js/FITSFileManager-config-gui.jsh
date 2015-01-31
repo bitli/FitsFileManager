@@ -10,6 +10,8 @@
 
 #define GROUP_BOX_MIN_SIZE 22
 
+#define FFM_CONFIGURATION_FILES_FILTER "*.ffm-configs"
+
 // ========================================================================================================================
 // ffM_GUI_support - GUI support methods and controls
 //   This module contains controls independent of the FITSFileManager data model
@@ -305,7 +307,7 @@ var ffM_GUI_config = (function (){
          var ofd = new OpenFileDialog;
          ofd.multipleSelections = false;
          ofd.caption = "Select FITSFileManager configuration file";
-         ofd.filters = [["json file", "*.json"]];
+         ofd.filters = [["configuration",  FFM_CONFIGURATION_FILES_FILTER]];
          if ( ofd.execute() ) {
             this.dialog.loadFileAction(ofd.fileName);
          }
@@ -318,7 +320,7 @@ var ffM_GUI_config = (function (){
          var ofd = new SaveFileDialog;
          ofd.overwritePrompt = false;
          ofd.caption = "Select FITSFileManager configuration file";
-         ofd.filters = [["json file", "*.json"]];
+         ofd.filters = [["configuration", FFM_CONFIGURATION_FILES_FILTER]];
          if ( ofd.execute() ) {
             this.dialog.saveAllToFileAction(ofd.fileName);
          }
@@ -331,7 +333,7 @@ var ffM_GUI_config = (function (){
          var ofd = new SaveFileDialog;
          ofd.overwritePrompt = false;
          ofd.caption = "Select FITSFileManager configuration file";
-         ofd.filters = [["json file", "*.json"]];
+         ofd.filters = [["configuration", FFM_CONFIGURATION_FILES_FILTER]];
          if ( ofd.execute() ) {
             this.dialog.saveCurrentToFileAction(ofd.fileName);
          }
@@ -753,7 +755,7 @@ var ffM_GUI_config = (function (){
 
 
      var transformationDefinitionFactory = function() {
-        return {regexp: /.*/, replacement: '?'}
+        return {regexp: '/.*/', replacement: '?'}
      }
 
      var transformationSelectionCallback = function(transformationModel) {
@@ -1635,8 +1637,6 @@ var ffM_GUI_config = (function (){
 
           }
           
-
-          // TODO Refersh UI 
         }
       }
 
