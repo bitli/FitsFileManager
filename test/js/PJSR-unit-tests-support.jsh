@@ -81,6 +81,14 @@ function pT_assertEquals(e,a) {
      throw "'" + e + "' !== '" + a +"'";
    }
 }
+function pT_assertEmptyArray(a) {
+   if (!Array.isArray(a)) {
+      throw "'" + a +"' is not an Array";
+   }
+   if (a.length != 0) {
+     throw "'" + a + "' is not empty";
+   }
+}
 function pT_assertArrayEquals(e,a) {
    if (e.length!==a.length) {
       var received = "";

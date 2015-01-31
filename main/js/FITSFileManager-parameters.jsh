@@ -592,7 +592,7 @@ var ffM_Configuration = (function() {
       return null;
    }
 
-   // Remvoe a configuration by name, but at least one configuration must be present
+   // Remvoe a configuration by name, but ensure that at least one configuration is present
    var removeConfigurationByName = function(aConfigurationTable, name) {
       if (aConfigurationTable.length>1) {
          for (var i=0; i<aConfigurationTable.length; i++) {
@@ -684,16 +684,11 @@ var ffM_Configuration = (function() {
 
   // Support to save/load configuration
 
-   // file = new File(filePath, FileMode_Read);
-  // var buffer = file.read( DataType_ByteArray, file.size );
-  // file.close();
-  // File.remove(filePath);
-  // var loadedText = buffer.toString();
-  // var loadedJSON = JSON.parse(loadedText);
+  
 
-  // Load file
-  //   load, parse, check validaty
-
+  // Load a configuration file, parse it and check its validity,
+  // return an object with the list of messages (empty array if none) and a configuration,
+  // the configuration is null if there is a fatal error.
   var loadConfigurationFile = function loadConfigurationFile(fileName) {
     var file = null;
     try {
@@ -720,11 +715,18 @@ var ffM_Configuration = (function() {
     if (! configurationData.hasOwnProperty("version") ) {
       return ({messages: ["File '" + fileName +"' is not a valid FITSFileManager configuration file, has not expected structure (missing 'version')."], configurations: null});      
     }
+     if (typeof configurationData.version !== 'number') {
+            return ({messages: ["File '" + fileName +"' is not a valid FITSFileManager configuration file, has not expected structure ('version' not numeric)."], configurations: null});      
+     }
     if (configurationData.version > PARAMETERS_VERSION) {
       return ({messages: ["File '" + fileName +"' is a FITSFileManager configuration file, but has version" +
-              configurationData.version + " higher than current verion " + PARAMETERS_VERSION + "."], configurations: null});      
+              configurationData.version + " higher than current version " + PARAMETERS_VERSION + "."], configurations: null});      
     }
-    return {messages: null, configurations: configurationData.configurations};
+
+    var messages = [];
+    var configurations = this.validateConfigurationData(configurationData.configurations, messages);
+
+    return {messages: messages, configurations: configurations};
   }
 
   // Merge configurations
@@ -751,9 +753,66 @@ var ffM_Configuration = (function() {
   
 
   // Validation:
-  //    Check type and presence,
-  //    return  configurations cpossibly adapted or null if fatal error, and list of messages
+  //    Check presence and type of elements of a configuration table
+  //    return  configurations possibly adapted or null if fatal error
+  //    Append any warning or error to the array messages (tehre are errors if null is returned)
+  var validateConfigurationData = function validateConfigurationData(configurations, messages) {
+    try {
+      if (!Array.isArray(configurations)) throw("Not array");
+      if (configurations.length==0) throw "Empty array";
 
+      for (var i=0; i<configurations.length; i++) {
+        var configuration = configurations[i];
+        if (typeof configuration !== 'object') throw("Not object element");
+
+        if (!configuration.hasOwnProperty("name")) throw("Missing 'name'");
+        if (typeof configuration.name !== 'string') throw("'name' not string");
+        
+        if (!configuration.hasOwnProperty("description")) throw("Missing 'description'");
+        if (typeof configuration.description !== 'string') throw("'description' not string");
+        
+        if (!configuration.hasOwnProperty("variableList")) throw("Missing 'variableList'");
+        var variableList = configuration.variableList
+        if (!Array.isArray(variableList)) throw("'variableList' not array");
+      
+        for (var j=0; j<variableList.length; j++) {
+          var variable = variableList[j];
+          if (typeof variable !== 'object') throw("variableList["+j+"] not object element");
+          if (!variable.hasOwnProperty("name")) throw("Missing 'variableList["+j+"].name'");
+          if (typeof variable.name !== 'string') throw("'variableList["+j+"].name' not string");
+          if (!variable.hasOwnProperty("description")) throw("Missing 'variableList["+j+"].description'");
+          if (typeof variable.description !== 'string') throw("'variableList["+j+"].description' not string");
+          if (!variable.hasOwnProperty("show")) throw("Missing 'variableList["+j+"].show'");
+          if (typeof variable.show !== 'boolean') throw("'variableList["+j+"].show' not boolean");
+          if (!variable.hasOwnProperty("resolver")) throw("Missing 'variableList["+j+"].resolver'");
+          if (typeof variable.resolver !== 'string') throw("'variableList["+j+"].resolver' not string");
+          if (!variable.hasOwnProperty("parameters")) throw("Missing 'variableList["+j+"].parameters'");
+          if (typeof variable.parameters != 'object') throw("'variableList["+j+"].parameters' not object");
+        }
+
+        if (!configuration.hasOwnProperty("builtins")) throw("Missing 'builtins'");
+        var builtins = configuration.builtins
+        if (typeof builtins != 'object') throw("'builtins' is not object");      
+        if (!builtins.hasOwnProperty("rank")) throw("Missing 'builtins.rank'");
+        if (typeof builtins.rank !== 'object') throw("'builtins.rank' is not object"); 
+        if (!builtins.rank.hasOwnProperty("format")) throw("Missing 'builtins.rank.format'");
+        if (typeof builtins.rank.format !== 'string') throw("'builtins.rank.format' is not string"); 
+
+        if (!builtins.hasOwnProperty("count")) throw("Missing 'builtins.resolver'");
+        if (typeof builtins.count !== 'object') throw("'builtins.count' is not object"); 
+        if (!builtins.count.hasOwnProperty("format")) throw("Missing 'builtins.count.format'");
+        if (typeof builtins.count.format !== 'string') throw("'builtins.count.format' is not string"); 
+
+      }
+
+      return configurations;
+
+    } catch (ex) {
+      messages.push(ex);
+      return null;
+    }
+  }
+  
 
 
 
@@ -796,6 +855,7 @@ var ffM_Configuration = (function() {
 
       saveConfigurationFile: saveConfigurationFile,
       loadConfigurationFile: loadConfigurationFile,
+      validateConfigurationData: validateConfigurationData,
 
       // Support for variables
       defineVariable: defineVariable,

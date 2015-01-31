@@ -562,7 +562,7 @@ var ffM_allTests = {
       pT_assertNull(result);
 
       var resultAndData = ffM_Configuration.loadConfigurationFile(filePath);
-      pT_assertNull(resultAndData.messages);
+      pT_assertEmptyArray(resultAndData.messages);
       // Do not use pT_assertEquals, as error message is too long
       pT_assertTrue(JSON.stringify(userConf) === JSON.stringify(resultAndData.configurations));
    },
@@ -596,8 +596,43 @@ var ffM_allTests = {
       var filePath = d + "/badConfigVersion.json";
       var resultAndData = ffM_Configuration.loadConfigurationFile(filePath);
       pT_assertNull(resultAndData.configurations);
-      pT_assertTrue(resultAndData.messages[0].endsWith("than current verion " + PARAMETERS_VERSION + "."));
+      pT_assertTrue(resultAndData.messages[0].endsWith("than current version " + PARAMETERS_VERSION + "."));
    },
+
+
+   testValidateConfigurationDataNotArray: function() {
+      var msgs = [];
+      var r = ffM_Configuration.validateConfigurationData(123,msgs);
+      pT_assertEquals("Not array",msgs[0]);
+      pT_assertNull(r);
+   },
+
+   testValidateConfigurationDataEmptyArray: function() {
+      var msgs = [];
+      var r = ffM_Configuration.validateConfigurationData([], msgs);
+      pT_assertEquals("Empty array",msgs[0]);
+      pT_assertNull(r);
+   },
+
+   
+  testValidateConfigurationDataBadShow: function() {
+      var msgs = [];
+      var r = ffM_Configuration.validateConfigurationData(
+         [{name:"astring", description:"aString",  variableList:
+            [{name:'v', description:'d', show:"badstring", resolver:'aResolver', parameters: []}]}],msgs);
+      pT_assertEquals("'variableList[0].show' not boolean",msgs[0]);
+      pT_assertNull(r);
+   },
+
+ testValidateConfigurationDataBadParameters: function() {
+      var msgs = [];
+      var r = ffM_Configuration.validateConfigurationData(
+         [{name:"astring", description:"aString", variableList:
+            [{name:'v', description:'d', show:false, resolver:'aResolver', parameters: 'shouldbeobject'}]}],msgs);
+      pT_assertEquals("'variableList[0].parameters' not object",msgs[0]);
+      pT_assertNull(r);
+   },
+
 
    // ---------------------------------------------------------------------------------------------------------
    // Test of helper functions

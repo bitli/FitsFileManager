@@ -81,6 +81,13 @@ function regExpFromUserString(reString) {
 
 }
 
+function ensureIsString(value) {
+   if (typeof value !== 'string') {
+      throw "INTERNAL ERROR - expected a 'string', got a '" + typeof value + " for '" + value.toString() +"'";
+   }
+   return value;
+}
+
 
 // Create a unique name with the same prefix than a list of existing similar name
 function createUniqueName(baseName, existingNames) {
@@ -90,10 +97,10 @@ function createUniqueName(baseName, existingNames) {
    var baseWithoutSuffix = baseName.replace(reNoSuffix,'');
    var reSuffix = /^[^_]+_(\d+)/;
    for (var i=0; i<existingNames.length;i++) {
-      var exisitingName = existingNames[i];
+      var existingName = existingNames[i];
       var existingNameWithoutSuffix = existingName.replace(reNoSuffix,'');
       if (existingNameWithoutSuffix === baseWithoutSuffix) {
-         var suffixMatch = exisitingName.match(reSuffix);
+         var suffixMatch = existingName.match(reSuffix);
          if (suffixMatch) {
             var n = parseInt(suffixMatch[1]);
             if (n>largestSuffix) {

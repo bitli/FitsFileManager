@@ -307,7 +307,7 @@ var ffM_GUI_config = (function (){
          ofd.caption = "Select FITSFileManager configuration file";
          ofd.filters = [["json file", "*.json"]];
          if ( ofd.execute() ) {
-            this.dialog.loadFilesAction(ofd.fileName);
+            this.dialog.loadFileAction(ofd.fileName);
          }
       }
 
@@ -409,26 +409,27 @@ var ffM_GUI_config = (function (){
 
   // Helper to validate and normalize input text,
   // There is no real conversion, as we keep all information in text format
-  // the toString() is just to avoid crash and help debug in case a non string object is received
+  // the ensureIsString()  helps debug in case a non string object is received
   var testInvalidVariableNameRegExp = /[&\(\);<>=!%*]/;
   var removeVariableReferencesRE = /&[0-9]+;/g
   var propertyTypes = {
      FREE_TEXT: {
         name: "FREE_TEXT",
-        propertyToText: function(value) {return value.toString()},
-        textToProperty: function(text) {return text},
+        propertyToText: function(value) {return ensureIsString(value)},
+          textToProperty: function(text) {return text},
      },
      REG_EXP: {
-        // Check that this is a valid regular expression
+        // Check that this is a valid regular expression, but the regexp is kept in its
+        // string format (as parsed with regExpFromString)
         name: "REG_EXP",
-        propertyToText: function(value) {return value.toString()},
+        propertyToText: function(value) {return ensureIsString(value)},
         textToProperty: function(text) {return regExpToString(regExpFromUserString(text))},
      },
-     REG_EXP_REPLACMENT: {
+     REG_EXP_REPLACEMENT: {
         // Check that this is a valid replacement for a regular expression,
         // this ensures that the only &<number>; are used (no &variable; or dangling &)
-        name: "REG_EXP_REPLACMENT",
-        propertyToText: function(value) {return value.toString()},
+        name: "REG_EXP_REPLACEMENT",
+        propertyToText: function(value) {return ensureIsString(value)},
         textToProperty: function(text) {
            var withoutRef = text.replace(removeVariableReferencesRE,'');
            if (withoutRef.indexOf("&")>=0) {
@@ -439,7 +440,7 @@ var ffM_GUI_config = (function (){
      // Check that the characters are valid for a variable name
      VAR_NAME: {
         name: "VAR_NAME",
-        propertyToText: function(value) {return value.toString()},
+        propertyToText: function(value) {return ensureIsString(value)},
         textToProperty: function(text) {
             var t = text.trim();
             if (testInvalidVariableNameRegExp.test(t)) {
@@ -793,7 +794,7 @@ var ffM_GUI_config = (function (){
      this.currentReplacementRow = new TextEntryRow(this.regExpListSelection_GroupBox,rowStyle, "Replacement",
         "The replacement text to use if the regular expression matched.\n" +
         "&0; may be used to refer to the original text, &1;, &2; refers to parenthesized groups in the regular expression.", "replacement",
-        propertyTypes.REG_EXP_REPLACMENT,
+        propertyTypes.REG_EXP_REPLACEMENT,
         function() {that.regExpListSelection_Box.currentModelElementChanged()});
      this.regExpListSelection_GroupBox.sizer.add(this.currentReplacementRow);
 
@@ -1577,14 +1578,90 @@ var ffM_GUI_config = (function (){
         configurationSelectedCallback(this.currentConfigurationName);
      }
 
+
      this.loadFileAction = function loadFileAction(fileName) {
-        Console.writeln("LOAD");
-     }
+        var result = ffM_Configuration.loadConfigurationFile(fileName);
+          
+        // Error, no configuration
+        if (result.configurations === null) {
+           var msg = new MessageBox(
+            result.messages.join("\n"),
+                  "Load configuration error", StdIcon_Error, StdButton_Ok );
+            msg.execute();
+        } else {
+          // Configuration present, check if they can be replaced
+          if (result.messages.length == 0 && result.configurations != null) {
+             var msg = new MessageBox( 
+                    result.configurations.length.toString() + " configuration(s) loaded from file\n" + fileName,
+                    "Configuration '" + this.currentConfigurationName + "' loaded", 
+                    StdIcon_Information, StdButton_Ok );
+          } else if (result.messages.length == 0 && result.configurations != null) {
+             var msg = new MessageBox(
+                    result.configurations.length.toString() + " configuration(s) loaded from file\n" + result.messages.join("\n"),
+                    "Load configuration warnings", 
+                    StdIcon_Error, StdButton_Ok );
+          }  
+          // TODO We could ask for confirmation in cse of warning 
+          msg.execute();
+
+          var replaceCurrent = false;
+          for (var i=0; i<result.configurations.length; i++) {
+            var loadedConfiguration = result.configurations[i];
+            var loadedConfigurationName = loadedConfiguration.name;
+            
+            // Replace or insert
+            // TODO may be support method
+            var replaced = false;
+            for (var j=0; j<that.editedConfigurationSet.length; j++) {
+              if (this.currentConfigurationName === loadedConfigurationName) {
+                replaceCurrent = true;
+              }
+              if (that.editedConfigurationSet[j].name === loadedConfigurationName) {
+                that.editedConfigurationSet.splice(j,1);
+                replaced = true;
+                break;
+              }
+            }
+        
+            // TODO maybe insert instead of push if replacing
+            that.editedConfigurationSet.push(loadedConfiguration);
+
+            Console.writeln("Configuration '" + loadedConfigurationName  +"' " + (replaced ? "replaced" : "added"));
+
+            // Update UI if the current configuration was loaded OR if a single configuration was loaded
+            if (replaceCurrent || result.configurations.length === 1) {
+              configurationSelectedCallback(loadedConfigurationName);
+            }
+
+          }
+          
+
+          // TODO Refersh UI 
+        }
+      }
+
      this.saveCurrentToFileAction = function saveCurrentToFileAction(fileName) {
         var result = ffM_Configuration.saveConfigurationFile(fileName, [this.selectedConfiguration]);
+        if (result == null) {
+           var msg = new MessageBox( "Current configuration saved to file\n" + fileName,
+                  "Configuration '" + this.currentConfigurationName + "' saved", StdIcon_Information, StdButton_Ok );
+        } else {
+           var msg = new MessageBox(result,
+                  "Write configuration error", StdIcon_Error, StdButton_Ok );
+        }
+        msg.execute();
      }
+
      this.saveAllToFileAction = function saveAllToFileAction(fileName) {
         var result = ffM_Configuration.saveConfigurationFile(fileName, this.editedConfigurationSet);
+        if (result == null) {
+           var msg = new MessageBox( "All configurations saved to file\n" + fileName,
+                  "All configurations saved", StdIcon_Information, StdButton_Ok );
+        } else {
+           var msg = new MessageBox(result,
+                  "Write configuration error", StdIcon_Error, StdButton_Ok );
+        }
+        msg.execute();
      }
 
 
