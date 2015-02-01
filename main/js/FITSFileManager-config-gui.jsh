@@ -10,8 +10,6 @@
 
 #define GROUP_BOX_MIN_SIZE 22
 
-#define FFM_CONFIGURATION_FILES_FILTER "*.ffm-configs"
-
 // ========================================================================================================================
 // ffM_GUI_support - GUI support methods and controls
 //   This module contains controls independent of the FITSFileManager data model
@@ -334,6 +332,8 @@ var ffM_GUI_config = (function (){
          ofd.overwritePrompt = false;
          ofd.caption = "Select FITSFileManager configuration file";
          ofd.filters = [["configuration", FFM_CONFIGURATION_FILES_FILTER]];
+         // TODO - Keep tack of path 
+         //ofd.initialPath = this.dialog.currentConfigurationName;
          if ( ofd.execute() ) {
             this.dialog.saveCurrentToFileAction(ofd.fileName);
          }
@@ -1588,22 +1588,35 @@ var ffM_GUI_config = (function (){
         if (result.configurations === null) {
            var msg = new MessageBox(
             result.messages.join("\n"),
-                  "Load configuration error", StdIcon_Error, StdButton_Ok );
+                  "Load configuration error", 
+                  StdIcon_Error, StdButton_Ok );
             msg.execute();
         } else {
-          // Configuration present, check if they can be replaced
-          if (result.messages.length == 0 && result.configurations != null) {
+          // Configuration present, if there are also warnings, add them to the message box
+
+          var text = result.configurations.length.toString() + " configuration(s)\n";
+          for (var i = 0; i<result.configurations.length; i++){
+            text += "  " + result.configurations[i].name + "\n";
+          }
+          text += "loaded from file\n" + fileName;
+
+          var title = "Configurations loaded";
+          if (result.configurations.length ===1) {
+            title = "Configuration " +  result.configurations[0].name + " loaded";
+          }
+
+          if (result.messages.length === 0) {
              var msg = new MessageBox( 
-                    result.configurations.length.toString() + " configuration(s) loaded from file\n" + fileName,
-                    "Configuration '" + this.currentConfigurationName + "' loaded", 
+                    text,
+                    title, 
                     StdIcon_Information, StdButton_Ok );
-          } else if (result.messages.length == 0 && result.configurations != null) {
+          } else {
              var msg = new MessageBox(
-                    result.configurations.length.toString() + " configuration(s) loaded from file\n" + result.messages.join("\n"),
-                    "Load configuration warnings", 
-                    StdIcon_Error, StdButton_Ok );
-          }  
-          // TODO We could ask for confirmation in cse of warning 
+                    text + "\n" + result.messages.join("\n"),
+                    "Warning occured on configuration load", 
+                    StdIcon_Warning, StdButton_Ok );
+          }
+          // TODO We could ask for confirmation in case of warning 
           msg.execute();
 
           var replaceCurrent = false;
@@ -1625,7 +1638,7 @@ var ffM_GUI_config = (function (){
               }
             }
         
-            // TODO maybe insert instead of push if replacing
+            // TODO - Maintainn a canonical order
             that.editedConfigurationSet.push(loadedConfiguration);
 
             Console.writeln("Configuration '" + loadedConfigurationName  +"' " + (replaced ? "replaced" : "added"));
@@ -1643,7 +1656,7 @@ var ffM_GUI_config = (function (){
      this.saveCurrentToFileAction = function saveCurrentToFileAction(fileName) {
         var result = ffM_Configuration.saveConfigurationFile(fileName, [this.selectedConfiguration]);
         if (result == null) {
-           var msg = new MessageBox( "Current configuration saved to file\n" + fileName,
+           var msg = new MessageBox( "Configuration '" + this.currentConfigurationName + "' saved to file\n" + fileName,
                   "Configuration '" + this.currentConfigurationName + "' saved", StdIcon_Information, StdButton_Ok );
         } else {
            var msg = new MessageBox(result,
@@ -1655,8 +1668,13 @@ var ffM_GUI_config = (function (){
      this.saveAllToFileAction = function saveAllToFileAction(fileName) {
         var result = ffM_Configuration.saveConfigurationFile(fileName, this.editedConfigurationSet);
         if (result == null) {
-           var msg = new MessageBox( "All configurations saved to file\n" + fileName,
-                  "All configurations saved", StdIcon_Information, StdButton_Ok );
+          var text = "Configurations\n";
+          for (var i=0; i<this.editedConfigurationSet.length; i++) {
+            text += "  " + this.editedConfigurationSet[i].name + "\n";
+          }
+          text += "saved to file\n" + fileName;
+          var msg = new MessageBox( text,
+                  "Configurations saved", StdIcon_Information, StdButton_Ok );
         } else {
            var msg = new MessageBox(result,
                   "Write configuration error", StdIcon_Error, StdButton_Ok );

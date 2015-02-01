@@ -6,7 +6,6 @@ GUI
    May be allow to preview or open a selected file
    ++ select all, -- deselect all
    reset all, reset to defaults for each field
-*   Make sure all update trigger update of file transformation
 
 FITS keyword export
 *   Check if CONTINUE keyword is supported
@@ -51,11 +50,15 @@ Configurations
    support for alternate source keywords for synthethic keywords, possibly default values in keyword mapping
    Make synthethic values from other synthetic values
    Option to select file by file name as BPP, generate keyword 
-   Save/Load configuration on files
    Better error check and reporting for errors in configuring regexp or formats in configuration
+   Safe format, check type
+   Possibly generic FITS key with type depending on format, and alternate keys
+   Make configuration files in order to be VCS friendly
+   Keep track of last used directory
+   Load configurations from script directory if emtpy on start
 
-Depending on PJSR enhnancements:
-  Enhance control of ordering (support for ordering of non string values if possible)   
+Depending on PJSR enhencements:
+  Enhance control of ordering on GUI tables(support for ordering of non string values if possible)   
 
 Operations
    Request confirmation for move (or move and copy)

@@ -3,7 +3,7 @@
 #feature-id    Utilities > FITSFileManager
 
 #feature-info Copy and move files based on FITS keys.<br/>\
-   Written by Jean-Marc Lugrin (c) 2012-2014.
+   Written by Jean-Marc Lugrin (c) 2012-2015.
 
 // ==================================================================================================
 // The complete source code is hosted at https://bitbucket.org/bitli/fitsfilemanager

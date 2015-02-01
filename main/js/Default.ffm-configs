@@ -1,0 +1,168 @@
+{
+  "sentinel": "FITSFileManager.configurations",
+  "version": 1,
+  "configurations": [
+    {
+      "name": "Default",
+      "description": "Common FITS rules",
+      "version": 1,
+      "variableList": [
+        {
+          "name": "type",
+          "description": "Type of image (flat, bias, ...)",
+          "show": true,
+          "resolver": "RegExpList",
+          "parameters": {
+            "RegExpList": {
+              "key": "IMAGETYP",
+              "reChecks": [
+                {
+                  "regexp": "/flat/i",
+                  "replacement": "flat"
+                },
+                {
+                  "regexp": "/bias/i",
+                  "replacement": "bias"
+                },
+                {
+                  "regexp": "/offset/i",
+                  "replacement": "bias"
+                },
+                {
+                  "regexp": "/dark/i",
+                  "replacement": "dark"
+                },
+                {
+                  "regexp": "/light/i",
+                  "replacement": "light"
+                },
+                {
+                  "regexp": "/science/i",
+                  "replacement": "light"
+                },
+                {
+                  "regexp": "/.*/",
+                  "replacement": "&0;"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "filter",
+          "description": "Filter (clear, red, ...)",
+          "show": true,
+          "resolver": "RegExpList",
+          "parameters": {
+            "RegExpList": {
+              "key": "FILTER",
+              "reChecks": [
+                {
+                  "regexp": "/green/i",
+                  "replacement": "green"
+                },
+                {
+                  "regexp": "/blue/i",
+                  "replacement": "blue"
+                },
+                {
+                  "regexp": "/red/i",
+                  "replacement": "red"
+                },
+                {
+                  "regexp": "/clear/i",
+                  "replacement": "clear"
+                },
+                {
+                  "regexp": "/luminance/i",
+                  "replacement": "luminance"
+                },
+                {
+                  "regexp": "/.*/",
+                  "replacement": "&0;"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "exposure",
+          "description": "Exposure in seconds",
+          "show": true,
+          "resolver": "Integer",
+          "parameters": {
+            "Integer": {
+              "key": "EXPTIME",
+              "abs": true,
+              "format": "%4.4d"
+            }
+          }
+        },
+        {
+          "name": "temp",
+          "description": "Temperature in C",
+          "show": true,
+          "resolver": "Integer",
+          "parameters": {
+            "Integer": {
+              "key": "SET-TEMP",
+              "abs": true,
+              "format": "%4.4d"
+            }
+          }
+        },
+        {
+          "name": "binning",
+          "description": "Binning as 1x1, 2x2, ...",
+          "show": true,
+          "resolver": "IntegerPair",
+          "parameters": {
+            "IntegerPair": {
+              "key1": "XBINNING",
+              "key2": "YBINNING",
+              "format": "%dx%d"
+            }
+          }
+        },
+        {
+          "name": "night",
+          "description": "night (experimental)",
+          "show": true,
+          "resolver": "Night",
+          "parameters": {
+            "Night": {
+              "keyLongObs": "LONG-OBS",
+              "keyJD": "JD"
+            }
+          }
+        },
+        {
+          "name": "filename",
+          "description": "Input file name",
+          "show": false,
+          "resolver": "FileName",
+          "parameters": {
+            "FileName": {}
+          }
+        },
+        {
+          "name": "extension",
+          "description": "Input file extension",
+          "show": false,
+          "resolver": "FileExtension",
+          "parameters": {
+            "FileExtension": {}
+          }
+        }
+      ],
+      "builtins": {
+        "rank": {
+          "format": "%4.4d"
+        },
+        "count": {
+          "format": "%4.4d"
+        }
+      }
+    }
+  ]
+}

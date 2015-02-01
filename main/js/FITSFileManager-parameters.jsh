@@ -41,6 +41,9 @@
 
 #define FFM_CONFIGURATION_FILE_SENTINEL "FITSFileManager.configurations"
 
+#define FFM_CONFIGURATION_FILES_FILTER "*.ffm-configs"
+
+
 // ====================================================================================================================
 // Configuration module
 // ====================================================================================================================
@@ -74,7 +77,7 @@ var ffM_Configuration = (function() {
    var i;
 
    // Default ConfigurationSet, serve also as example of the structure.
-   // The structure is like:s
+   // The structure is like:
    // --------------------------------------------------------------------------------------------------
    // configurationSet data (an ordered list of Configurations, the order does not matter for the semantic)
    //    [configuration]
@@ -88,6 +91,7 @@ var ffM_Configuration = (function() {
    //  name of the resolver, allowing to keep data for inactive resolvers)
    // ---------------------------------------------------------------------------------------------------------------------
 
+   // Used only on initial start, if neither the settings nor the script directory contains configur
    var defaultConfigurationSet =
    [
       { name: "Default",
@@ -238,328 +242,7 @@ var ffM_Configuration = (function() {
 
    ];
 
-   // Duplicate the default configuration,
-   // patch in the differences
-   var defaultConf = defaultConfigurationSet[0];
-
-   // Default configuration for images originated in the CAHA (http://www.caha.es/) observatory
-   var userConf = deepCopyData(defaultConf);
-   userConf.name = "User CAHA";
-   userConf.description = "A default configuration based on images from CAHA via PixInsight";
-   // Just the differences from the base configuration - which is about everything
-   userConf.variableList =
-         [ { name: "type",
-             description: "Type of image (flat, bias, ...)",
-             show: true,
-             resolver: "RegExpList",
-             parameters:
-               { RegExpList:
-                   { key: "IMAGETYP",
-                     reChecks:
-                       [ { regexp: '/flat/i',
-                           replacement: "flat"
-                         },
-                         { regexp: '/bias/i',
-                           replacement: "bias"
-                         },
-                         { regexp: '/offset/i',
-                           replacement: "bias"
-                         },
-                         { regexp: '/dark/i',
-                           replacement: "dark"
-                         },
-                         { regexp: '/light/i',
-                           replacement: "light"
-                         },
-                         { regexp: '/science/i',
-                           replacement: "light"
-                         },
-                         { regexp: '/.*/',
-                           replacement: "&0;"
-                         },
-                       ]
-                   }
-               }
-           },
-           { name: "filter",
-             description: "Filter (clear, red, ...)",
-             show: true,
-             resolver: "RegExpList",
-             parameters:
-               { RegExpList:
-                   { key: "INSFLNAM",
-                     reChecks:
-                       [ { regexp: '/.*/i',
-                           replacement: "&0;"
-                         }
-                       ]
-                   }
-
-               }
-           },
-           { name: "exposure",
-             description: "Exposure in seconds",
-             show: true,
-             resolver: "Integer",
-             parameters:
-               { Integer:
-                   { key: "EXPTIME", // also EXPOSURE
-                     abs: true,
-                     format: "%4.4d",
-                   }
-               }
-           },
-           { name: "temp",
-             description: "Temperature in C",
-             show: true,
-             resolver: "Integer",
-             parameters:
-               { Integer:
-                   { key: "CCDTEMP", // Also CCDTEMP and CCD-TEMP",
-                     abs: true,
-                     format: "%4.4d"
-                   }
-               }
-           },
-           { name: "binning",
-             description: "Binning as 1x1, 2x2, ...",
-             show: true,
-             resolver: "IntegerPair",
-             parameters:
-               { IntegerPair:
-                   { key1: "CDELT1",
-                     key2: "CDELT2",
-                     format: "%dx%d"
-                   }
-               }
-           },
-           { name: "night",
-             description: "night (experimental)",
-             show: true,
-             resolver: "Night",
-             parameters:
-               { Night:
-                   { keyLongObs: "CAHA TEL GEOLON",
-                   // We should really used DATE-OBS (if available) and convert
-                    keyJD: "JUL-DATE"
-                   }
-               }
-           },
-           { name: "filename",
-             description: "Input file name",
-             show: false,
-             resolver: "FileName",
-             parameters:
-               { FileName:
-                   {
-                   }
-               }
-           },
-           { name: "extension",
-             description: "Input file extension",
-             show: false,
-             resolver: "FileExtension",
-             parameters:
-               { FileExtension:
-                   {
-                   }
-               }
-           }
-         ];
-
-   defaultConfigurationSet.push(userConf);
-
-
-   // Default configuration for images originated in the CAHA (http://www.caha.es/) observatory
-   var iTelescopeConf = deepCopyData(defaultConf);
-   iTelescopeConf.name = "iTelescope";
-   iTelescopeConf.description = "A default configuration for iTelescope";
-   // Just the differences from the base configuration - which is about everything
-   iTelescopeConf.variableList =
-         [ { name: "type",
-             description: "Type of image (flat, bias, ...)",
-             show: true,
-             resolver: "RegExpList",
-             parameters:
-               { RegExpList:
-                   { key: "IMAGETYP",
-                     reChecks:
-                       [ { regexp: '/flat/i',
-                           replacement: "flat"
-                         },
-                         { regexp: '/bias/i',
-                           replacement: "bias"
-                         },
-                         { regexp: '/offset/i',
-                           replacement: "bias"
-                         },
-                         { regexp: '/dark/i',
-                           replacement: "dark"
-                         },
-                         { regexp: '/light/i',
-                           replacement: "light"
-                         },
-                         { regexp: '/science/i',
-                           replacement: "light"
-                         },
-                         { regexp: '/.*/',
-                           replacement: "&0;"
-                         },
-                       ]
-                   }
-               }
-           },
-           { name: "filter",
-             description: "Filter (clear, red, ...)",
-             show: true,
-             resolver: "RegExpList",
-             parameters:
-               { RegExpList:
-                   { key: "FILTER",
-                     reChecks:
-                       [ { regexp: '/^V$/',
-                           replacement: "G"
-                         },
-                         { regexp: '/green/i',
-                           replacement: "G"
-                         },
-                         { regexp: '/^B$/',
-                           replacement: "B"
-                         },
-                         { regexp: '/blue/i',
-                           replacement: "B"
-                         },
-                         { regexp: '/^R$/',
-                           replacement: "R"
-                         },
-                         { regexp: '/red/i',
-                           replacement: "R"
-                         },
-                         { regexp: '/luminance/i',
-                           replacement: "L"
-                         },
-                         { regexp: '/.*/',
-                           replacement: "&0;"
-                         }
-                       ]
-                   }
-               }
-           },
-           { name: "exposure",
-             description: "Exposure in seconds",
-             show: true,
-             resolver: "Integer",
-             parameters:
-               { Integer:
-                   { key: "EXPTIME", // also EXPOSURE
-                     abs: true,
-                     format: "%4.4d",
-                   }
-               }
-           },
-           { name: "temp",
-             description: "Temperature in C",
-             show: true,
-             resolver: "Integer",
-             parameters:
-               { Integer:
-                   { key: "CCD-TEMP", // Also CCDTEMP and CCD-TEMP",
-                     abs: true,
-                     format: "%3.3d"
-                   }
-               }
-           },
-           { name: "binning",
-             description: "Binning as 1x1, 2x2, ...",
-             show: true,
-             resolver: "IntegerPair",
-             parameters:
-               { IntegerPair:
-                   { key1: "XBINNING",
-                     key2: "YBINNING",
-                     format: "%dx%d"
-                   }
-               }
-           },
-           { name: "object",
-             description: "Name of target object",
-             show: true,
-             resolver: "Text",
-             parameters:
-               {Text:
-                   {key:"OBJECT",
-                    format:"%ls",
-                    "case":"UP"
-                   }
-               }
-           },
-           { name: "night",
-             description: "night (experimental)",
-             show: true,
-             resolver: "Night",
-             parameters:
-               { Night:
-                   { keyLongObs: "LONG-OBS",
-                     keyJD: "JD"
-                   }
-               }
-           },
-           { name: "dateobs",
-             description: "Date of observation",
-             show: true,
-             resolver: "DateTime",
-             parameters:
-               { DateTime:
-                   { key: "DATE-OBS",
-                     format: "%y%m%d"
-                   }
-               }
-           },
-           { name: "filename",
-             description: "Input file name",
-             show: false,
-             resolver: "FileName",
-             parameters:
-               { FileName:
-                   {
-                   }
-               }
-           },
-           { name: "extension",
-             description: "Input file extension",
-             show: false,
-             resolver: "FileExtension",
-             parameters:
-               { FileExtension:
-                   {
-                   }
-               }
-           },
-           { name :"telescope",
-             description: "iTelescope telescope identifier",
-             show: true,
-             resolver: "RegExpList",
-             parameters:
-                 { Text:
-                    {  key:"TELESCOP",
-                       format:"%ls",
-                       "case": "UP"
-                     },
-                    RegExpList:
-                    {  key: "OBSERVAT",
-                       reChecks:
-                       [  {  regexp: "/ (T[0-9]+)/",
-                           replacement: "&1;"
-                          }
-                       ]
-                    }
-                  }
-            }
-         ];
-
-   defaultConfigurationSet.push(iTelescopeConf);
-
-
+   
 
 
    // --- singletons variables ---------------------------------------------------
@@ -606,6 +289,7 @@ var ffM_Configuration = (function() {
       }
       return null;
    }
+
 
 
 
@@ -985,7 +669,7 @@ function FFM_GUIParameters() {
 FFM_GUIParameters.prototype.loadSettings = function() {
 
     // TODO Better log in case of error loading the configuration, at least indicate that something went wrong
-    // TODO Poissbly recover in case of error, validate the type of data
+    // TODO Possibly recover in case of error, validate the type of data
    function load( key, type )
    {
       var setting = Settings.read( FFM_SETTINGS_KEY_BASE + key, type );
@@ -1005,6 +689,7 @@ FFM_GUIParameters.prototype.loadSettings = function() {
       return load( key + '_' + index.toString(), type );
    }
 
+   // Check if we have parameters, laod from parameters if present
    var o, t, parameterVersion, templateErrors, configurations, activeConfigurationName;
    if ( (parameterVersion = load( "version",    DataType_Double )) !== null ) {
       if (parameterVersion > PARAMETERS_VERSION) {
@@ -1050,7 +735,7 @@ FFM_GUIParameters.prototype.loadSettings = function() {
         // After 0.8
         if (parameterVersion>0.8) {
           if ( (o = load( "configurations",          DataType_String )) !== null ) {
-            // TODO Protect this agains error, move to a separate method
+            // TODO Protect this agains error, move to a separate method, refactor validation with load from file
             configurations = JSON.parse(o);
           }
           if ( (o = load( "activeConfiguration",          DataType_String )) !== null ) {
@@ -1061,9 +746,51 @@ FFM_GUIParameters.prototype.loadSettings = function() {
       }
 
    } else {
+      // There is no parameter, load all from script directory
       Console.show();
-      Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' do not have a 'version' key, settings ignored");
+      Console.writeln("Warning: Settings '", FFM_SETTINGS_KEY_BASE, "' do not have a 'version' key, settings ignored.");
       Console.flush();
+
+      // Initialize with built-in defaults in case none is found
+      configurations = deepCopyData(ffM_Configuration.getConfigurationTable());
+      var defaultConfigurationName = configurations[0].name;
+
+      var scriptDir = File.extractDirectory(#__FILE__);
+      Console.writeln("Loading initial configurations from directory '" + scriptDir + "'");
+
+      var find = new FileFind;
+     
+      if ( find.begin( scriptDir + "/" + FFM_CONFIGURATION_FILES_FILTER) ) {
+         do
+         {
+            if ( find.name != "." && find.name != ".." && find.isFile ) {
+              var filePath = scriptDir + "/" + find.name;
+              Console.writeln("Add configurations from file '" + find.name + "'.");
+              var result = ffM_Configuration.loadConfigurationFile(filePath);
+              var loadedConfigurations = result.configurations;
+              if ( loadedConfigurations != null) {
+                // TODO Refactor with load configuration
+                for (var i=0; i<loadedConfigurations.length; i++) {
+                  var replaced = false;
+                  for (var j=0; j<configurations.length; j++) {
+                    if (loadedConfigurations[i].name === configurations[j].name) {
+                      replaced = true;
+                      configurations.splice(j,1);
+                    }
+                  }
+                  configurations.push(loadedConfigurations[i]);
+                  Console.writeln("   " + (replaced ? "replaced '" : "loaded '") + loadedConfigurations[i].name + "'");
+                }
+              } else {
+                Console.writeln("ERRORS loading configuration: " + result.messages.join(", "))
+              }
+            }
+         } while ( find.next() );
+
+         ffM_Configuration.replaceConfigurationTable(configurations, defaultConfigurationName);
+
+      }
+      
    }
 
 };

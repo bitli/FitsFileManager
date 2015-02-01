@@ -87,8 +87,25 @@ var ffM_allTests = {
 
    },
 
+   // Test if Find File works as expected
+   test_FindFile: function() {
+      var scriptDir = File.extractDirectory(#__FILE__);
+      var find = new FileFind;
+      var count = 0;
+      if ( find.begin( scriptDir + "/*.jsh" ) ) {
+         do
+         {
+            if ( find.name != "." && find.name != ".." && find.isFile ) {
+               count ++;
+               // Console.writeln("*** FILE  " + find.name);
+            }
+         } while ( find.next() );
+      }
+      // Number of jsh files in directory
+      pT_assertEquals(2, count);
+   },
 
-   // Test helper
+   // Test helper functions
 
    test_RegExpToString: function() {
       var r = /[a-z]+/i;
@@ -555,7 +572,7 @@ var ffM_allTests = {
 
    testSaveLoadConfiguration: function() {
       var d = File.extractDirectory(#__FILE__) + "/../../data";
-      var filePath = d + "/testDefault.json";
+      var filePath = d + "/testDefault.ffm-configs";
 
       var userConf = deepCopyData(ffM_Configuration.getConfigurationTable());
       var result = ffM_Configuration.saveConfigurationFile(filePath, userConf);
@@ -569,7 +586,7 @@ var ffM_allTests = {
 
    testLoadConfigurationNoFile: function() {
       var d = File.extractDirectory(#__FILE__) + "/../../data";
-      var filePath = d + "/NON-EXISTANT-FILE.json";
+      var filePath = d + "/NON-EXISTANT-FILE.ffm-configs";
       var resultAndData = ffM_Configuration.loadConfigurationFile(filePath);
       pT_assertNull(resultAndData.configurations);
       pT_assertTrue(resultAndData.messages[0].endsWith("is not readable."));
@@ -577,7 +594,7 @@ var ffM_allTests = {
 
    testLoadConfigurationSyntaxError: function() {
       var d = File.extractDirectory(#__FILE__) + "/../../data";
-      var filePath = d + "/badConfigSyntax.json";
+      var filePath = d + "/badConfigSyntax.ffm-configs";
       var resultAndData = ffM_Configuration.loadConfigurationFile(filePath);
       pT_assertNull(resultAndData.configurations);
       pT_assertTrue(resultAndData.messages[0].endsWith("not JSON format."));
@@ -585,7 +602,7 @@ var ffM_allTests = {
 
    testLoadConfigurationSentinelError: function() {
       var d = File.extractDirectory(#__FILE__) + "/../../data";
-      var filePath = d + "/badConfigSentinel.json";
+      var filePath = d + "/badConfigSentinel.ffm-configs";
       var resultAndData = ffM_Configuration.loadConfigurationFile(filePath);
       pT_assertNull(resultAndData.configurations);
       pT_assertTrue(resultAndData.messages[0].endsWith("(missing or bad 'sentinel')."));
@@ -593,10 +610,10 @@ var ffM_allTests = {
 
    testLoadConfigurationVersionError: function() {
       var d = File.extractDirectory(#__FILE__) + "/../../data";
-      var filePath = d + "/badConfigVersion.json";
+      var filePath = d + "/badConfigVersion.ffm-configs";
       var resultAndData = ffM_Configuration.loadConfigurationFile(filePath);
       pT_assertNull(resultAndData.configurations);
-      pT_assertTrue(resultAndData.messages[0].endsWith("than current version " + PARAMETERS_VERSION + "."));
+       pT_assertTrue(resultAndData.messages[0].endsWith("than current version " + PARAMETERS_VERSION + "."));
    },
 
 

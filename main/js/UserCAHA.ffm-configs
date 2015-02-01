@@ -1,0 +1,148 @@
+{
+  "sentinel": "FITSFileManager.configurations",
+  "version": 1,
+  "configurations": [
+    {
+      "name": "User CAHA",
+      "description": "A default configuration based on images from CAHA via PixInsight",
+      "version": 1,
+      "variableList": [
+        {
+          "name": "type",
+          "description": "Type of image (flat, bias, ...)",
+          "show": true,
+          "resolver": "RegExpList",
+          "parameters": {
+            "RegExpList": {
+              "key": "IMAGETYP",
+              "reChecks": [
+                {
+                  "regexp": "/flat/i",
+                  "replacement": "flat"
+                },
+                {
+                  "regexp": "/bias/i",
+                  "replacement": "bias"
+                },
+                {
+                  "regexp": "/offset/i",
+                  "replacement": "bias"
+                },
+                {
+                  "regexp": "/dark/i",
+                  "replacement": "dark"
+                },
+                {
+                  "regexp": "/light/i",
+                  "replacement": "light"
+                },
+                {
+                  "regexp": "/science/i",
+                  "replacement": "light"
+                },
+                {
+                  "regexp": "/.*/",
+                  "replacement": "&0;"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "filter",
+          "description": "Filter (clear, red, ...)",
+          "show": true,
+          "resolver": "RegExpList",
+          "parameters": {
+            "RegExpList": {
+              "key": "INSFLNAM",
+              "reChecks": [
+                {
+                  "regexp": "/.*/i",
+                  "replacement": "&0;"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "exposure",
+          "description": "Exposure in seconds",
+          "show": true,
+          "resolver": "Integer",
+          "parameters": {
+            "Integer": {
+              "key": "EXPTIME",
+              "abs": true,
+              "format": "%4.4d"
+            }
+          }
+        },
+        {
+          "name": "temp",
+          "description": "Temperature in C",
+          "show": true,
+          "resolver": "Integer",
+          "parameters": {
+            "Integer": {
+              "key": "CCDTEMP",
+              "abs": true,
+              "format": "%4.4d"
+            }
+          }
+        },
+        {
+          "name": "binning",
+          "description": "Binning as 1x1, 2x2, ...",
+          "show": true,
+          "resolver": "IntegerPair",
+          "parameters": {
+            "IntegerPair": {
+              "key1": "CDELT1",
+              "key2": "CDELT2",
+              "format": "%dx%d"
+            }
+          }
+        },
+        {
+          "name": "night",
+          "description": "night (experimental)",
+          "show": true,
+          "resolver": "Night",
+          "parameters": {
+            "Night": {
+              "keyLongObs": "CAHA TEL GEOLON",
+              "keyJD": "JUL-DATE"
+            }
+          }
+        },
+        {
+          "name": "filename",
+          "description": "Input file name",
+          "show": false,
+          "resolver": "FileName",
+          "parameters": {
+            "FileName": {}
+          }
+        },
+        {
+          "name": "extension",
+          "description": "Input file extension",
+          "show": false,
+          "resolver": "FileExtension",
+          "parameters": {
+            "FileExtension": {}
+          }
+        }
+      ],
+      "builtins": {
+        "rank": {
+          "format": "%4.4d"
+        },
+        "count": {
+          "format": "%4.4d"
+        }
+      }
+    }
+  ]
+}
