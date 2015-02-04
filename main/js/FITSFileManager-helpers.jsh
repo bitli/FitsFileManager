@@ -4,7 +4,7 @@
 
 #include <pjsr/DataType.jsh>
 
-
+#include <pjsr/UndoFlag.jsh>
 
 
 //=========================================================================================================================
@@ -292,18 +292,19 @@ function deepCopyData(object) {
 // File utility functions
 // ------------------------------------------------------------------------------------------------------------------------
 
+// as per http://pixinsight.com/forum/index.php?topic=8155.msg53446#msg53446
+function getDirectoryWithDriveLetter( a_path )
+{
+   let path = File.windowsPathToUnix( a_path );
+   return File.extractDrive( path ) + File.extractDirectory( path );
+}
+
+
+// Mind parameter order TODO : Change
 function copyFile( sourceFilePath, targetFilePath ) {
-   var f = new File;
 
-   f.openForReading( sourceFilePath );
-   var buffer = f.read( DataType_ByteArray, f.size );
-   f.close();
+   File.copyFile( targetFilePath, sourceFilePath);
 
-   f = new File();
-   f.createForWriting( targetFilePath );
-   f.write( buffer );
-   //f.flush(); // optional; remove if immediate writing is not required
-   f.close();
 }
 
 
@@ -314,15 +315,7 @@ function copyFile( sourceFilePath, targetFilePath ) {
 // An HISTORY record is also added
 #define FFM_FITS_HISTORY_LEADER "PI FITSFileManager from "
 
-function loadSaveFile( sourceFilePath, targetFilePath ) {
-
-   // More than one image may be loaded - this is an issue
-   var images = ImageWindow.open( sourceFilePath,"FITSFileManagerLoadSaveAs_Temp", true );
-   if (images.length !== 1) {
-      throw "File '" + sourceFilePath + "' contains " + images.length + " images, this is not supported.";
-   }
-   var image = images[0];
-   var keywords = image.keywords;
+function updateKeywords(keywords, sourceFilePath, targetFilePath) {
    var firstORIGFILE = false;
    for (var i=0; i<keywords.length; i++) {
       if (keywords[i].name === "ORIGFILE" && keywords[i].value) {
@@ -351,12 +344,119 @@ function loadSaveFile( sourceFilePath, targetFilePath ) {
    ensureKeyword(keywords,  new FITSKeyword( "XBINNING", "1", "Binning factor in X"));
    ensureKeyword(keywords,  new FITSKeyword( "YBINNING", "1", "Binning factor in Y"));
 #endif
+
+   return keywords;
+
+}
+
+function inputHints ()
+{
+   // Input format hints:
+   return "signed-is-physical "; //  + (this.upBottomFITS ? "up-bottom" : "bottom-up");
+};
+
+function outputHints ()
+{
+   // Output format hints:
+   // * XISF: properties fits-keywords no-compress-data block-alignment 4096 max-inline-block-size 3072 no-embedded-data no-resolution
+   // * FITS: up-bottom|bottom-up
+   return "" ; // (this.upBottomFITS ? "up-bottom" : "bottom-up");
+};
+
+
+#define IO_WITH_HINTS 1
+
+function loadSaveFile( sourceFilePath, targetFilePath ) {
+
+#ifdef IO_WITH_HINTS
+   var extin = File.extractExtension( sourceFilePath );
+   var Fin = new FileFormat( extin, true/*toRead*/, false/*toWrite*/ );
+   if ( Fin.isNull )
+      throw new Error( "No installed file format can read \'" + extin + "\' files." ); // shouldn't happen
+
+   var fin = new FileFormatInstance( Fin );
+   if ( fin.isNull )
+      throw new Error( "Unable to instantiate file format: " + Fin.name );
+
+   var d = fin.open( sourceFilePath, inputHints() );
+   if ( d.length < 1 )
+      throw new Error( "Unable to open file: " + sourceFilePath );
+   if ( d.length > 1 )
+      throw "File '" + sourceFilePath + "' contains " + d.length + " images, this is not supported by this script.";
+
+   var imageWindow = new ImageWindow( 1, 1, 1,/*numberOfChannels*/ 32,/*bitsPerSample*/ true/*floatSample*/ );
+
+   var view = imageWindow.mainView;
+   // Protect to be ready if driver handles exceptions
+   let beingProcessed = null;
+   try {
+      view.beginProcess( UndoFlag_NoSwapFile );
+      beingProcessed = view;
+      if ( !fin.readImage( view.image ) )
+         throw new Error( "Unable to read file: " + sourceFilePath );
+      imageWindow.keywords = fin.keywords;
+      view.endProcess();
+      beingProcessed = null;
+   } finally {
+      if ( beingProcessed )
+      {
+         beingProcessed.endProcess();
+         beingProcessed = null;
+      }
+   }
+
+
+   fin.close();
+
+   var keywords = updateKeywords(imageWindow.keywords, sourceFilePath, targetFilePath);
+
+   
+   var ext = File.extractExtension( targetFilePath );
+   var Fout = new FileFormat( ext, false/*toRead*/, true/*toWrite*/ );
+   if ( Fout.isNull )
+      throw new Error( "No installed file format can write " + ext + " files." ); // shouldn't happen
+
+   var fout = new FileFormatInstance( Fout );
+   if ( fout.isNull )
+      throw new Error( "Unable to instantiate file format: " + F.name );
+
+   var hints = outputHints();
+   if ( !fout.create( targetFilePath, hints ) )
+      throw new Error( "Error creating output file: " + targetFilePath );
+
+   // var d = new ImageDescription;
+   // d.bitsPerSample = 32;
+   // d.ieeefpSampleFormat = true;
+   // if ( !f.setOptions( d ) )
+   //    throw new Error( "Unable to set output file options: " + targetFilePath );
+
+   fout.keywords = keywords;
+   //f.keywords = imageWindow.keywords;
+
+   if ( !fout.writeImage( imageWindow.mainView.image ) )
+      throw new Error( "Error writing output file: " + targetFilePath );
+
+   fout.close();
+
+   imageWindow.forceClose();;
+
+#else
+   // More than one image may be loaded - this is an issue
+   var images = ImageWindow.open( sourceFilePath,"FITSFileManagerLoadSaveAs_Temp", true );
+   if (images.length !== 1) {
+      throw "File '" + sourceFilePath + "' contains " + images.length + " images, this is not supported by this script.";
+   }
+   var image = images[0];
+   var keywords = image.keywords;
+
+   keywords = updateKeywords(keywords, sourceFilePath, targetFilePath);
+
    image.keywords = keywords;
 
    image.saveAs(targetFilePath,  false, false, false, false);
 
    image.forceClose();
-
+#endif
 }
 
 // set the keyword to the provided value, override if present, create if not

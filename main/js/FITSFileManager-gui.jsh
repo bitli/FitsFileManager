@@ -550,7 +550,7 @@ function MainDialog(engine, guiParameters) {
    this.configuration_Button.text = Text.T.CONFIGURE_BUTTON_TEXT;
    this.configuration_Button.toolTip = Text.H.CONFIGURE_BUTTON_TOOLTIP;
    this.configuration_Button.enabled = true;
-   this.configurationDialog = ffM_GUI_config.makeDialog(this);
+   this.configurationDialog = ffM_GUI_config.makeDialog(this, this.guiParameters);
 
    this.configurationDescription_Label = new Label();
    this.configurationDescription_Label.text =  ffM_Configuration.getActiveConfigurationElement().description;
@@ -560,7 +560,7 @@ function MainDialog(engine, guiParameters) {
    this.configuration_Button.onClick = function() {
       var configurationName = ffM_Configuration.getActiveConfigurationName();
       var configurationDialog = this.dialog.configurationDialog;
-      configurationDialog.configure(ffM_Configuration.getConfigurationTable(), configurationName);
+      configurationDialog.configure(ffM_Configuration.getConfigurationTable(), configurationName, ffM_Configuration.getGuiParameters());
 
       var result =  configurationDialog.execute();
 

@@ -10,7 +10,7 @@
 #include "PJSR-unit-tests-support.jsh"
 
 
-#define VERSION "1.2-tests"
+#define VERSION "1.3-tests"
 
 #define TITLE     "FITSFileManager"
 
@@ -151,14 +151,16 @@ function vP_testConfigurationGui()
    Console.writeln("FITSFileManager-test-gui - Actions on the GUI will be logged on the console");
 
    var configurationSet = ffM_TestConfigUi.testConfigurations;
-   // Noe: this log takes forever...
+   // Note: this log takes forever...
    //Console.writeln("Initiale ruleset:\n" + Log.pp(configurationSet));
 
-   var names=[];
-   for (var i=0; i<configurationSet.length; i++) {
-      names.push(configurationSet[i].name);
-   }
-   var dialog =  ffM_GUI_config.makeDialog(null, names);
+   // var names=[];
+   // for (var i=0; i<configurationSet.length; i++) {
+   //    names.push(configurationSet[i].name);
+   // }
+   // Make a fake guiParamters with a convenient test directory
+   var d = getDirectoryWithDriveLetter(#__FILE__) +  "/../../data" ;
+   var dialog =  ffM_GUI_config.makeDialog(null,{lastConfigurationDirectory: d});
    dialog.configure(configurationSet, configurationSet[0].name);
    for ( ;; )
    {

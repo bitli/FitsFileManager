@@ -291,7 +291,7 @@ var ffM_GUI_support = (function (){
 var ffM_GUI_config = (function (){
 
    // -- Private methods
-   function makeOKCancel(parentDialog) {
+   function makeLoadSaveOKCancelButtons(parentDialog) {
 
       var c = new Control(parentDialog);
       c.sizer = new HorizontalSizer;
@@ -306,7 +306,9 @@ var ffM_GUI_config = (function (){
          ofd.multipleSelections = false;
          ofd.caption = "Select FITSFileManager configuration file";
          ofd.filters = [["configuration",  FFM_CONFIGURATION_FILES_FILTER]];
+         ofd.initialPath = this.dialog.guiParameters.lastConfigurationDirectory;
          if ( ofd.execute() ) {
+            this.dialog.guiParameters.lastConfigurationDirectory = getDirectoryWithDriveLetter(ofd.fileName);
             this.dialog.loadFileAction(ofd.fileName);
          }
       }
@@ -318,8 +320,10 @@ var ffM_GUI_config = (function (){
          var ofd = new SaveFileDialog;
          ofd.overwritePrompt = false;
          ofd.caption = "Select FITSFileManager configuration file";
-         ofd.filters = [["configuration", FFM_CONFIGURATION_FILES_FILTER]];
+         ofd.filters = [["configuration", FFM_CONFIGURATION_FILES_FILTER]];        
+         ofd.initialPath = this.dialog.guiParameters.lastConfigurationDirectory;
          if ( ofd.execute() ) {
+            this.dialog.guiParameters.lastConfigurationDirectory = getDirectoryWithDriveLetter(ofd.fileName);
             this.dialog.saveAllToFileAction(ofd.fileName);
          }
       }
@@ -332,9 +336,10 @@ var ffM_GUI_config = (function (){
          ofd.overwritePrompt = false;
          ofd.caption = "Select FITSFileManager configuration file";
          ofd.filters = [["configuration", FFM_CONFIGURATION_FILES_FILTER]];
-         // TODO - Keep tack of path 
-         //ofd.initialPath = this.dialog.currentConfigurationName;
+         // TODO - Make sure name of file is clean 
+         ofd.initialPath = this.dialog.guiParameters.lastConfigurationDirectory+"/"+this.dialog.currentConfigurationName;
          if ( ofd.execute() ) {
+            this.dialog.guiParameters.lastConfigurationDirectory = getDirectoryWithDriveLetter(ofd.fileName);
             this.dialog.saveCurrentToFileAction(ofd.fileName);
          }
       }
@@ -1467,10 +1472,11 @@ var ffM_GUI_config = (function (){
   // the configurationSet and new current configuration name properties from the dialog to get the current
   // state.
   // There is currently no way to add, delete or rename configurations
-  function ConfigurationDialog( parentDialog) {
+  function ConfigurationDialog( parentDialog, guiParameters) {
      this.__base__ = Dialog;
      this.__base__();
      var that = this;
+     this.guiParameters = guiParameters;
 
      // Model -
      // Keeps track of configurationSet and current configuration selected
@@ -1559,7 +1565,7 @@ var ffM_GUI_config = (function (){
      this.sizer.add(this.builtinVariable_Group);
 
      // Bottom pane - buttons
-     this.okCancelButtons = makeOKCancel(this);
+     this.okCancelButtons = makeLoadSaveOKCancelButtons(this);
      this.sizer.add(this.okCancelButtons);
 
      this.setVariableSize();
@@ -1690,8 +1696,9 @@ var ffM_GUI_config = (function (){
 
 
   return {
-     makeDialog: function(parent, configurationSet, configurationNameToEdit) {
-        return new ConfigurationDialog(parent, configurationSet, configurationNameToEdit);
+    // makeDialog must be followed by a call to configure()
+     makeDialog: function(parent, guiParameters) {
+        return new ConfigurationDialog(parent, guiParameters);
      },
      ConfigurationSelection_ComboBox: ConfigurationSelection_ComboBox,
 

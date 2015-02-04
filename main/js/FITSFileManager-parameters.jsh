@@ -17,7 +17,11 @@
 
 
 // Define a version for the PARAMETERS ( a double, independent of the script version)
-#define PARAMETERS_VERSION 1.0
+// History:
+//   0.8 - RC versions, did not include 'configurations'
+//   1.0 - First supported version - includes 'configurations'
+//   1.1 - Add 
+#define PARAMETERS_VERSION 1.1
 
 
 // TODO Should not be a global or define, but scoped variables
@@ -578,6 +582,8 @@ function FFM_GUIParameters() {
       this.currentConfigurationIndex = 0;
 
 
+      // Use some reasonable default for the directory to use as the default path to load/save configurations
+      this.lastConfigurationDirectory = File.homeDirectory;
 
 
       // Create templates (use defaults if not yet specified), precompile them
@@ -656,6 +662,7 @@ function FFM_GUIParameters() {
       s += "  orderBy:                        " + this.orderBy + "\n";
       s += "  groupByTemplate:                " + this.groupByCompiledTemplate.templateString + "\n";
       s += "  currentConfigurationIndex:      " + this.currentConfigurationIndex + "\n";
+      s += "  lastConfigurationDirectory:     " + this.lastConfigurationDirectory + "\n";
       return s;
    }
 
@@ -689,6 +696,7 @@ FFM_GUIParameters.prototype.loadSettings = function() {
       return load( key + '_' + index.toString(), type );
    }
 
+   // --- loadSettings
    // Check if we have parameters, laod from parameters if present
    var o, t, parameterVersion, templateErrors, configurations, activeConfigurationName;
    if ( (parameterVersion = load( "version",    DataType_Double )) !== null ) {
@@ -743,6 +751,17 @@ FFM_GUIParameters.prototype.loadSettings = function() {
           }
           ffM_Configuration.replaceConfigurationTable(configurations, activeConfigurationName);
         }
+
+        // After 1.0
+        if (parameterVersion>1.0) {
+          if ( (o = load( "lastConfigurationDirectory",  DataType_String )) !== null ) {
+            if (File.directoryExists(o)) {
+              this.lastConfigurationDirectory = o;
+            }
+          }
+        }
+        
+
       }
 
    } else {
@@ -819,6 +838,7 @@ FFM_GUIParameters.prototype.saveSettings = function()
       save( key + '_' + index.toString(), type, value );
    }
 
+   // --- saveSettings
    save( "version",                    DataType_Double, PARAMETERS_VERSION );
    save( "targetFileNameTemplate",     DataType_String, this.targetFileNameCompiledTemplate.templateString );
    save( "sourceFileNameRegExp",       DataType_String, regExpToString(this.sourceFileNameRegExp) );
@@ -826,6 +846,7 @@ FFM_GUIParameters.prototype.saveSettings = function()
    save( "groupByTemplate",            DataType_String, this.groupByCompiledTemplate.templateString );
    save( "configurations",             DataType_String, JSON.stringify(ffM_Configuration.getConfigurationTable() ));
    save( "activeConfiguration",        DataType_String, ffM_Configuration.getActiveConfigurationName() );
+   save( "lastConfigurationDirectory", DataType_String, this.lastConfigurationDirectory);
 }
 
 

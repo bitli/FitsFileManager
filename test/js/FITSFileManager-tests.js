@@ -11,7 +11,7 @@
 #define DEBUG true
 
 
-#define VERSION "1.2-tests"
+#define VERSION "1.3-tests"
 
 #include "../../main/js/PJSR-logging.jsh"
 
@@ -631,7 +631,7 @@ var ffM_allTests = {
       pT_assertNull(r);
    },
 
-   
+
   testValidateConfigurationDataBadShow: function() {
       var msgs = [];
       var r = ffM_Configuration.validateConfigurationData(
