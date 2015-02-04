@@ -171,7 +171,7 @@ The configurations are kept in the settings of PixInsight, you can edit, add (du
          You select the configuration to work on in the \e{configuration section}, where you can also delete a configuration, duplicated it or change its name and description.
 
          You can save the current configuration or all configuration to a file, and load a configuration file in your environment.  When you load a configuration file, the loaded configuration(s) will replace the current configurations having a matching name.  A default configuration is located in the same directory as the scripts and can be reloaded if desired. Note that currently the configuration files do not include the output template, group template or file name RegExp, those are only part of the settings (this may change in a future release).
-The configuration file are in a JSON format (a commonly used text format), but are not designed for editing with a text editor.
+         The configuration file are in a JSON format (a commonly used text format), but are not designed for editing with a text editor.
 
          In the area \e{select variable} you can add, remove or move snythetic variables.  If a variable reference other variables the order may be important. The parameters of the currently selected variables are defined in the right part of the window.
 
@@ -189,6 +189,26 @@ The configuration file are in a JSON format (a commonly used text format), but a
          You can change the name, description and its default presence in the file tables for all parameters. Additional parameters are presented depending of the \e{resolver}. Most resolvers have a field to define the \e{format} of the variable.
 
          The area \e{built-in variable formats} is used to specify the format of the built-in synthethic variables \c{&rank;} and \c{&code;}.
+
+         \subsection { Date format } {
+            The DateTime fields can be formatted using a format string. The format string consists of zero or more conversion specifications and ordinary characters. A conversion specification consists of a \% character and a terminating conversion character that determines the conversion specification's behaviour. All ordinary characters are copied unchanged into the array. If copying takes place between objects that overlap, the behaviour is undefined. Each conversion specification is replaced by appropriate characters as described in the following list.
+            \definition { 
+               {\%d}{is replaced by the day of the month as a decimal number \[01,31\].}
+               {\%H}{is replaced by the hour (24-hour clock) as a decimal number \[00,23\].} 
+               {\%j}{is replaced by the julian day.}
+               {\%L}{is replaced by the milliseconds padded to 3 digits.}
+               {\%m}{is replaced by the month as a decimal number \[01,12\].}
+               {\%M}{is replaced by the minute as a decimal number \[00,59\].}
+               {\%S}{is replaced by the second as a decimal number \[00,61\].}
+               {\%y}{is replaced by the year without century as a decimal number \[00,99\].}
+               {\%Y}{is replaced by the year with century as a decimal number.}
+               {\%\%}{is replaced by \%.}
+            }
+
+            If a conversion specification does not correspond to any of the above, the format character itself is output.
+
+            A common format is \%Y\%m\%d which result in a string as 20150227.
+         }
     }
 
 
