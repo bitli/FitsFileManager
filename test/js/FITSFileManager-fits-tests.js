@@ -18,7 +18,7 @@
 //#define DEBUG_FITS
 
 
-#define VERSION "1.2-tests"
+#define VERSION "1.3-tests"
 
 // Unit testing, refrain to include other files
 #include "../../main/js/FITSFileManager-fits.jsh"
@@ -217,7 +217,10 @@ var ffM_allTests = {
    // Test the ffM_FITS_Keywords.fitsKeywords
 
    test_ffM_load_fits: function() {
-      var attrs = ffM_FITS_Keywords.makeImageKeywordsfromFile(ffM_allTests_baseDirectory+ "/" +"m31_Green_0028.fit");
+      var path = ffM_allTests_baseDirectory+ "/" +"m31_Green_0028.fit";
+      var errorList = new Array;
+      var attrs = ffM_FITS_Keywords.makeImageKeywordsfromFile(path, errorList);
+      pT_assertEquals(0,errorList.length);
       pT_assertEquals(26, attrs.fitsKeywordsList.length);
       // Only some are keywords with value
       pT_assertEquals(14, Object.getOwnPropertyNames(attrs.fitsKeywordsMap).length);
@@ -226,11 +229,19 @@ var ffM_allTests = {
       pT_assertEquals(158,attrs.getValueKeyword("NAXIS2").numericValue);
       pT_assertEquals(null,attrs.getValueKeyword("nothere"));
       pT_assertEquals(null,attrs.getValue("nothere"));
+
+      /* Test of multiple HDU
+      var errorList = new Array;
+      ffM_FITS_Keywords.makeImageKeywordsfromFile("D:/Temp/source/flat-FILTER_clear-BINNING_1.fit", errorList);
+      pT_assertEquals(1,errorList.length);
+      */
+
    },
 
    test_ffM_load_bad_fits: function() {
-      try {
-         ffM_FITS_Keywords.makeImageKeywordsfromFile(ffM_allTests_baseDirectory+ "/" + "badfitsmissingend.fit");
+     var errorList = new Array;
+     try {
+         ffM_FITS_Keywords.makeImageKeywordsfromFile(ffM_allTests_baseDirectory+ "/" + "badfitsmissingend.fit", errorList);
       } catch (error) {
          pT_assertEquals(0,error.toString().indexOf("Error: Unexpected end of file reading FITS keywords"));
          return;
@@ -240,7 +251,9 @@ var ffM_allTests = {
 
    // Test the ffM_FITS_Keywords.keywordSet
    test_ffM_keywordsSet: function() {
-      var kwof = ffM_FITS_Keywords.makeImageKeywordsfromFile(ffM_allTests_baseDirectory+ "/" + "m31_Green_0028.fit");
+      var errorList = new Array;
+      var kwof = ffM_FITS_Keywords.makeImageKeywordsfromFile(ffM_allTests_baseDirectory+ "/" + "m31_Green_0028.fit", errorList);
+      pT_assertEquals(0,errorList.length);
       var kws = ffM_FITS_Keywords.makeKeywordsSet();
       kws.putAllImageKeywords(kwof);
       pT_assertEquals(14, Object.keys(kws.allValueKeywordNames).length);
@@ -260,7 +273,9 @@ function pT_compareTwoLoads(expectedNumberOfKeywords, sourceFilePath) {
       pT_assertEquals(expectedNumberOfKeywords, piKeywords.length);
 
       // Load by script
-      var jsKeywords = ffM_loadFITSKeywordsList(sourceFilePath);
+      var errorList = [];
+      var jsKeywords = ffM_loadFITSKeywordsList(sourceFilePath, errorList);
+      pT_assertEquals( 0, errorList.length);
       pT_assertEquals( piKeywords.length, jsKeywords.length);
 
       for (var i=0; i< piKeywords.length; i++) {

@@ -112,13 +112,15 @@ function FFM_Engine(guiParameters) {
    this.rebuildAll = function() {
       for (var i=0; i<this.inputFiles.length; i++) {
          var fileName = this.inputFiles[i];
-         this.inputFITSKeywords[i] = ffM_FITS_Keywords.makeImageKeywordsfromFile(fileName);
-         // Create the synthethic variables using the desired rules
-         this.inputErrors[i] = [];
-         this.inputVariables[i] = ffM_variables.makeSyntheticVariables(this.inputFiles[i],
-            this.inputFITSKeywords[i],
-            this.currentConfiguration.variableList,
-            this.inputErrors[i])
+         this.inputErrors[i] = new Array;
+         this.inputFITSKeywords[i] = ffM_FITS_Keywords.makeImageKeywordsfromFile(fileName, this.inputErrors[i]);
+         if (this.inputErrors[i].length == 0) {
+            // Create the synthethic variables using the desired rules
+            this.inputVariables[i] = ffM_variables.makeSyntheticVariables(this.inputFiles[i],
+               this.inputFITSKeywords[i],
+               this.currentConfiguration.variableList,
+               this.inputErrors[i])
+          }
        }
    }
 
@@ -140,15 +142,19 @@ function FFM_Engine(guiParameters) {
 #endif
          if (this.inputFiles.indexOf(fileNames[i]) < 0) // Skip files already in the list
          {
-            var imageKeywords = ffM_FITS_Keywords.makeImageKeywordsfromFile(fileNames[i]);
+            var errorList = new Array;
+            var imageKeywords = ffM_FITS_Keywords.makeImageKeywordsfromFile(fileNames[i], errorList);
             this.inputFiles.push(fileNames[i]);
             this.inputFITSKeywords.push(imageKeywords);
-            // Create the synthethic variables using the desired rules
-            var errorList = new Array;
-            var variables = ffM_variables.makeSyntheticVariables(fileNames[i], imageKeywords,
-                this.currentConfiguration.variableList, errorList);
+            if (errorList.length === 0) {
+               // Create the synthethic variables using the desired rules
+               var variables = ffM_variables.makeSyntheticVariables(fileNames[i], imageKeywords,
+                   this.currentConfiguration.variableList, errorList);
+               this.inputVariables.push(variables);
+            } else {
+               this.inputVariables.push({});
+            }
 
-            this.inputVariables.push(variables);
             this.inputErrors.push(errorList);
             nmbFilesAdded++;
          } else {

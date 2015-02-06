@@ -8,7 +8,7 @@
 // ------------------------------------------------------------------------------------------------------------------------
 // Read the FITS keywords of an image file, supports the HIERARCH convention
 // ------------------------------------------------------------------------------------------------------------------------
-// Input:  The full path of a file
+// Input:  The opened file
 // Return: An array FITSKeyword, identical to what would be returned by ImageWindow.open().keywords.
 //         at least for correct keywords (errors and border line cases may be handled differently)
 // Throws: Error if bad format
@@ -17,7 +17,20 @@
 // TODO - Support CONTINUE ?
 // TODO - Support blank comment as a continuation of a previous coomment ?
 // ------------------------------------------------------------------------------------------------------------------------
-var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
+var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath, mutableErrorList) {
+   var f = new File;
+   f.openForReading( fitsFilePath );
+   try {
+      return local_loadFITSKeywordsList(f, mutableErrorList);
+   } finally {
+      f.close();
+   }
+}
+
+
+// TODO Move to module
+var local_loadFITSKeywordsList =  function loadFITSKeywordsList(f, mutableErrorList) {
+
 
    function searchCommentSeparator( b ) {
       var inString = false;
@@ -51,93 +64,88 @@ var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath ) {
    }
 
 #ifdef DEBUG_SHOW_FITS
-      debug("ffM_loadFITSKeywordsList: loading '" + fitsFilePath + "'");
+      debug("ffM_loadFITSKeywordsList: loading '" + f.path + "'");
 #endif
 
-   var f = new File;
-   f.openForReading( fitsFilePath );
-   try {
-
-      var keywords = [];
-      for ( ;; ) {
-         var rawData = f.read( DataType_ByteArray, 80 );
+   var keywords = [];
+   for ( ;; ) {
+      var rawData = f.read( DataType_ByteArray, 80 );
 #ifdef DEBUG_FITS
-         debug("ffM_loadFITSKeywordsList: line - '" + rawData.toString() + "'");
+      debug("ffM_loadFITSKeywordsList: line - '" + rawData.toString() + "'");
 #endif
 
-         var name = rawData.toString( 0, 8 );
-         if ( name.toUpperCase() === "END     " ) { // end of HDU keyword list?
-            break;
-         }
-         if ( f.isEOF ) {
-            throw new Error( "Unexpected end of file reading FITS keywords, file: " + fitsFilePath );
-         }
+      var name = rawData.toString( 0, 8 );
+      if ( name.toUpperCase() === "END     " ) { // end of HDU keyword list?
+         break;
+      }
+      if ( f.isEOF ) {
+         throw new Error( "Unexpected end of file reading FITS keywords, file: " + f.path );
+      }
 
-         var value = "";
-         var comment = "";
-         var hasValue = false;
+      var value = "";
+      var comment = "";
+      var hasValue = false;
 
-         // value separator (an equal sign at byte 8) present?
-         if ( rawData.at( 8 ) === 61 ) {
-            // This is a valued keyword
+      // value separator (an equal sign at byte 8) present?
+      if ( rawData.at( 8 ) === 61 ) {
+         // This is a valued keyword
+         hasValue = true;
+         // find comment separator slash
+         var cmtPos = searchCommentSeparator( rawData );
+         if ( cmtPos < 0) {
+            // no comment separator
+            cmtPos = 80;
+         }
+         // value substring
+         value = rawData.toString( 9, cmtPos-9 );
+         if ( cmtPos < 80 ) {
+            // comment substring
+            comment = rawData.toString( cmtPos+1, 80-cmtPos-1 );
+         }
+      } else if (name === 'HIERARCH') {
+         var viPos = searchHierarchValueIndicator(rawData);
+         if (viPos > 0) {
             hasValue = true;
+            name = rawData.toString(9, viPos-10);
             // find comment separator slash
             var cmtPos = searchCommentSeparator( rawData );
-            if ( cmtPos < 0) {
+            if ( cmtPos < 0 ) {
                // no comment separator
                cmtPos = 80;
             }
             // value substring
-            value = rawData.toString( 9, cmtPos-9 );
+            value = rawData.toString( viPos+1, cmtPos-viPos-1 );
             if ( cmtPos < 80 ) {
                // comment substring
                comment = rawData.toString( cmtPos+1, 80-cmtPos-1 );
             }
-         } else if (name === 'HIERARCH') {
-            var viPos = searchHierarchValueIndicator(rawData);
-            if (viPos > 0) {
-               hasValue = true;
-               name = rawData.toString(9, viPos-10);
-               // find comment separator slash
-               var cmtPos = searchCommentSeparator( rawData );
-               if ( cmtPos < 0 ) {
-                  // no comment separator
-                  cmtPos = 80;
-               }
-               // value substring
-               value = rawData.toString( viPos+1, cmtPos-viPos-1 );
-               if ( cmtPos < 80 ) {
-                  // comment substring
-                  comment = rawData.toString( cmtPos+1, 80-cmtPos-1 );
-               }
-            }
          }
+      }
 
-         // If no value in this keyword
-         if (! hasValue) {
-            comment = rawData.toString( 8, 80-8 ).trim();
+      // If no value in this keyword
+      if (! hasValue) {
+         comment = rawData.toString( 8, 80-8 ).trim();
+      }
+
+
+      // Perform a naive sanity check: a valid FITS file must begin with a SIMPLE=T keyword.
+      if ( keywords.length === 0 ) {
+         if ( name !== "SIMPLE  " && value.trim() !== 'T' ) {
+            throw new Error( "File does not seem to be a valid FITS file (SIMPLE T not found): " + f.path );
          }
+      }
 
-
-         // Perform a naive sanity check: a valid FITS file must begin with a SIMPLE=T keyword.
-         if ( keywords.length === 0 ) {
-            if ( name !== "SIMPLE  " && value.trim() !== 'T' ) {
-               throw new Error( "File does not seem to be a valid FITS file (SIMPLE T not found): " + fitsFilePath );
-            }
-         }
-
-         // Add new keyword.
-         var fitsKeyWord = new FITSKeyword( name, value, comment);
-         fitsKeyWord.trim();
-         keywords.push(fitsKeyWord);
+      // Add new keyword.
+      var fitsKeyWord = new FITSKeyword( name, value, comment);
+      fitsKeyWord.trim();
+      keywords.push(fitsKeyWord);
 #ifdef DEBUG_SHOW_FITS
-         debug("ffM_loadFITSKeywordsList: - " + fitsKeyWord);
+      debug("ffM_loadFITSKeywordsList: - " + fitsKeyWord);
 #endif
 
-      }
-   } finally {
-   f.close();
    }
+
+
 #ifdef DEBUG_SHOW_FITS
       debug("ffM_loadFITSKeywordsList: (end) ");
 #endif
@@ -179,21 +187,33 @@ var ffM_FITS_Keywords = (function() {
       return s;
    }
 
+ 
 
 
    // ------------------------------------------------------------------------------------------------------------------------
    // ImageKeywords support - An 'ImageKeywords' keeps track of the FITS keywords of a file, both as an array ordered
-   // as in the file PDU and as a map of name to FITSKeyword for the value keywords (keywords that are not null)
+   // as in the file PDU and as a map of name to FITSKeyword for the value keywords (keywords that are not null).
+   // It also keep track of some key characteristics of the file - especially if it is a single HDU image file
    // ------------------------------------------------------------------------------------------------------------------------
    // Prototype for methods operating on ImageKeywords
    var imageKeywordsPrototype = {
 
       // -- Load the FITS keywords from the file, adding them to the value map too
-      loadFitsKeywords:  function loadFitsKeywords(filePath) {
+      loadFitsKeywords:  function loadFitsKeywords(fitsFilePath, mutableErrorList) {
          var imageKeywords = this;
          var name, fitsKeyFromList, i;
-         imageKeywords.fitsKeywordsList = ffM_loadFITSKeywordsList(filePath);
-         // Make a map of all fits keywords with a value (this remove the comment keywords)
+         var hdu = {};
+
+         var f = new File;
+         f.openForReading( fitsFilePath );
+         try {
+            hdu.fileSize =  f.size;
+            imageKeywords.fitsKeywordsList = local_loadFITSKeywordsList(f, mutableErrorList);
+         } finally {
+            f.close();
+         }
+
+         // Make a map of all fits keywords with a value (this ignores the comment keywords)
          imageKeywords.fitsKeywordsMap = {};
          for (i=0; i<imageKeywords.fitsKeywordsList.length; i++) {
             fitsKeyFromList = imageKeywords.fitsKeywordsList[i];
@@ -204,6 +224,44 @@ var ffM_FITS_Keywords = (function() {
                imageKeywords.fitsKeywordsMap[name] = fitsKeyFromList;
             }
          }
+
+         // Complet info on HDU
+         hdu.numberOfCards = imageKeywords.fitsKeywordsList.length;
+         hdu.blockNumber = Math.floor((hdu.numberOfCards + 35 ) / 36);       
+
+         // Check the characteristics of the (primary) HDU and if it is a single HDU
+         // Note: imageKeywords must be initialized
+         // TODO Error if the keyword is missing
+         var bitpix = imageKeywords.getValueKeyword('BITPIX').numericValue;
+         var naxis = imageKeywords.getValueKeyword('NAXIS').numericValue;
+         var axisProduct = 1;
+         for (var i=1; i<=naxis; i++) {
+            var axis = imageKeywords.getValueKeyword('NAXIS' + i).numericValue; 
+            axisProduct *= axis;        
+         }
+         var elementSize = 0;
+         if (bitpix === 8)        {elementSize = 1; }
+         else if (bitpix === 16)  {elementSize = 2;}
+         else if (bitpix === 32)  {elementSize = 4;}
+         else if (bitpix === 64)  {elementSize = 8;}
+         else if (bitpix === -32) {elementSize = 4;}
+         else if (bitpix === -64) {elementSize = 8;}
+
+         hdu.dataSize = elementSize * axisProduct;
+
+         hdu.paddedDataSize = Math.floor((hdu.dataSize+2880-1)/2880) * 2880;
+
+         // Estimate size of header 
+         hdu.headerSize =  Math.floor((imageKeywords.fitsKeywordsList.length*80+2880-1)/2880) * 2880;
+         hdu.totalSize = hdu.paddedDataSize + hdu.headerSize;   
+
+         Console.writeln("**** HDU " + Object.keys(hdu).map(function (k) {return k + "->" + hdu[k]}));
+         if (hdu.totalSize < hdu.fileSize) {
+            mutableErrorList.push("Likely mutliple HDU in file - primary HDU size " + hdu.totalSize +", file size " + hdu.fileSize);
+         }
+
+         f.close();
+
       },
 
       // -- return the FITSKeyword by name (if keyword has a value), return null otherwise
@@ -257,7 +315,9 @@ var ffM_FITS_Keywords = (function() {
 
    };
 
-   // Factory method for an empty ImageKeywords
+
+
+   // Factory method for an empty ImageKeywords (seems not used)
    var makeImageKeywords = function makeNew() {
       var imageKeywords = Object.create(imageKeywordsPrototype);
       imageKeywords.fitsKeywordsMap = {};
@@ -265,10 +325,10 @@ var ffM_FITS_Keywords = (function() {
       return imageKeywords;
    }
 
-   // Factory method of an imageKeywords
-   var makeImageKeywordsfromFile = function makeImageKeywordsfromFile(filePath) {
+   // Factory method of an imageKeywords from a file
+   var makeImageKeywordsfromFile = function makeImageKeywordsfromFile(filePath, mutableErrorList) {
       var imageKeywords = makeImageKeywords();
-      imageKeywords.loadFitsKeywords(filePath);
+      imageKeywords.loadFitsKeywords(filePath, mutableErrorList);
       return imageKeywords;
    };
 
@@ -318,7 +378,7 @@ var ffM_FITS_Keywords = (function() {
    return {
       makeImageKeywordsfromFile: makeImageKeywordsfromFile,
       makeKeywordsSet: makeKeywordsSet,
-      // Made public for short format of columns
+       // Made public for short format of columns
       unquote: unquote,
 
       // For unit testing only
