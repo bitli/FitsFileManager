@@ -64,10 +64,10 @@
 
 // Debug supprt is in the module PJSR-logging
 // Tracing - define DEBUG if you define any other DEBUG_xxx
-//#define DEBUG
+#define DEBUG
 //#define DEBUG_EVENTS
-//#define DEBUG_SHOW_FITS
-//#define DEBUG_FITS
+#define DEBUG_SHOW_FITS
+#define DEBUG_FITS
 //#define DEBUG_VARS
 //#define DEBUG_COLUMNS
 // ------------------------------------

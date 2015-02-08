@@ -675,7 +675,9 @@ var ffM_allTests = {
       pT_assertEquals(new Date(1995,12,23,13,45,32,430).getTime(),parseFITSDateTime("1995-12-23T13:45:32.43").getTime());
       pT_assertEquals(new Date(1995,12,23,13,45,32,900).getTime(),parseFITSDateTime("1995-12-23T13:45:32.9").getTime());
       pT_assertEquals(new Date(2012,2,28).getTime(),parseFITSDateTime("2012-02-28").getTime());
-   }
+   },
+
+
 
 }
 

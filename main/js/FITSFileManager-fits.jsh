@@ -3,6 +3,7 @@
 // This file is part of FITSFileManager, see copyright in FITSFileManager.js
 
 #include <pjsr/DataType.jsh>
+#include <pjsr/SeekMode.jsh>
 
 
 // ------------------------------------------------------------------------------------------------------------------------
@@ -257,7 +258,7 @@ var ffM_FITS_Keywords = (function() {
 
          Console.writeln("**** HDU " + Object.keys(hdu).map(function (k) {return k + "->" + hdu[k]}));
          if (hdu.totalSize < hdu.fileSize) {
-            mutableErrorList.push("Likely mutliple HDU in file - primary HDU size " + hdu.totalSize +", file size " + hdu.fileSize);
+            mutableErrorList.push("Likely multiple HDU in file - primary HDU size " + hdu.totalSize +", file size " + hdu.fileSize);
          }
 
          f.close();
@@ -389,3 +390,406 @@ var ffM_FITS_Keywords = (function() {
 
 
 }) ();
+
+// ----------------------------------------------------------------------------
+// FITS File object
+var ffM_FITS_Files = (function() {
+
+   // ------------------------------------------------------------------------------
+   // --- Local methods
+   // ------------------------------------------------------------------------------
+   let loadFITSKeywordsList =  function loadFITSKeywordsList(f, mutableErrorList) {
+
+      function searchCommentSeparator( b ) {
+         var inString = false;
+         for ( var i = 10; i < 80; ++i )
+            switch ( b.at( i ) )
+            {
+            case 39: // single quote
+               inString ^= true;
+               break;
+            case 47: // slash
+               if ( !inString )
+                  return i;
+               break;
+            }
+         return -1;
+      };
+
+      // in HIERARCH the = sign is after the real keyword name
+      function searchHierarchValueIndicator( b ) {
+         for ( var i = 9; i < 80; ++i )
+            switch ( b.at( i ) )
+            {
+            case 39: // single quote, = cannot be later
+               return -1;
+            case 47: // slash, cannot be later
+               return -1;
+            case 61: // =, may be value indicator after all
+               return i;
+            }
+         return -1;
+      };
+
+#ifdef DEBUG_SHOW_FITS
+      debug("loadFITSKeywordsList: loading '" + f.path + "'");
+#endif
+
+      let isPrimaryHDU = (f.position === 0);
+
+      let keywords = [];
+      for ( ;; ) {
+
+         // TODO read by block
+         let rawData = f.read( DataType_ByteArray, 80 );
+#ifdef DEBUG_FITS
+         debug("loadFITSKeywordsList: line - '" + rawData.toString() + "'");
+#endif
+
+         let name = rawData.toString( 0, 8 );
+         if ( name.toUpperCase() === "END     " ) { // end of HDU keyword list?
+            break;
+         }
+         if ( f.isEOF ) {
+            mutableErrorList.push("Unexpected end of file reading FITS keywords.");
+            return null;
+         }
+
+         let value = "";
+         let comment = "";
+         let hasValue = false;
+
+         // value separator (an equal sign at byte 8) present?
+         if ( rawData.at( 8 ) === 61 ) {
+            // This is a valued keyword
+            hasValue = true;
+            // find comment separator slash
+            let cmtPos = searchCommentSeparator( rawData );
+            if ( cmtPos < 0) {
+               // no comment separator
+               cmtPos = 80;
+            }
+            // value substring
+            value = rawData.toString( 9, cmtPos-9 );
+            if ( cmtPos < 80 ) {
+               // comment substring
+               comment = rawData.toString( cmtPos+1, 80-cmtPos-1 );
+            }
+         } else if (name === 'HIERARCH') {
+            let viPos = searchHierarchValueIndicator(rawData);
+            if (viPos > 0) {
+               hasValue = true;
+               name = rawData.toString(9, viPos-10);
+               // find comment separator slash
+               var cmtPos = searchCommentSeparator( rawData );
+               if ( cmtPos < 0 ) {
+                  // no comment separator
+                  cmtPos = 80;
+               }
+               // value substring
+               value = rawData.toString( viPos+1, cmtPos-viPos-1 );
+               if ( cmtPos < 80 ) {
+                  // comment substring
+                  comment = rawData.toString( cmtPos+1, 80-cmtPos-1 );
+               }
+            }
+         }
+
+         // If no value in this keyword, fill with spaces
+         if (! hasValue) {
+            comment = rawData.toString( 8, 80-8 ).trim();
+         }
+
+
+         // Perform a naive sanity check: a valid FITS file must begin with a SIMPLE=T keyword.
+         if ( isPrimaryHDU && keywords.length === 0 ) {
+            if ( name !== "SIMPLE  " && value.trim() !== 'T' ) {
+               mutableErrorList.push("Not a valid FITS file (SIMPLE T not found).");
+               return null;
+            }
+         }
+
+         // Add new keyword.
+         let fitsKeyWord = new FITSKeyword( name, value, comment);
+         fitsKeyWord.trim();
+         keywords.push(fitsKeyWord);
+#ifdef DEBUG_SHOW_FITS
+         debug("loadFITSKeywordsList: - " + fitsKeyWord);
+#endif
+
+      }
+
+
+#ifdef DEBUG_SHOW_FITS
+         debug("loadFITSKeywordsList: (end) ");
+#endif
+
+      return keywords;
+   };
+
+
+   // -------------------------------------------------------------------------------
+   let makeFITSValueKeywordsMap = function makeFITSValueKeywordsMap(fitsKeywordsList) {
+     // Make a map of all fits keywords with a value (this ignores the comment keywords)
+      let fitsKeywordsMap = {};
+      for (let i=0; i<fitsKeywordsList.length; i++) {
+         let fitsKeyFromList = fitsKeywordsList[i];
+         if (!fitsKeyFromList.isNull) {
+            // It has a value
+            let name = fitsKeyFromList.name;
+            // IMPORTANT: FitsKey is shared with the list
+            // TODO Add check for duplicates (they are not supported, should be a warning)
+            fitsKeywordsMap[name] = fitsKeyFromList;
+         }
+      }
+      return fitsKeywordsMap;
+
+   }
+
+
+
+
+
+   // ------------------------------------------------------------------------------
+   // ---- HDU
+   // ------------------------------------------------------------------------------
+   let HDU = function HDU() {
+      this.fitsValueKeywordsMap = {};
+      this.fitsKeywordsList = [];
+   }
+
+   HDU.prototype._addKeywords = function _addKeywords(keywords) {
+      this.fitsKeywordsList = keywords;
+      this.fitsValueKeywordsMap = makeFITSValueKeywordsMap(keywords);
+
+      // Complete information on keyword size and offset of data
+      this.numberOfCards = keywords.length;
+      this.blockNumber = Math.floor((this.numberOfCards + 35 ) / 36);       
+   }
+
+   HDU.prototype._checkAndCompleteHDU = function _checkAndCompleteHDU (startOfHeader, endOfHeader, mutableErrorList) {
+
+      // Make location of header and data
+      this.startOfHeader = startOfHeader;
+      // TODO Wrong, calculated location
+      this.endOfHeader = endOfHeader;
+
+
+      //let simpleKW = imageKeywords.getValueKeyword('SIMPLE');
+      let bitpixKW = this.getValueKeyword('BITPIX');
+      let naxisKW = this.getValueKeyword('NAXIS');
+
+      // TODO  review error reporting
+      if (bitpixKW == null || naxisKW === null) {
+         mutableErrorList.push("Bad FITS file format, missing BITPIX or NAXIS.");
+         return;
+      }
+
+      // -------------------------------------------------------------------------------
+      // Check the characteristics of the (primary) HDU and if it is a single HDU
+       // TODO Error if the keyword is missing
+      var bitpix = bitpixKW.numericValue;
+      var naxis = naxisKW.numericValue;
+      var axisProduct = 1;
+      for (var i=1; i<=naxis; i++) {
+         let axisKWname = 'NAXIS' + i;
+         let axisKW = this.getValueKeyword(axisKWname); 
+         // TODO  review error reporting
+         if (axisKW == null) {
+            mutableErrorList.push("Bad FITS file format, missing '"  + axisKWname + "'");
+            return;
+         }
+         var axis = axisKW.numericValue; 
+         axisProduct *= axis;        
+      }
+      var elementSize = 0;
+      if (bitpix === 8)        {elementSize = 1; }
+      else if (bitpix === 16)  {elementSize = 2;}
+      else if (bitpix === 32)  {elementSize = 4;}
+      else if (bitpix === 64)  {elementSize = 8;}
+      else if (bitpix === -32) {elementSize = 4;}
+      else if (bitpix === -64) {elementSize = 8;}
+
+      this.dataSize = elementSize * axisProduct;
+      this.paddedDataSize = Math.floor((this.dataSize+2880-1)/2880) * 2880;
+
+      // Calculate size of header (the END keyword is not in the list) 
+      this.headerSize = (this.fitsKeywordsList.length+1)*80;
+      this.paddedHeaderSize =  Math.floor((this.headerSize +2880-1)/2880) * 2880;
+
+      // Total (padded) size of HDU
+      this.totalSize = this.paddedDataSize + this.paddedHeaderSize;   
+
+    };
+
+
+   // -- return the FITSKeyword by name (if keyword has a value), return null otherwise
+   HDU.prototype.getValueKeyword = function getValueKeyword(name) {
+      if (this.fitsValueKeywordsMap.hasOwnProperty(name)) {
+         return this.fitsValueKeywordsMap[name];
+      } else {
+         return null;
+      }
+   };
+
+      // -- Return the value (that is the raw String, as read) of a FITSKeyword
+   HDU.prototype.getValue = function getValue(name) {
+      let kw = this.getValueKeyword(name);
+      if (kw === null) {
+         return null;
+      } else {
+         return kw.value;
+      }
+   };
+
+      // -- Return the value as a stripped from outside quotes and trimmed (the PI way)
+   HDU.prototype.getStrippedValue = function getStrippedValue(name) {
+      let kw = this.getValueKeyword(name);
+      if (kw === null) {
+         return null;
+      } else {
+         return kw.strippedValue;
+      }
+   };
+      
+   // -- Return the FITS keyword value as a string, unquoted if it was a string, following the FITS rules
+   // (remove outside quote and inside double quote, trim trailing spaces but not leading spaces)
+   // Note that it is not possible to distinguish a string value from a boolean or numeric value with
+   // the same representation (both '123' and 123 will result in the same string)
+   // The unquoted value is suitable for display
+   // This assumes that the value was trimmed (the first and last characters must be the quotes if it is a string value)
+   HDU.prototype.getUnquotedValue = function getUnquotedValue(keywordName) {
+      let kw = this.getValueKeyword(keywordName);
+      if (kw === null) {
+         return null;
+      } else {
+         return unquote(kw.value);
+      }
+   };
+
+
+   // -- return the name of all value key words
+   HDU.prototype.getNamesOfValueKeywords = function getNamesOfValueKeywords() {
+      return Object.keys(this.fitsValueKeywordsMap);
+   };
+
+
+   let makePrimaryHDU = function makePrimaryHDU(keywords, startOfHeader, endOfHeader, mutableErrorList) {
+      let hdu = new HDU();
+      hdu.primary = true;
+      hdu._addKeywords(keywords);
+      hdu._checkAndCompleteHDU(startOfHeader, endOfHeader);
+      return hdu;
+   };
+
+   let makeExtendedHDU = function makeExtendedHDU(keywords, startOfHeader, endOfHeader, mutableErrorList) {
+      let hdu = new HDU();
+      hdu.primary = false;
+      hdu._addKeywords(keywords);
+      hdu._checkAndCompleteHDU(startOfHeader, endOfHeader);
+      return hdu;
+   };
+
+
+
+   // ------------------------------------------------------------------------------
+   // ---- FITSFile
+   // ------------------------------------------------------------------------------
+
+   let FITSFile = function FITSFile(path) {
+      this._path = path;
+      this.HDUs = new Array;
+      this.errors = new Array;
+      // Populated during load of primary HDU
+      this._size = 0;
+      this._multiExtension = null;
+   };
+
+   FITSFile.prototype.loadPrimaryHeader = function loadPrimaryHeader() {
+
+      this.errors = new Array;
+
+      let f = new File;
+      f.openForReading( this._path );
+      try {
+         this._size =  f.size;
+         var startOfHeader = 0;
+         var primaryHDUkws = loadFITSKeywordsList(f, this.errors);
+         var endOfHeader = f.position;
+      } finally {
+         f.close();
+      }
+
+      if (this.errors.length>0) return;
+
+      let hdu = makePrimaryHDU(primaryHDUkws, startOfHeader, endOfHeader, this.errors);
+      this.HDUs = [hdu];
+
+      //Console.writeln("**** this " + Object.keys(this).map(function (k) {return k + "->" + this[k]}));
+      this._multiExtension = (hdu.paddedTotalSize < this._size);
+
+   }
+
+   FITSFile.prototype.loadAllHeaders = function loadAllHeaders() {
+
+      this.errors = new Array;
+
+      let f = new File;
+      f.openForReading( this._path );
+      try {
+         this._size =  f.size;
+         let startOfHeader = 0;
+         let keywords = loadFITSKeywordsList(f, this.errors);
+         // TODO Wrong
+         var endOfHeader = f.position;
+    
+         let hdu = makePrimaryHDU(keywords, startOfHeader, endOfHeader, this.errors);
+         this._multiExtension = (hdu.paddedTotalSize < this._size);
+
+         this.HDUs = [hdu];
+      
+         if (this._multiExtension) {
+            let posOfNextHeader = hdu.startOfHeader + hdu.totalSize;
+            while (posOfNextHeader<this._size) {
+               f.position(posOfNextHeader);
+               keywords = loadFITSKeywordsList(f, this.errors);
+               // TODO Wrong
+               endOfHeader = f.position;
+               hdu = makePrimaryHDU(keywords, posOfNextHeader, endOfHeader, this.errors);
+               this.HDUs.push(hdu);
+               posOfNextHeader = hdu.startOfHeader + hdu.totalSize;
+            }
+
+         }
+
+
+
+      } finally {
+         f.close();
+      }
+
+       this.HDUs = [hdu];
+
+ 
+   }
+
+
+   FITSFile.prototype.getPath = function gePath() {
+      return this._path;
+   }
+
+
+
+
+   let makeFITSFile = function makeFITSFile(path) {
+      return new FITSFile(path);
+   }
+
+
+   return {
+      makeFITSFile: makeFITSFile
+   }
+}) ();
+
+
+

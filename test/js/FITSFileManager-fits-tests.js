@@ -14,8 +14,8 @@
 
 // Tracing - define DEBUG if you define any other DEBUG_xxx
 #define DEBUG
-//#define DEBUG_SHOW_FITS
-//#define DEBUG_FITS
+#define DEBUG_SHOW_FITS
+#define DEBUG_FITS
 
 
 #define VERSION "1.3-tests"
@@ -23,11 +23,16 @@
 // Unit testing, refrain to include other files
 #include "../../main/js/FITSFileManager-fits.jsh"
 
+#include "../../main/js/PJSR-logging.jsh"
+
 
 // ---------------------------------------------------------------------------------------------------------
 // Unit tests
 // ---------------------------------------------------------------------------------------------------------
 
+#ifdef DEBUG
+   Console.show();
+#endif
 
 var ffM_allTests_filePath = #__FILE__ ;
 var ffM_allTests_baseDirectory = File.extractDrive(ffM_allTests_filePath) + File.extractDirectory(ffM_allTests_filePath) + "/../images";
@@ -258,8 +263,20 @@ var ffM_allTests = {
       kws.putAllImageKeywords(kwof);
       pT_assertEquals(14, Object.keys(kws.allValueKeywordNames).length);
       pT_assertEquals(14, kws.allValueKeywordNameList.length);
-   }
+   },
 
+
+   // ---------------------------------------------------------------------------------------------------------
+   // Test of FITS file and HDU functions
+   // ---------------------------------------------------------------------------------------------------------
+
+   testFITSFile: function() {
+      let path = ffM_allTests_baseDirectory+ "/" + "m31_Green_0028.fit";
+      let ff = ffM_FITS_Files.makeFITSFile(path);
+      pT_assertEquals(path,ff.getPath());
+      ff.loadPrimaryHeader();
+      pT_assertEquals(26,ff.HDUs[0].fitsKeywordsList.length);
+   }
 }
 
 // Utility method to load FITS file keys by PI and by script and compare the result
