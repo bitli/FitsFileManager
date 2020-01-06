@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": "main\\js"
+		},
+		{
+			"path": "main\\doc"
+		},
+		{
+			"path": "test"
+		}
+	]
+}
