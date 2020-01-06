@@ -2,6 +2,11 @@
 FITSFileManager Script Changelog
 ===============================================================================
 
+2020.01.6 - v1.4
+- Corrected error regarding the initialization of RegExp in the regexp list, 
+  thanks to 'wfcashwell'.
+-------------------------------------------------------------------------------
+
 2015.2.1 - v1.3
 - Added support for loading/saving configurations
 - Added support for date/time fields and formatting

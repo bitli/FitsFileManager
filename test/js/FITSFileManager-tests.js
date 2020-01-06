@@ -571,8 +571,23 @@ var ffM_allTests = {
       guiParameters.saveSettings();
 
       guiParameters.loadSettings();
-      // TODO make some real tests
-     // pT_assertEquals("string",guiParameters.targetFileNameCompiledTemplate);
+      // Test soem values
+      pT_assertEquals('&1;_&binning;_&temp;C_&type;_&exposure;s_&filter;_&count;&extension;',guiParameters.targetFileNameTemplate);
+      pT_assertEquals('/([^-_.]+)(?:[._-]|$)/',guiParameters.sourceFileNameRegExp.toString());
+      pT_assertEquals('&rank;',guiParameters.orderBy);
+      pT_assertEquals('&targetDir;',guiParameters.groupByTemplate);
+    
+   },
+
+   // ---------------------------------------------------------------------------------------------------------
+   // Test of configurations
+   // ---------------------------------------------------------------------------------------------------------
+   testDefaultConfiguration: function() {
+ 
+      ffM_Configuration.restoreDefaultConfiguration();
+      
+      var c = ffM_Configuration.getConfigurationTable();
+      pT_assertTrue(c[0].name,"Default");
    },
 
    testSaveLoadConfiguration: function() {

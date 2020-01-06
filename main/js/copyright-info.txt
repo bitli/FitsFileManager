@@ -1,1 +1,1 @@
-Copyright (c) 2012-2013 Jean-Marc Lugrin
+Copyright (c) 2012-2020 Jean-Marc Lugrin

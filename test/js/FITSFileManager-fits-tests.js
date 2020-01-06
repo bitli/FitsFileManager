@@ -284,8 +284,6 @@ var ffM_allTests = {
 // Utility method to load FITS file keys by PI and by script and compare the result
 function pT_compareTwoLoads(expectedNumberOfKeywords, sourceFilePath) {
 
-      Console.writeln("***************** " + sourceFilePath);
-
       // Load by PI
       var images = ImageWindow.open( sourceFilePath,"test_ffM_compare_file_1", "", true );
       var image = images[0];

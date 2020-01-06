@@ -3,7 +3,7 @@
 // This file is part of FITSFileManager, see copyright in FITSFileManager.js
 
 
-// This file contains tww modules:
+// This file contains two modules:
 //    ffM_GUI_support - General utility controls (currently used in this file only)
 //    ffM_GUI_config  - Dialog to manage configuration sets
 
@@ -65,10 +65,10 @@ var ffM_GUI_support = (function (){
    //            propertyName: name of the propery to use in the element model for the corresponding column
    //   initialListModel: A (usually empty) initial list model (an array of object with the properties described by modelDescription)
    //                    Usually the model is specified by the modelListChange call (including for initial populate)
-   //   elementFactory: A function() that return a new element model (called when new is created)
+   //   elementFactory: A function() that return a new element model (called when a new element is added)
    //   toolTip: The tool tip text
    //   selectionCallBack: a function(elementModel) that return the element model currently selected. Can be null if
-   //                      no element is selected (for example last one is deleted).
+   //                      no element is selected (for example if the last one was deleted).
    //   sorted: if true the elements are sorted on the first column
    // ---------------------------------------------------------------------------------------------------------
    function ManagedList_Box(parent, modelDescription, initialListModel, elementFactory, toolTip, selectionCallback, sorted) {
@@ -127,7 +127,7 @@ var ffM_GUI_support = (function (){
          for (i=nmbNodes; i>0; i--) {
             this.treeBox.remove(i-1);
          }
-         // Update variable tracking current model
+         // Update the variable tracking the current model
          listModel = newModelList;
 
          // Add new nodes
@@ -421,9 +421,9 @@ var ffM_GUI_config = (function (){
   var removeVariableReferencesRE = /&[0-9]+;/g
   var propertyTypes = {
      FREE_TEXT: {
-        name: "FREE_TEXT",
-        propertyToText: function(value) {return ensureIsString(value)},
-          textToProperty: function(text) {return text},
+         name: "FREE_TEXT",
+         propertyToText: function(value) {return ensureIsString(value)},
+         textToProperty: function(text) {return text},
      },
      REG_EXP: {
         // Check that this is a valid regular expression, but the regexp is kept in its
@@ -1254,6 +1254,7 @@ var ffM_GUI_config = (function (){
      this.selectVariable = function(variableDefinition) {
 #ifdef DEBUG
         debug("VariableUIControl: selectVariable - Variable selected ",variableDefinition.name );
+        //debug("********** ",JSON.stringify(variableDefinition) );
 #endif
          var resolverName;
 

@@ -66,7 +66,7 @@
 // a Configuration is manipulated directly by the methods that use it.
 // The ConfigurationSet is a singleton read/writen by this module. A copy of the ConfigurationSet is manipulated
 // by the Configuration Dialog and replace the singleton only if the Dialog exits with a status OK.
-// One configuration is the 'current' configuration. It is a copy if the selected configuration
+// One configuration is the 'current' configuration. It is a copy of the selected configuration
 // and can be complemented by data used for processing (typically the implementation of the resolvers).
 // That copy is not modified by the ConfigurationDialog or saved as parameter. If another Configuration
 // is selected, a new copy of the selected Configuration will replace the 'current configuration' and all derived
@@ -279,7 +279,7 @@ var ffM_Configuration = (function() {
       return null;
    }
 
-   // Remvoe a configuration by name, but ensure that at least one configuration is present
+   // Remove a configuration by name, but ensure that at least one configuration is present
    var removeConfigurationByName = function(aConfigurationTable, name) {
       if (aConfigurationTable.length>1) {
          for (var i=0; i<aConfigurationTable.length; i++) {
@@ -294,6 +294,10 @@ var ffM_Configuration = (function() {
       return null;
    }
 
+   var restoreDefaultConfiguration = function() {
+     configurationTable = defaultConfigurationSet;
+     this.setActiveConfigurationName(configurationTable[0].name);
+   }
 
 
 
@@ -530,6 +534,7 @@ var ffM_Configuration = (function() {
       getConfigurationTable: getConfigurationTable,
       getActiveConfigurationName: getActiveConfigurationName,
       getActiveConfigurationElement: getActiveConfigurationElement,
+      restoreDefaultConfiguration: restoreDefaultConfiguration,
 
       // Manage active configurations
       createWorkingConfiguration: createWorkingConfiguration,
@@ -715,7 +720,7 @@ FFM_GUIParameters.prototype.loadSettings = function() {
         };
         if ( (o = load( "sourceFileNameRegExp",    DataType_String )) !== null ) {
             try {
-               this.sourceFileNameRegExp = RegExpFromString(o);
+               this.sourceFileNameRegExp = regExpFromString(o);
             } catch (err) {
                // Default in case of error in load
                this.sourceFileNameRegExp = FFM_DEFAULT_SOURCE_FILENAME_REGEXP;

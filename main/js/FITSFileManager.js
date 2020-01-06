@@ -3,7 +3,7 @@
 #feature-id    Utilities > FITSFileManager
 
 #feature-info Copy and move files based on FITS keys.<br/>\
-   Written by Jean-Marc Lugrin (c) 2012-2015.
+   Written by Jean-Marc Lugrin (c) 2012-2019.
 
 // ==================================================================================================
 // The complete source code is hosted at https://bitbucket.org/bitli/fitsfilemanager
@@ -66,8 +66,8 @@
 // Tracing - define DEBUG if you define any other DEBUG_xxx
 #define DEBUG
 //#define DEBUG_EVENTS
-#define DEBUG_SHOW_FITS
-#define DEBUG_FITS
+//#define DEBUG_SHOW_FITS
+//#define DEBUG_FITS
 //#define DEBUG_VARS
 //#define DEBUG_COLUMNS
 // ------------------------------------

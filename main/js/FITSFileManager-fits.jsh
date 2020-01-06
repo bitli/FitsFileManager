@@ -256,7 +256,7 @@ var ffM_FITS_Keywords = (function() {
          hdu.headerSize =  Math.floor((imageKeywords.fitsKeywordsList.length*80+2880-1)/2880) * 2880;
          hdu.totalSize = hdu.paddedDataSize + hdu.headerSize;   
 
-         Console.writeln("**** HDU " + Object.keys(hdu).map(function (k) {return k + "->" + hdu[k]}));
+         //Console.writeln("**** HDU " + Object.keys(hdu).map(function (k) {return k + "->" + hdu[k]}));
          if (hdu.totalSize < hdu.fileSize) {
             mutableErrorList.push("Likely multiple HDU in file - primary HDU size " + hdu.totalSize +", file size " + hdu.fileSize);
          }

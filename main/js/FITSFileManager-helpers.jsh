@@ -83,7 +83,7 @@ function regExpFromUserString(reString) {
 
 function ensureIsString(value) {
    if (typeof value !== 'string') {
-      throw "INTERNAL ERROR - expected a 'string', got a '" + typeof value + " for '" + value.toString() +"'";
+      throw "INTERNAL ERROR - expected a 'string', got a '" + typeof value + "' for '" + value.toString() +"'";
    }
    return value;
 }
@@ -624,9 +624,10 @@ var ffM_Resolver = (function(){
    // Describe the resolver types
    // The 'initial' property value will be deep copied to the parameter property when a new definition is created
    // The 'control' property will be populatedby the GUI when they are created
+   // For regexp, the regexp must be a string (as only strings are saved/restored)
    var resolvers = [
       {name: 'RegExpList', description: 'Type of image (flat, bias, ...)',
-            initial:{key: '?', reChecks: [{regexp: /.*/, replacement: '?'}]},  control: null, parserFactory:null},
+            initial:{key: '?', reChecks: [{regexp: "/.*/", replacement: '?'}]},  control: null, parserFactory:null},
       {name: 'Text', description: 'Text of FITS keyword value',
             initial:{key: '?', format: '%ls', case: 'NONE'}, control: null, parserFactory:null},
       {name: 'Integer', description: 'Integer value',
