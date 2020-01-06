@@ -726,7 +726,7 @@ var ffM_FITS_Files = (function() {
       this.HDUs = [hdu];
 
       //Console.writeln("**** this " + Object.keys(this).map(function (k) {return k + "->" + this[k]}));
-      this._multiExtension = (hdu.paddedTotalSize < this._size);
+      this._multiExtension = (hdu.totalSize < this._size);
 
    }
 
@@ -744,7 +744,7 @@ var ffM_FITS_Files = (function() {
          var endOfHeader = f.position;
     
          let hdu = makePrimaryHDU(keywords, startOfHeader, endOfHeader, this.errors);
-         this._multiExtension = (hdu.paddedTotalSize < this._size);
+         this._multiExtension = (hdu.totalSize < this._size);
 
          this.HDUs = [hdu];
       
