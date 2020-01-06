@@ -14,8 +14,8 @@
 
 // Tracing - define DEBUG if you define any other DEBUG_xxx
 #define DEBUG
-#define DEBUG_SHOW_FITS
-#define DEBUG_FITS
+//#define DEBUG_SHOW_FITS
+//#define DEBUG_FITS
 
 
 #define VERSION "1.3-tests"
@@ -34,9 +34,11 @@
    Console.show();
 #endif
 
-var ffM_allTests_filePath = #__FILE__ ;
-var ffM_allTests_baseDirectory = File.extractDrive(ffM_allTests_filePath) + File.extractDirectory(ffM_allTests_filePath) + "/../images";
-Console.writeln("ffM_allTests_filePath is '" + ffM_allTests_filePath + "', ffM_allTests_baseDirectory is '" + ffM_allTests_baseDirectory +"'");
+var PROJECT_BASE_DIR = File.fullPath(File.extractDrive(#__FILE__)+File.extractDirectory(#__FILE__)+"/../..");
+var PROJECT_IMAGE_DIR = PROJECT_BASE_DIR+"/test/images";
+
+Console.writeln("Project base directory is   '" + PROJECT_BASE_DIR + "'.");
+Console.writeln("        images directory is '" + PROJECT_IMAGE_DIR + "'.")
 
 
 var ffM_allTests = {
@@ -159,13 +161,13 @@ var ffM_allTests = {
 
    // Test loading keywords from file by PI
    test_ffM_compare_files_simple: function() {
-      pT_compareTwoLoads(26,ffM_allTests_baseDirectory+ "/" + "m31_Green_0028.fit");
+      pT_compareTwoLoads(26,PROJECT_IMAGE_DIR+ "/" + "m31_Green_0028.fit");
    },
    test_ffM_compare_files_hierarch: function() {
-      pT_compareTwoLoads(151,ffM_allTests_baseDirectory+ "/" + "dsaI_0008.fits");
+      pT_compareTwoLoads(151,PROJECT_IMAGE_DIR+ "/" + "dsaI_0008.fits");
    },
    test_ffM_compare_files_manycases: function() {
-      pT_compareTwoLoads(151,ffM_allTests_baseDirectory+ "/" +"manycases.fits");
+      pT_compareTwoLoads(151,PROJECT_IMAGE_DIR+ "/" +"manycases.fits");
    },
 
 
@@ -222,7 +224,7 @@ var ffM_allTests = {
    // Test the ffM_FITS_Keywords.fitsKeywords
 
    test_ffM_load_fits: function() {
-      var path = ffM_allTests_baseDirectory+ "/" +"m31_Green_0028.fit";
+      var path = PROJECT_IMAGE_DIR + "/" +"m31_Green_0028.fit";
       var errorList = new Array;
       var attrs = ffM_FITS_Keywords.makeImageKeywordsfromFile(path, errorList);
       pT_assertEquals(0,errorList.length);
@@ -246,7 +248,7 @@ var ffM_allTests = {
    test_ffM_load_bad_fits: function() {
      var errorList = new Array;
      try {
-         ffM_FITS_Keywords.makeImageKeywordsfromFile(ffM_allTests_baseDirectory+ "/" + "badfitsmissingend.fit", errorList);
+         ffM_FITS_Keywords.makeImageKeywordsfromFile(PROJECT_IMAGE_DIR+ "/" + "badfitsmissingend.fit", errorList);
       } catch (error) {
          pT_assertEquals(0,error.toString().indexOf("Error: Unexpected end of file reading FITS keywords"));
          return;
@@ -257,7 +259,7 @@ var ffM_allTests = {
    // Test the ffM_FITS_Keywords.keywordSet
    test_ffM_keywordsSet: function() {
       var errorList = new Array;
-      var kwof = ffM_FITS_Keywords.makeImageKeywordsfromFile(ffM_allTests_baseDirectory+ "/" + "m31_Green_0028.fit", errorList);
+      var kwof = ffM_FITS_Keywords.makeImageKeywordsfromFile(PROJECT_IMAGE_DIR+ "/" + "m31_Green_0028.fit", errorList);
       pT_assertEquals(0,errorList.length);
       var kws = ffM_FITS_Keywords.makeKeywordsSet();
       kws.putAllImageKeywords(kwof);
@@ -271,7 +273,7 @@ var ffM_allTests = {
    // ---------------------------------------------------------------------------------------------------------
 
    testFITSFile: function() {
-      let path = ffM_allTests_baseDirectory+ "/" + "m31_Green_0028.fit";
+      let path = PROJECT_IMAGE_DIR+ "/" + "m31_Green_0028.fit";
       let ff = ffM_FITS_Files.makeFITSFile(path);
       pT_assertEquals(path,ff.getPath());
       ff.loadPrimaryHeader();
@@ -282,8 +284,10 @@ var ffM_allTests = {
 // Utility method to load FITS file keys by PI and by script and compare the result
 function pT_compareTwoLoads(expectedNumberOfKeywords, sourceFilePath) {
 
+      Console.writeln("***************** " + sourceFilePath);
+
       // Load by PI
-      var images = ImageWindow.open( sourceFilePath,"test_ffM_compare_file_1", true );
+      var images = ImageWindow.open( sourceFilePath,"test_ffM_compare_file_1", "", true );
       var image = images[0];
       var piKeywords = image.keywords;
       image.close();

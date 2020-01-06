@@ -23,6 +23,12 @@
 
 #include <pjsr/FileMode.jsh>
 
+var PROJECT_BASE_DIR = File.fullPath(File.extractDrive(#__FILE__)+File.extractDirectory(#__FILE__)+"/../..");
+var PROJECT_DATA_DIR = PROJECT_BASE_DIR+"/data";
+
+Console.writeln("Project base directory is '" + PROJECT_BASE_DIR + "'.");
+Console.writeln("        data directory is '" + PROJECT_DATA_DIR + "'.");
+
 // ---------------------------------------------------------------------------------------------------------
 // Unit tests
 // ---------------------------------------------------------------------------------------------------------
@@ -67,8 +73,7 @@ var ffM_allTests = {
    // Test that file reading/writing works as expected
    // It is not clear which encoding is used
    test_JSONFile: function() {
-      var d = File.extractDirectory(#__FILE__) + "/../../data";
-      var filePath = d + "/test.json";
+      var filePath = PROJECT_DATA_DIR + "/test.json";
 
       var js = JSON.parse('{"s":12,"a":[1,2,3]}');
       var text = JSON.stringify(js, null, 2);
@@ -89,20 +94,20 @@ var ffM_allTests = {
 
    // Test if Find File works as expected
    test_FindFile: function() {
-      var scriptDir = File.extractDirectory(#__FILE__);
+      var scriptDir = File.extractDrive(#__FILE__)+File.extractDirectory(#__FILE__);
       var find = new FileFind;
       var count = 0;
-      if ( find.begin( scriptDir + "/*.jsh" ) ) {
+      if ( find.begin( scriptDir + "/*.js" ) ) {
          do
          {
             if ( find.name != "." && find.name != ".." && find.isFile ) {
                count ++;
-               // Console.writeln("*** FILE  " + find.name);
+               //Console.writeln("*** FILE  " + find.name);
             }
          } while ( find.next() );
       }
-      // Number of jsh files in directory
-      pT_assertEquals(2, count);
+      // Number of js files in directory test/js
+      pT_assertEquals(3, count);
    },
 
    // Test helper functions
@@ -571,8 +576,7 @@ var ffM_allTests = {
    },
 
    testSaveLoadConfiguration: function() {
-      var d = File.extractDirectory(#__FILE__) + "/../../data";
-      var filePath = d + "/testDefault.ffm-configs";
+      var filePath = PROJECT_DATA_DIR + "/testDefault.ffm-configs";
 
       var userConf = deepCopyData(ffM_Configuration.getConfigurationTable());
       var result = ffM_Configuration.saveConfigurationFile(filePath, userConf);
@@ -585,35 +589,31 @@ var ffM_allTests = {
    },
 
    testLoadConfigurationNoFile: function() {
-      var d = File.extractDirectory(#__FILE__) + "/../../data";
-      var filePath = d + "/NON-EXISTANT-FILE.ffm-configs";
+      var filePath = PROJECT_DATA_DIR + "/NON-EXISTANT-FILE.ffm-configs";
       var resultAndData = ffM_Configuration.loadConfigurationFile(filePath);
       pT_assertNull(resultAndData.configurations);
       pT_assertTrue(resultAndData.messages[0].endsWith("is not readable."));
    },
 
    testLoadConfigurationSyntaxError: function() {
-      var d = File.extractDirectory(#__FILE__) + "/../../data";
-      var filePath = d + "/badConfigSyntax.ffm-configs";
+      var filePath = PROJECT_DATA_DIR+"/badConfigSyntax.ffm-configs";
       var resultAndData = ffM_Configuration.loadConfigurationFile(filePath);
       pT_assertNull(resultAndData.configurations);
       pT_assertTrue(resultAndData.messages[0].endsWith("not JSON format."));
    },
 
    testLoadConfigurationSentinelError: function() {
-      var d = File.extractDirectory(#__FILE__) + "/../../data";
-      var filePath = d + "/badConfigSentinel.ffm-configs";
+      var filePath = PROJECT_DATA_DIR+"/badConfigSentinel.ffm-configs";
       var resultAndData = ffM_Configuration.loadConfigurationFile(filePath);
       pT_assertNull(resultAndData.configurations);
       pT_assertTrue(resultAndData.messages[0].endsWith("(missing or bad 'sentinel')."));
    },
 
    testLoadConfigurationVersionError: function() {
-      var d = File.extractDirectory(#__FILE__) + "/../../data";
-      var filePath = d + "/badConfigVersion.ffm-configs";
+      var filePath = PROJECT_DATA_DIR+"/badConfigVersion.ffm-configs";
       var resultAndData = ffM_Configuration.loadConfigurationFile(filePath);
       pT_assertNull(resultAndData.configurations);
-       pT_assertTrue(resultAndData.messages[0].endsWith("than current version " + PARAMETERS_VERSION + "."));
+      pT_assertTrue(resultAndData.messages[0].endsWith("than current version " + PARAMETERS_VERSION + "."));
    },
 
 
