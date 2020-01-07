@@ -560,7 +560,7 @@ function MainDialog(engine, guiParameters) {
    this.configuration_Button.onClick = function() {
       var configurationName = ffM_Configuration.getActiveConfigurationName();
       var configurationDialog = this.dialog.configurationDialog;
-      configurationDialog.configure(ffM_Configuration.getConfigurationTable(), configurationName, ffM_Configuration.getGuiParameters());
+      configurationDialog.configure(ffM_Configuration.getConfigurationTable(), configurationName);
 
       var result =  configurationDialog.execute();
 
