@@ -293,11 +293,26 @@ function deepCopyData(object) {
 // ------------------------------------------------------------------------------------------------------------------------
 
 // as per http://pixinsight.com/forum/index.php?topic=8155.msg53446#msg53446
-function getDirectoryWithDriveLetter( a_path )
+
+// Return a full normalized path of a directory or a file, received in unix or windows format
+function getDirectoryWithDriveLetter( a_directory_path )
 {
-   let path = File.windowsPathToUnix( a_path );
-   return File.extractDrive( path ) + File.extractDirectory( path );
+   let unix_path = File.windowsPathToUnix( a_directory_path );
+   let pathNormalized = File.fullPath(unix_path);
+   //Console.writeln("*** getDirectoryWithDriveLetter\n    a_directory_path '" + a_directory_path + "'\n    unix_path '" + unix_path  + "'\n    pathNormalized '" + pathNormalized +"'");
+   return pathNormalized;
 }
+
+// Return a full normalized path to the directory containing the parameter file (or directory)
+function getDirectoryOfFileWithDriveLetter( a_file_path )
+{
+   let unix_path = File.windowsPathToUnix( a_file_path );
+   let pathNormalized = File.fullPath(unix_path);
+   let directoryWithDrive = File.extractDrive( pathNormalized ) + File.extractDirectory(pathNormalized);
+   //Console.writeln("*** getDirectoryOfFileWithDriveLetter\n    a_file_path '" + a_file_path + "\n    unix_path '" + unix_path + "'\n    pathNormalized '" + pathNormalized + "' \n    directoryWithDrive '" + directoryWithDrive +"'");
+   return directoryWithDrive;
+}
+
 
 
 // Mind parameter order TODO : Change

@@ -159,7 +159,8 @@ function vP_testConfigurationGui()
    //    names.push(configurationSet[i].name);
    // }
    // Make a fake guiParamters with a convenient test directory
-   var d = getDirectoryWithDriveLetter(#__FILE__) +  "/../../data" ;
+   let scriptDir = getDirectoryOfFileWithDriveLetter(#__FILE__ ) ;
+   let d = getDirectoryWithDriveLetter(scriptDir + "/../../data") ;
    var dialog =  ffM_GUI_config.makeDialog(null,{lastConfigurationDirectory: d});
    dialog.configure(configurationSet, configurationSet[0].name);
    for ( ;; )

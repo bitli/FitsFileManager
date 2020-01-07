@@ -779,7 +779,7 @@ FFM_GUIParameters.prototype.loadSettings = function() {
       configurations = deepCopyData(ffM_Configuration.getConfigurationTable());
       var defaultConfigurationName = configurations[0].name;
 
-      var scriptDir = File.extractDirectory(#__FILE__);
+      var scriptDir = getDirectoryOfFileWithDriveLetter(#__FILE__);
       Console.writeln("Loading initial configurations from directory '" + scriptDir + "'");
 
       var find = new FileFind;

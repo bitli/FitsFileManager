@@ -308,7 +308,7 @@ var ffM_GUI_config = (function (){
          ofd.filters = [["configuration",  FFM_CONFIGURATION_FILES_FILTER]];
          ofd.initialPath = this.dialog.guiParameters.lastConfigurationDirectory;
          if ( ofd.execute() ) {
-            this.dialog.guiParameters.lastConfigurationDirectory = getDirectoryWithDriveLetter(ofd.fileName);
+            this.dialog.guiParameters.lastConfigurationDirectory = getDirectoryOfFileWithDriveLetter(ofd.fileName);
             this.dialog.loadFileAction(ofd.fileName);
          }
       }
@@ -323,7 +323,7 @@ var ffM_GUI_config = (function (){
          ofd.filters = [["configuration", FFM_CONFIGURATION_FILES_FILTER]];        
          ofd.initialPath = this.dialog.guiParameters.lastConfigurationDirectory;
          if ( ofd.execute() ) {
-            this.dialog.guiParameters.lastConfigurationDirectory = getDirectoryWithDriveLetter(ofd.fileName);
+            this.dialog.guiParameters.lastConfigurationDirectory = getDirectoryOfFileWithDriveLetter(ofd.fileName);
             this.dialog.saveAllToFileAction(ofd.fileName);
          }
       }
@@ -339,7 +339,7 @@ var ffM_GUI_config = (function (){
          // TODO - Make sure name of file is clean 
          ofd.initialPath = this.dialog.guiParameters.lastConfigurationDirectory+"/"+this.dialog.currentConfigurationName;
          if ( ofd.execute() ) {
-            this.dialog.guiParameters.lastConfigurationDirectory = getDirectoryWithDriveLetter(ofd.fileName);
+            this.dialog.guiParameters.lastConfigurationDirectory = getDirectoryOfFileWithDriveLetter(ofd.fileName);
             this.dialog.saveCurrentToFileAction(ofd.fileName);
          }
       }

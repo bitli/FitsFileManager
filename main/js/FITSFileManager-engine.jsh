@@ -533,7 +533,7 @@ function FFM_Engine(guiParameters) {
 #ifdef DEBUG
          debug("executeFileOperations: targetFile = " + targetFile );
 #endif
-         var targetDirectory = File.extractDrive(targetFile) +  File.extractDirectory(targetFile);
+         var targetDirectory = getDirectoryOfFileWithDriveLetter(targetFile);
 #ifdef DEBUG
          debug("executeFileOperations: targetDirectory = " + targetDirectory );
 #endif

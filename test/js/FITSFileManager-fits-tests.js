@@ -18,9 +18,9 @@
 //#define DEBUG_FITS
 
 
-#define VERSION "1.3-tests"
+#define VERSION "1.4-tests"
 
-// Unit testing, refrain to include other files
+// Unit testing, refrain to include other files to avoid conflict in tests
 #include "../../main/js/FITSFileManager-fits.jsh"
 
 #include "../../main/js/PJSR-logging.jsh"
@@ -34,7 +34,32 @@
    Console.show();
 #endif
 
-var PROJECT_BASE_DIR = File.fullPath(File.extractDrive(#__FILE__)+File.extractDirectory(#__FILE__)+"/../..");
+// From FITSFileManager-helper.js
+// Return a full normalized path of a directory or a file, received in unix or windows format
+function getDirectoryWithDriveLetter( a_directory_path )
+{
+   let unix_path = File.windowsPathToUnix( a_directory_path );
+   let pathNormalized = File.fullPath(unix_path);
+   //Console.writeln("*** getDirectoryWithDriveLetter\n    a_directory_path '" + a_directory_path + "'\n    unix_path '" + unix_path  + "'\n    pathNormalized '" + pathNormalized +"'");
+   return pathNormalized;
+}
+
+// Return a full normalized path to the directory containing the parameter file (or directory)
+function getDirectoryOfFileWithDriveLetter( a_file_path )
+{
+   let unix_path = File.windowsPathToUnix( a_file_path );
+   let pathNormalized = File.fullPath(unix_path);
+   let directoryWithDrive = File.extractDrive( pathNormalized ) + File.extractDirectory(pathNormalized);
+   //Console.writeln("*** getDirectoryOfFileWithDriveLetter\n    a_file_path '" + a_file_path + "\n    unix_path '" + unix_path + "'\n    pathNormalized '" + pathNormalized + "' \n    directoryWithDrive '" + directoryWithDrive +"'");
+   return directoryWithDrive;
+}
+
+
+
+// var PROJECT_BASE_DIR = File.fullPath(File.extractDrive(#__FILE__)+File.extractDirectory(#__FILE__)+"/../..");
+var SCRIPT_DIR = getDirectoryOfFileWithDriveLetter(#__FILE__);
+var PROJECT_BASE_DIR = getDirectoryWithDriveLetter(SCRIPT_DIR + "/../..");
+
 var PROJECT_IMAGE_DIR = PROJECT_BASE_DIR+"/test/images";
 
 Console.writeln("Project base directory is   '" + PROJECT_BASE_DIR + "'.");

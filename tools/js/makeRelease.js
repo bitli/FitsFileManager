@@ -9,7 +9,7 @@
 
 #include <pjsr/DataType.jsh>
 
-#define VERSION "1.2"
+#define VERSION "1.4"
 #define ROOT_FILE_NAME "FITSFileManager.js"
 #define ROOT_FILE_DIR "../../main/js"
 #define TARGET_FILE_DIR "../../../releases"
@@ -17,7 +17,7 @@
 (function (version, rootFileName) {
    // Directories are relative to the script directory
    var scriptFileName = #__FILE__ ;
-   var scriptFileDir = File.extractDrive(scriptFileName)+File.extractDirectory(scriptFileName);
+   var scriptFileDir = getDirectoryOfFileWithDriveLetter(scriptFileName);
 
    var rootFileDirectory = scriptFileDir + "/" + ROOT_FILE_DIR;
    var rootFilePath = rootFileDirectory + "/" + rootFileName;
@@ -41,7 +41,7 @@
    if (!File.directoryExists(targetDirectory)) {
       throw "Target directory not found: " +  File.fullPath(targetDirectory);
    }
-   var rootFileDirectory = File.extractDrive(rootFilePath) + File.extractDirectory(rootFilePath);
+   var rootFileDirectory = getDirectoryOfIleWithDriveLetter(rootFilePath);
    var rootFileNameOnly = File.extractName(rootFilePath); // Name without extension
    var rootFileExtension = File.extractExtension(rootFilePath);
 

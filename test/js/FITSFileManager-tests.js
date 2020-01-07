@@ -11,7 +11,7 @@
 #define DEBUG true
 
 
-#define VERSION "1.3-tests"
+#define VERSION "1.4-tests"
 
 #include "../../main/js/PJSR-logging.jsh"
 
@@ -23,7 +23,10 @@
 
 #include <pjsr/FileMode.jsh>
 
-var PROJECT_BASE_DIR = File.fullPath(File.extractDrive(#__FILE__)+File.extractDirectory(#__FILE__)+"/../..");
+
+// var PROJECT_BASE_DIR = File.fullPath(File.extractDrive(#__FILE__)+File.extractDirectory(#__FILE__)+"/../..");
+var SCRIPT_DIR = getDirectoryOfFileWithDriveLetter(#__FILE__);
+var PROJECT_BASE_DIR = getDirectoryWithDriveLetter(SCRIPT_DIR + "/../..");
 var PROJECT_DATA_DIR = PROJECT_BASE_DIR+"/data";
 
 Console.writeln("Project base directory is '" + PROJECT_BASE_DIR + "'.");
@@ -70,6 +73,18 @@ var ffM_allTests = {
       pT_assertEquals('{"s":12,"a":[1,2,3]}', r);
    },
 
+   test_getDirectoryOfFileWithDriveLetter : function () {
+      let testdir = getDirectoryOfFileWithDriveLetter(#__FILE__);
+      pT_assertTrue(testdir.endsWith("/test/js"));
+   },
+
+   test_getDirectoryWithDriveLetter : function () {
+      let filedir = getDirectoryOfFileWithDriveLetter(#__FILE__);
+      let testdir = getDirectoryWithDriveLetter(filedir + "/..");
+      pT_assertTrue(testdir.endsWith("/test"));
+   },
+
+
    // Test that file reading/writing works as expected
    // It is not clear which encoding is used
    test_JSONFile: function() {
@@ -94,7 +109,7 @@ var ffM_allTests = {
 
    // Test if Find File works as expected
    test_FindFile: function() {
-      var scriptDir = File.extractDrive(#__FILE__)+File.extractDirectory(#__FILE__);
+      var scriptDir = getDirectoryOfFileWithDriveLetter(#__FILE__);
       var find = new FileFind;
       var count = 0;
       if ( find.begin( scriptDir + "/*.js" ) ) {
