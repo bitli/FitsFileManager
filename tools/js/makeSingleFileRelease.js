@@ -85,8 +85,17 @@
    // var includeRegExp = /#include[ \t]"+(VaryParams-.+)"/;
    Console.writeln("  looking up include as " + includeRegExp1 + " or " + includeRegExp2);
 
-   // For some reason adding the N make the regexp not working....
+   // For some reason adding the N makes the regexp not working....
    var defineVersionRegExp = /^#define[ \t]+VERSIO/;
+
+   // To detect the title
+   var defineTitleRegExp = /^#define[ \t]+TITLE[ \t]+(.+)/;
+
+   // Log that we have a title
+   var defineDebugRegExp = /^#define[ \t]+DEBUG(.*)/;
+
+   var hasTitle = false;
+   var hasVersion = false;
 
    for (var i=0; i<rootFileText.length; i++) {
       // To show log on console
@@ -95,11 +104,13 @@
 
        // Copy the text, adding the included files and updating the VERSION string
       let line = rootFileText[i];
+      // Remove terminator characters
+      line = line.replace(/[\r\n]*/g,"");
       let match = line.match(includeRegExp1);
       if (!match) match = line.match(includeRegExp2);
       if (match) {
          // Found an #include
-         Console.writeln("  handling '"+ line.substring(0,line.length-1) + "'");
+         Console.writeln("  handling '"+ line + "'");
          
          let inludedFilePath = sourceDir + "/" + match[1];
          let includedText = readTextFile(inludedFilePath);
@@ -108,19 +119,52 @@
          targetFile.outTextLn("// " + line.substring(1));
          targetFile.outTextLn("//================================================================");
          for (let j=0; j<includedText.length; j++) {
-            targetFile.outTextLn(includedText[j]);
+            // Remove terminator characters
+            line = includedText[j].replace(/[\r\n]*/g,"");
+            if (defineDebugRegExp.test(line)) {
+               // Disable DEBUG
+               Console.writeln("    handling '" + line + "'");
+               Console.writeln("       Disabling DEBUG"); 
+               targetFile.outTextLn("// " + line);
+            } else {
+               targetFile.outTextLn(line);
+            }
          }
          targetFile.outTextLn("//==== end of include ============================================");
 
       } else if (defineVersionRegExp.test(line)) {
-         Console.writeln("  handling '" + line.substring(0,line.length-1) + "'");
-         Console.writeln("     writing " + "#define VERSION \"" + version + "\"");
-         targetFile.outTextLn("// Version created by makeRelease on " + new Date());
+         hasVersion = true;
+         // Update version
+         Console.writeln("  handling '" + line + "'");
+         Console.writeln("     writing updated version " + "#define VERSION \"" + version + "\"");
+         targetFile.outTextLn("// Release version " + version + " created by makeRelease on " + new Date() );
          targetFile.outTextLn("#define VERSION \"" + version + "\"");
+
+      } else if (defineDebugRegExp.test(line)) {
+         // Disable DEBUG
+         Console.writeln("  handling '" + line + "'");
+         Console.writeln("     Disabling DEBUG"); 
+         targetFile.outTextLn("// " + line);
+
+      } else if (defineTitleRegExp.test(line)) {
+         hasTitle = true;
+         // Show title
+         Console.writeln("  handling '" + line + "'");
+         Console.writeln("     TITLE is defined"); //  as '" + TITLE + "'");
+         targetFile.outTextLn(line);
+
+
       } else {
          targetFile.outTextLn(line);
       }
 
+   }
+
+   if (!hasTitle) {
+      Console.writeln("#define TITLE is missing");
+   }
+   if (!hasVersion) {
+      Console.writeln("#define VERSION is missing");
    }
 
    targetFile.close();
