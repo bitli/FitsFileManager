@@ -70,17 +70,18 @@
    \label variables
    \subsection { Variables } {
       The variables have the general form \v { '&name:present?missing;' }, although most of the time they have simply the form \v{'&name;'}. The 'name' identifies the variable, it may be a FITS key or a synthetic variable name.
-\list {
-      { The optional 'present' part is the string that will be used as the replacement value if the variable or FITS key has a value. Usually \v{ :present} is not specified and the value of the variable is used as the replacement string. You can also  have an empty 'present' value (as \v{&TELESCOP:;}), in which case the variable is checked for presence (an error is generated if the variable is missing) but its value does not contribute to the target path. }
-      { The optional \v{?missing} part is used if the variable is not present in the file (for example \v{'&OBJECT?unknown;}).  You can also have an empty 'missing' value (like \v {'&binning?;}) in which case there is no error if the corresponding variableor FITS key has no value. }
+      \list {
+         { The optional 'present' part is the string that will be used as the replacement value if the variable or FITS key has a value. Usually \v{ :present} is not specified and the value of the variable is used as the replacement string. You can also  have an empty 'present' value (as \v{&TELESCOP:;}), in which case the variable is checked for presence (an error is generated if the variable is missing) but its value does not contribute to the target path. }
+         { The optional \v{?missing} part is used if the variable is not present in the file (for example \v{'&OBJECT?unknown;}).  You can also have an empty 'missing' value (like \v {'&binning?;}) in which case there is no error if the corresponding variableor FITS key has no value. }
       }
       The synthetic variables are described in the section 'target template' below. They are built from the FITS keywords (following rules specified in a 'configuration'), from the sequence number of the file being processed or from the a regular expression (an extraction of parts of the name) applied to the file name. The source file regular expression can be used, for example, to extract the part of the file name  before the first dash and use it as a prefix when forming the output file name   .
 
-   The files are processed in the order they appear in the table, the variable \v{&rank;} provides the image number to help generating a unique file file. In addition a 'group' string can be generated using from the 'group' template. A \v{&count;} variable is increased for each different group (for example each target directory if the group template contained the target directory). The values are cleaned up of special characters, so that they form legal file names.
+      The files are processed in the order they appear in the table, the variable \v{&rank;} provides the image number to help generating a unique file file. In addition a 'group' string can be generated using from the 'group' template. A \v{&count;} variable is increased for each different group (for example each target directory if the group template contained the target directory). The values are cleaned up of special characters, so that they form legal file names.
    }
 
    \label target_template
-   \subsection { Target template } { Define how the target file path will be generated. The text of this field is used as the output path, except that the variables are replaced by their values according to the current \e configuration. The \lref variables {variables} include the FITS keywords and the synthetic variables defined in the configuration. A typical configuration contains the following keywords (your actual configuration may be different):
+   \subsection { Target template } { 
+      Define how the target file path will be generated. The text of this field is used as the output path, except that the variables are replaced by their values according to the current \e configuration. The \lref variables {variables} include the FITS keywords and the synthetic variables defined in the configuration. A typical configuration contains the following keywords (your actual configuration may be different):
 
       \definition {
          {&binning;} { Binning from XBINNING and YBINNING as integers, like 2x2. }
@@ -100,18 +101,19 @@
          {&count;} { The number of the file being moved/copied int the current group. }
          {&rank;} { The number of the file in the order of the input file list. }
       }
-   You can enter the template or select one of the predefined one and optionaly modify it.
+      You can enter the template or select one of the predefined one and optionaly modify it.
 
-   Example of template: \code { &1;_&binning;_&temp;C_&type;_&exposure;s_&filter;_&count;&extension; }
+      Example of template: \code { &1;_&binning;_&temp;C_&type;_&exposure;s_&filter;_&count;&extension; }
    }
 
    \label file_name_regexp
-   \subsection { Source filename reg exp } { Defines a regular expression (without the surrounding slashes) that will be applied to all file names, without the extension. The 'match' array resulting from the regular expression matching can be used in the target file name template as numbered variables. \v{&0;} represent the whole matched expression, '&1' the first group, and so on. In case of error the field turns red. You can enter the regexp or select one of the predefined one and optionally modify it.
+   \subsection { Source filename reg exp } { 
+      Defines a regular expression (without the surrounding slashes) that will be applied to all file names, without the extension. The 'match' array resulting from the regular expression matching can be used in the target file name template as numbered variables. \v{&0;} represent the whole matched expression, '&1' the first group, and so on. In case of error the field turns red. You can enter the regexp or select one of the predefined one and optionally modify it.
 
-   See \xref { https:\/\/developer.mozilla.org\/en-US\/docs\/JavaScript\/Guide\/Regular_Expressions} { Javascript Regular_Expressions } for more informations on regular expresssions.
+      See \xref { https:\/\/developer.mozilla.org\/en-US\/docs\/JavaScript\/Guide\/Regular_Expressions} { Javascript Regular_Expressions } for more informations on regular expresssions.
 
-   Example of regular expression:
-      \code {(\[^-_.\]+)(?:\[._-\]|$) } }
+      Example of regular expression:
+         \code {(\[^-_.\]+)(?:\[._-\]|$) } }
 
    \label group_template
    \label counter
@@ -138,24 +140,26 @@
    \label manage_configurations
    \subsection { Manage configurations } {
 
-         A \e{configuration} defines how the synthetic variables are created. Synthetic variables are created by rules and parameters, for example by specifying the FITS key to use, the format of the value and operations like changing case or renaming filter names. FITSFileManager keeps track of multiple configurations but only one is active at any time. .  It is expected that most users could use the default configuration, or may be the default with some simple adjustments. It is also possible to have a set of configuration for different image type, but currently you must still change the configuration or the template between image types.  Some configuration options may requirea good understanding of regular expressions and of the FITS key words.
+      A \e{configuration} defines how the synthetic variables are created. Synthetic variables are created by rules and parameters, for example by specifying the FITS key to use, the format of the value and operations like changing case or renaming filter names. This is described in the section \lref configuration configurations.  FITSFileManager keeps track of multiple configurations but only one is active at any time.  It is expected that most users could use the default configuration, or may be the default with some simple adjustments. It is also possible to have a set of configuration for different image type, but currently you must still change the configuration or the template between image types.  Some configuration options may requirea good understanding of regular expressions and of the FITS key words.
 
-The configurations are kept in the settings of PixInsight, you can edit, add (duplicate and edit) or remove configurations. They can also be saved and loaded to/from files and so shared with other users.
+      The configurations are kept in the settings of PixInsight, you can edit, add (duplicate and edit) or remove configurations. They can also be saved and loaded to/from files and so shared with other users.
 
-   Click on the the button \e{Manage configurations...} to change or edit the \lref configuration configuration.
+      Click on the the button \e{Manage configurations...} to change or edit the \lref configuration configuration.
    }
 
    \label output_base_directory
-   \subsection { Output base directory } { Select the directory for the destination files. The target file template may specify directories in the name, in which case the required subdirectories will be created if needed.
+   \subsection { Output base directory } { 
+      Select the directory for the destination files. The target file template may specify directories in the name, in which case the required subdirectories will be created if needed.
    }
 
 
    \label operation
-   \subsection { Operations } { The operations Copy/Move copy or move the files directly, without adding any FITS keywords.  The operation Load/SaveAs loads each image temporarily in the workspace and save it to the new location. An ORIGFILE keyword with the original file name is added if it is not already present.
+   \subsection { Operations } { 
+      The operations Copy/Move copy or move the files directly, without adding any FITS keywords.  The operation Load/SaveAs loads each image temporarily in the workspace and save it to the new location. An ORIGFILE keyword with the original file name is added if it is not already present.
 
-   The operation buttons may be disabled if the operation is not possible (for example if the output directory is not specified). You can use the button \e{Check validity} if the reason why an operation is not possible is not obvious.
+      The operation buttons may be disabled if the operation is not possible (for example if the output directory is not specified). You can use the button \e{Check validity} if the reason why an operation is not possible is not obvious.
 
-    When an operation is completed, the script will ask you if you want to remove the files from the input section of FITSFileManager (this does not remove the files from the disk!).
+      When an operation is completed, the script will ask you if you want to remove the files from the input section of FITSFileManager (this does not remove the files from the disk!).
 
    }
 
@@ -164,52 +168,52 @@ The configurations are kept in the settings of PixInsight, you can edit, add (du
 
       The configurations window is displayed by the button \lref manage_configurations {manage configurations}.
 
-         \center \image FITSFileManagerConfiguration.png
+      \center \image FITSFileManagerConfiguration.png
 
-         The configuration window allows to copy, edit or delete configurations to define a set of synthetic variables.
+      The configuration window allows to copy, edit or delete configurations to define a set of synthetic variables.
 
-         You select the configuration to work on in the \e{configuration section}, where you can also delete a configuration, duplicated it or change its name and description.
+      You select the configuration to work on in the \e{configuration section}, where you can also delete a configuration, duplicated it or change its name and description.
 
-         You can save the current configuration or all configuration to a file, and load a configuration file in your environment.  When you load a configuration file, the loaded configuration(s) will replace the current configurations having a matching name.  A default configuration is located in the same directory as the scripts and can be reloaded if desired. Note that currently the configuration files do not include the output template, group template or file name RegExp, those are only part of the settings (this may change in a future release).
-         The configuration file are in a JSON format (a commonly used text format), but are not designed for editing with a text editor.
+      You can save the current configuration or all configuration to a file, and load a configuration file in your environment.  When you load a configuration file, the loaded configuration(s) will replace the current configurations having a matching name.  A default configuration is located in the same directory as the scripts and can be reloaded if desired. Note that currently the configuration files do not include the output template, group template or file name RegExp, those are only part of the settings (this may change in a future release).
+      The configuration file are in a JSON format (a commonly used text format), but are not designed for editing with a text editor.
 
-         In the area \e{select variable} you can add, remove or move snythetic variables.  If a variable reference other variables the order may be important. The parameters of the currently selected variables are defined in the right part of the window.
+      In the area \e{select variable} you can add, remove or move snythetic variables.  If a variable reference other variables the order may be important. The parameters of the currently selected variables are defined in the right part of the window.
 
-         The area \e{paramters of the variables} specifies or the value of the variable is calculated. The \e{resolver} specifies the rule to use. It is one of:
-            \definition {
-               {Text}{The value of a FITS key used as text, but with characters not allowed in file names filtered.}
-               {Integer}{The value of a FITS key interpreted as an integer.}
-               {IntegerPair}{The value of two FITS key interpreted as a pair of integer (for example size or binning).}
-               {DateTime}{The value of a FITS key interpreted as a date or time.}
-               {RegExpList}{The value of a FITS key is tested agains list of regexp, the first match defines the value. This is typically used to normalize the name of a filter or image type.}
-               {Constant}{A fixed value value.}
-               {FileName}{The original file name.}
-               {FileExtension}{The original file extension.}
-            }
-         You can change the name, description and its default presence in the file tables for all parameters. Additional parameters are presented depending of the \e{resolver}. Most resolvers have a field to define the \e{format} of the variable.
-
-         The area \e{built-in variable formats} is used to specify the format of the built-in synthethic variables \c{&rank;} and \c{&code;}.
-
-         \subsection { Date format } {
-            The DateTime fields can be formatted using a format string. The format string consists of zero or more conversion specifications and ordinary characters. A conversion specification consists of a \% character and a terminating conversion character that determines the conversion specification's behaviour. All ordinary characters are copied unchanged into the array. If copying takes place between objects that overlap, the behaviour is undefined. Each conversion specification is replaced by appropriate characters as described in the following list.
-            \definition { 
-               {\%d}{is replaced by the day of the month as a decimal number \[01,31\].}
-               {\%H}{is replaced by the hour (24-hour clock) as a decimal number \[00,23\].} 
-               {\%j}{is replaced by the julian day.}
-               {\%L}{is replaced by the milliseconds padded to 3 digits.}
-               {\%m}{is replaced by the month as a decimal number \[01,12\].}
-               {\%M}{is replaced by the minute as a decimal number \[00,59\].}
-               {\%S}{is replaced by the second as a decimal number \[00,61\].}
-               {\%y}{is replaced by the year without century as a decimal number \[00,99\].}
-               {\%Y}{is replaced by the year with century as a decimal number.}
-               {\%\%}{is replaced by \%.}
-            }
-
-            If a conversion specification does not correspond to any of the above, the format character itself is output.
-
-            A common format is \%Y\%m\%d which result in a string as 20150227.
+      The area \e{paramters of the variables} specifies or the value of the variable is calculated. The \e{resolver} specifies the rule to use. It is one of:
+         \definition {
+            {Text}{The value of a FITS key used as text, but with characters not allowed in file names filtered.}
+            {Integer}{The value of a FITS key interpreted as an integer.}
+            {IntegerPair}{The value of two FITS key interpreted as a pair of integer (for example size or binning).}
+            {DateTime}{The value of a FITS key interpreted as a date or time.}
+            {RegExpList}{The value of a FITS key is tested agains list of regexp, the first match defines the value. This is typically used to normalize the name of a filter or image type.}
+            {Constant}{A fixed value value.}
+            {FileName}{The original file name.}
+            {FileExtension}{The original file extension.}
          }
-    }
+      You can change the name, description and its default presence in the file tables for all parameters. Additional parameters are presented depending of the \e{resolver}. Most resolvers have a field to define the \e{format} of the variable.
+
+      The area \e{built-in variable formats} is used to specify the format of the built-in synthethic variables \c{&rank;} and \c{&code;}.
+
+      \subsection { Date format } {
+         The DateTime fields can be formatted using a format string. The format string consists of zero or more conversion specifications and ordinary characters. A conversion specification consists of a \% character and a terminating conversion character that determines the conversion specification's behaviour. All ordinary characters are copied unchanged into the array. If copying takes place between objects that overlap, the behaviour is undefined. Each conversion specification is replaced by appropriate characters as described in the following list.
+         \definition { 
+            {\%d}{is replaced by the day of the month as a decimal number \[01,31\].}
+            {\%H}{is replaced by the hour (24-hour clock) as a decimal number \[00,23\].} 
+            {\%j}{is replaced by the julian day.}
+            {\%L}{is replaced by the milliseconds padded to 3 digits.}
+            {\%m}{is replaced by the month as a decimal number \[01,12\].}
+            {\%M}{is replaced by the minute as a decimal number \[00,59\].}
+            {\%S}{is replaced by the second as a decimal number \[00,61\].}
+            {\%y}{is replaced by the year without century as a decimal number \[00,99\].}
+            {\%Y}{is replaced by the year with century as a decimal number.}
+            {\%\%}{is replaced by \%.}
+         }
+
+         If a conversion specification does not correspond to any of the above, the format character itself is output.
+
+         A common format is \%Y\%m\%d which result in a string as 20150227.
+      }
+   }
 
 
 }
