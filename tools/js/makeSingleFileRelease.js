@@ -9,7 +9,7 @@
 
 #include <pjsr/DataType.jsh>
 
-#define VERSION "1.4"
+#define VERSION "1.4-test"
 #define MAIN_FILE_NAME "FITSFileManager.js"
 
 // This should be identical for all my projects
@@ -66,9 +66,9 @@
       throw "Target directory not found: " +  File.fullPath(targetDirectory);
    }
    var mainFileNameOnly = File.extractName(mainFileName); // Name without extension
-   var rootFileExtension = File.extractExtension(mainFileName);
+   var mainFileExtension = File.extractExtension(mainFileName);
 
-   var targetFileName = mainFileNameOnly + "-" + version + rootFileExtension;
+   var targetFileName = mainFileNameOnly + "-" + version + mainFileExtension;
    var targetFilePath = targetDirectory + "/" + targetFileName;
    Console.writeln("  Target directory: " + targetDirectory);
    Console.writeln("  Target file name: " + targetFileName);
@@ -97,10 +97,14 @@
    var hasTitle = false;
    var hasVersion = false;
 
+   var anyMessage = true;
    for (var i=0; i<rootFileText.length; i++) {
       // To show log on console
-      Console.flush();
-      processEvents();
+      if (anyMessage) {
+         Console.flush();
+         processEvents();
+         anyMessage = false;
+      }
 
        // Copy the text, adding the included files and updating the VERSION string
       let line = rootFileText[i];
@@ -111,6 +115,7 @@
       if (match) {
          // Found an #include
          Console.writeln("  handling '"+ line + "'");
+         anyMessage = true;
          
          let inludedFilePath = sourceDir + "/" + match[1];
          let includedText = readTextFile(inludedFilePath);
@@ -134,6 +139,7 @@
 
       } else if (defineVersionRegExp.test(line)) {
          hasVersion = true;
+         anyMessage = true;
          // Update version
          Console.writeln("  handling '" + line + "'");
          Console.writeln("     writing updated version " + "#define VERSION \"" + version + "\"");
@@ -142,12 +148,14 @@
 
       } else if (defineDebugRegExp.test(line)) {
          // Disable DEBUG
+         anyMessage = true;
          Console.writeln("  handling '" + line + "'");
          Console.writeln("     Disabling DEBUG"); 
          targetFile.outTextLn("// " + line);
 
       } else if (defineTitleRegExp.test(line)) {
          hasTitle = true;
+         anyMessage = true;
          // Show title
          Console.writeln("  handling '" + line + "'");
          Console.writeln("     TITLE is defined"); //  as '" + TITLE + "'");
