@@ -99,6 +99,7 @@
       // Avoid recursive copy
       filesToCopy[sourceFileName] = true;
 
+
       let sourceFilePath = sourceDirectory + "/" + sourceFileName;
       let targetFilePath = targetDirectory  + "/" + sourceFileName;
 
@@ -107,6 +108,10 @@
 
       var targetFile = new File;
       targetFile.createForWriting(targetFilePath);
+
+      let extension = File.extractExtension(sourceFileName);
+      let expandJSsource = extension.startsWith(".js");
+      Console.writeln("  File " + sourceFileName + " has extension " + extension + ", " + (expandJSsource ? "expanding directives" : "copying as is"));
 
       var anyMessage = true;
 
@@ -122,50 +127,59 @@
          let line = sourceFileText[i];
          // Remove terminator characters
          line = line.replace(/[\r\n]*/g,"");
-         let match = line.match(includeRegExp1);
-         if (!match) match = line.match(includeRegExp2);
-         if (match) {
-            // Found an #include
-            Console.writeln("  handling '"+ line + "'");
-            anyMessage = true;
+
+         if (expandJSsource) {
             
-            let includedFileName = match[1];
-            if (includedFileName in filesToCopy)
-            {
-               Console.writeln("    File '" + includedFileName + "' already in list");
+            let match = line.match(includeRegExp1);
+            if (!match) match = line.match(includeRegExp2);
+            if (match) {
+               // Found an #include
+               Console.writeln("  handling '"+ line + "'");
+               anyMessage = true;
+               
+               let includedFileName = match[1];
+               if (includedFileName in filesToCopy)
+               {
+                  Console.writeln("    File '" + includedFileName + "' already in list");
+               } else {
+                  Console.writeln("    File '" + includedFileName + "' to be added in copy list");
+                  filesToCopy[includedFileName] = false;
+               }
+   
+            } else if (defineVersionRegExp.test(line)) {
+               hasVersion = true;
+               anyMessage = true;
+               // Update version
+               Console.writeln("  handling '" + line + "'");
+               Console.writeln("     writing updated version " + "#define VERSION \"" + version + "\"");
+               targetFile.outTextLn("// Release version " + version + " created by makeRelease on " + new Date() );
+               targetFile.outTextLn("#define VERSION \"" + version + "\"");
+
+            } else if (defineDebugRegExp.test(line)) {
+               // Disable DEBUG
+               anyMessage = true;
+               Console.writeln("  handling '" + line + "'");
+               Console.writeln("     Disabling DEBUG"); 
+               targetFile.outTextLn("// " + line);
+
+            } else if (defineTitleRegExp.test(line)) {
+               hasTitle = true;
+               anyMessage = true;
+               // Show title
+               Console.writeln("  handling '" + line + "'");
+               Console.writeln("     TITLE is defined"); //  as '" + TITLE + "'");
+               targetFile.outTextLn(line);
+
             } else {
-               Console.writeln("    File '" + includedFileName + "' to be added in copy list");
-               filesToCopy[includedFileName] = false;
+               // No special handling for this line
+               targetFile.outTextLn(line);
             }
- 
-         } else if (defineVersionRegExp.test(line)) {
-            hasVersion = true;
-            anyMessage = true;
-            // Update version
-            Console.writeln("  handling '" + line + "'");
-            Console.writeln("     writing updated version " + "#define VERSION \"" + version + "\"");
-            targetFile.outTextLn("// Release version " + version + " created by makeRelease on " + new Date() );
-            targetFile.outTextLn("#define VERSION \"" + version + "\"");
-
-         } else if (defineDebugRegExp.test(line)) {
-            // Disable DEBUG
-            anyMessage = true;
-            Console.writeln("  handling '" + line + "'");
-            Console.writeln("     Disabling DEBUG"); 
-            targetFile.outTextLn("// " + line);
-
-         } else if (defineTitleRegExp.test(line)) {
-            hasTitle = true;
-            anyMessage = true;
-            // Show title
-            Console.writeln("  handling '" + line + "'");
-            Console.writeln("     TITLE is defined"); //  as '" + TITLE + "'");
-            targetFile.outTextLn(line);
-
 
          } else {
+            // No expansion for this file
             targetFile.outTextLn(line);
          }
+
       }
       targetFile.close();
       Console.writeln("  File '" + sourceFileName + "' copied.")
@@ -174,6 +188,15 @@
 
 
    filesToCopy[mainFileName] = false;
+   // Add all mandatory files
+   filesToCopy['change-log.txt'] = false;
+   filesToCopy['copyright-info.txt'] = false;
+   filesToCopy['product-info.txt'] = false;
+
+   // Add ffm-configs files
+   filesToCopy['Default.ffm-configs'] = false;
+   filesToCopy['iTelescope.ffm-configs'] = false;
+   filesToCopy['UserCAHA.ffm-configs'] = false;
 
    var anyLoaded = true;
    while (anyLoaded) 
@@ -196,10 +219,10 @@
 
 
    if (!hasTitle) {
-      Console.writeln("#define TITLE is missing");
+      Console.writeln("** ERROR ** #define TITLE is missing");
    }
    if (!hasVersion) {
-      Console.writeln("#define VERSION is missing");
+      Console.writeln("** ERROR ** #define VERSION is missing");
    }
 
    Console.writeln("Kit '" + targetDirectory + "' created.");
