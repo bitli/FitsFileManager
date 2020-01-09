@@ -2,7 +2,7 @@
 FITSFileManager Script Changelog
 ===============================================================================
 
-2020.01.6 - v1.4
+2020.01.09 - v1.4
 - Corrected error regarding the initialization of RegExp in the regexp list, 
   thanks to 'wfcashwell'.
 -------------------------------------------------------------------------------

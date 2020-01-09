@@ -71,6 +71,7 @@ var Log = (function() {
       if ( object.length > 0 ) {
          if (embedded) { newline = true }
          var content = "";
+         // The use of for each is deprecated, but it still seems to work
          for each (var item in object) { content += pp(item, depth+1) + ",\n" + spacer(depth+1) }
          content = content.replace(/,\n\s*$/, "").replace(/^\s*/,"")
          pretty += "[ " + content + "\n" + spacer(depth) + "]"
