@@ -123,7 +123,7 @@
             anyMessage = false;
          }
 
-         // Copy the text, adding the included files and updating the VERSION string
+         // Copy the text, adding the included files to the lisz of files to include and updating the VERSION string
          let line = sourceFileText[i];
          // Remove terminator characters
          line = line.replace(/[\r\n]*/g,"");
@@ -145,6 +145,8 @@
                   Console.writeln("    File '" + includedFileName + "' to be added in copy list");
                   filesToCopy[includedFileName] = false;
                }
+               // The #include statement must be kept
+               targetFile.outTextLn(line);
    
             } else if (defineVersionRegExp.test(line)) {
                hasVersion = true;
@@ -176,7 +178,7 @@
             }
 
          } else {
-            // No expansion for this file
+            // No expansion for this file, copy the line
             targetFile.outTextLn(line);
          }
 
