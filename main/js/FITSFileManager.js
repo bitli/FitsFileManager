@@ -55,7 +55,7 @@
 // Thanks to Nikolay for sharing the original FITSKey
 
 // NOTE : The parameters have their own version number in FITSFileManger-parameters.jsh
-#define VERSION   "1.4-SNAPSHOTS"
+#define VERSION   "1.5-SNAPSHOTS"
 #define TITLE     "FITSFileManager"
 
 // --- Debugging control ----------------
@@ -66,8 +66,8 @@
 // Tracing - define DEBUG if you define any other DEBUG_xxx
 #define DEBUG
 //#define DEBUG_EVENTS
-//#define DEBUG_SHOW_FITS
-//#define DEBUG_FITS
+#define DEBUG_SHOW_FITS
+#define DEBUG_FITS
 //#define DEBUG_VARS
 //#define DEBUG_COLUMNS
 // ------------------------------------
