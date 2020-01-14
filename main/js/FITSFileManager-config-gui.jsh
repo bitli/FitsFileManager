@@ -891,7 +891,7 @@ var ffM_GUI_config = (function (){
      this.sizer.add(this.formatRow);
 
      this.caseRuleRow = new CheckListEntryRow(this, rowStyle, "Case conversion",
-     "Case conversion",
+     "Case conversion (Up, Down or None)",
      "case",['up','down','none'], ['UP','DOWN','NONE'], null);
      this.sizer.add(this.caseRuleRow);
 
