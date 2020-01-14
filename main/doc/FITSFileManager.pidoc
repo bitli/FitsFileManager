@@ -24,7 +24,7 @@
 
    \center \image FITSFileManager.png
 
-   The script FITSFileManager allows you to rename FITS image files by copying or moving them to new locations selected by a set of rule. The new location path is build from a template where \lref variables {variables} are replaced with values extracted from FITS keys, from the original file name from a generated \lref counter counter.
+   The script FITSFileManager allows you to rename FITS image files by copying or moving them to new locations selected by a set of rule. The new location path is build from a template where \lref variables {variables} are replaced with values extracted from FITS keys, from the original file name or from a \lref counter counter of copied files.
 
    \subsection { Operations } {
 
@@ -32,15 +32,15 @@
 
       \list[ordered] {
          { Select the files to move or copy. The selected files can be individually checked or un-checked. Currently you should probably process the different type of files (science, bias, dark, flats) separetely. }
-         { Select a predefined configuration. You can also select \lref manage_configurations {configuration} and load or edit configuration information, which define the way to parse and format the FITS keys of the files to process.}
+         { Select a predefined configuration. You can also select \lref manage_configurations {Manage configurations...} and load or edit configuration information. A configuration defines the way to parse and format the FITS keys of the files to process.}
 
-         { Select a predefined template or enter a new \lref target_template template to generate the target path.
+         { Select a predefined template or enter a new \lref target_template {target files template} to generate the target path.
 
           In a \lref target_template template you can use variables like \v{&OBJECT;} or \v {&binning;} to substitute values based on the source file. The variables are the values of the FITS keywords and synthethic variables defined in your \lref manage_configurations {configuration}.  }
-          { \e {Adavanced usage:} If needed adapt the \lref file_name_regexp {file name regular expression} used to select parts of the file name to use in the template. }
+          { \e {Adavanced usage:} If needed adapt the \lref file_name_regexp {File name regular expression} used to select parts of the file name to use as variable in the template. }
           { You can also enter a \lref group_template { Group template } to control a \lref counter counter.}
           { Specifiy the \lref output_base_directory {output directory}. }
-          { Finally select the \lref operation to move the files, to copy them or to load/save them to check their validity and add a FITS keyword about the original file name. }
+          { Finally select the \lref operation operation to move the files, to copy them or to load/save them to check their validity and add a FITS keyword about the original file name. }
       }
 
       The list of transformation is updated as you type templates and other parameters and is visible in the window \e { Resulting operations }. Errors are immediately reported (the correspongi files or fields turn red).
@@ -65,6 +65,8 @@
 
    They keywords in red are missing in the current file.
 
+   \e {Note:} You can also use the Pixinsight process \e {FITSHeader} to examine the FITS header of images to discover the interesting headers.
+
    }
 
    \label variables
@@ -72,11 +74,13 @@
       The variables have the general form \v { '&name:present?missing;' }, although most of the time they have simply the form \v{'&name;'}. The 'name' identifies the variable, it may be a FITS key or a synthetic variable name.
       \list {
          { The optional 'present' part is the string that will be used as the replacement value if the variable or FITS key has a value. Usually \v{ :present} is not specified and the value of the variable is used as the replacement string. You can also  have an empty 'present' value (as \v{&TELESCOP:;}), in which case the variable is checked for presence (an error is generated if the variable is missing) but its value does not contribute to the target path. }
-         { The optional \v{?missing} part is used if the variable is not present in the file (for example \v{'&OBJECT?unknown;}).  You can also have an empty 'missing' value (like \v {'&binning?;}) in which case there is no error if the corresponding variableor FITS key has no value. }
+         { The optional \v{?missing} part is used if the variable is not present in the file (for example \v{'&OBJECT?unknown;}).  You can also have an empty 'missing' value (like \v {'&binning?;}) in which case there is no error if the corresponding variable or FITS key has no value. }
       }
-      The synthetic variables are described in the section 'target template' below. They are built from the FITS keywords (following rules specified in a 'configuration'), from the sequence number of the file being processed or from the a regular expression (an extraction of parts of the name) applied to the file name. The source file regular expression can be used, for example, to extract the part of the file name  before the first dash and use it as a prefix when forming the output file name   .
+      The synthetic variables are described in the section 'target template' below. They are built from the FITS keywords (following rules specified in a 'configuration'), from the sequence number of the file being processed or from the a regular expression (an extraction of parts of the name) applied to the file name. The source file regular expression can be used, for example, to extract the part of the file name before the first dash and use it as a prefix when forming the output file name   .
 
-      The files are processed in the order they appear in the table, the variable \v{&rank;} provides the image number to help generating a unique file file. In addition a 'group' string can be generated using from the 'group' template. A \v{&count;} variable is increased for each different group (for example each target directory if the group template contained the target directory). The values are cleaned up of special characters, so that they form legal file names.
+      The files are processed in the order they appear in the table, the variable \v{&rank;} provides the image number to help generating a unique file file. In addition a 'group' string can be generated using from the 'group' template. A \v{&count;} variable is increased for each different group (for example each target directory if the group template contained the target directory). 
+      
+      The value of the variables are cleaned up of special characters, so that they can be used to form legal file names.
    }
 
    \label target_template
@@ -103,7 +107,8 @@
       }
       You can enter the template or select one of the predefined one and optionaly modify it.
 
-      Example of template: \code { &1;_&binning;_&temp;C_&type;_&exposure;s_&filter;_&count;&extension; }
+      Example of template: 
+         \code { &1;_&binning;_&temp;C_&type;_&exposure;s_&filter;_&count;&extension; }
    }
 
    \label file_name_regexp
@@ -124,7 +129,7 @@
          {\c{&targetDir;}}{The directory part of the target file name. }
       }
 
-      This is useful to implement the common case of counting the images by directory, in case your template already output them in different directories (for example using &FILTER; in the directory part of the output template).
+      This is useful to implement the common case of counting the images by directory, in case your template already output them in different directories (for example using &filter; in the directory part of the output template).
 
 
       Leave the field group template blank or use a fixed name to have a single global counter.
@@ -140,7 +145,7 @@
    \label manage_configurations
    \subsection { Manage configurations } {
 
-      A \e{configuration} defines how the synthetic variables are created. Synthetic variables are created by rules and parameters, for example by specifying the FITS key to use, the format of the value and operations like changing case or renaming filter names. This is described in the section \lref configuration configurations.  FITSFileManager keeps track of multiple configurations but only one is active at any time.  It is expected that most users could use the default configuration, or may be the default with some simple adjustments. It is also possible to have a set of configuration for different image type, but currently you must still change the configuration or the template between image types.  Some configuration options may requirea good understanding of regular expressions and of the FITS key words.
+      A \e{configuration} defines how the synthetic variables are created. Synthetic variables are created by rules and parameters, for example by specifying the FITS key to use, the format of the value and operations like changing case or renaming filter names. This is described in the section \lref configuration configurations.  FITSFileManager keeps track of multiple configurations but only one is active at any time.  It is expected that most users could use the default configuration, possibly with some simple adjustments. It is also possible to have a set of configuration for different image type, but currently you must still change the configuration or the template between image types.  Some configuration options may require a good understanding of regular expressions and of the FITS key words.
 
       The configurations are kept in the settings of PixInsight, you can edit, add (duplicate and edit) or remove configurations. They can also be saved and loaded to/from files and so shared with other users.
 
@@ -155,11 +160,13 @@
 
    \label operation
    \subsection { Operations } { 
-      The operations Copy/Move copy or move the files directly, without adding any FITS keywords.  The operation Load/SaveAs loads each image temporarily in the workspace and save it to the new location. An ORIGFILE keyword with the original file name is added if it is not already present.
+      The operations \e {Copy{} and \e {Move} copy or move the files directly without adding any FITS keywords.  
+      
+      The operation \e {Load/SaveAs} loads each image temporarily in the workspace and save it to the new location. An ORIGFILE keyword with the original file name is added if it is not already present.
 
-      The operation buttons may be disabled if the operation is not possible (for example if the output directory is not specified). You can use the button \e{Check validity} if the reason why an operation is not possible is not obvious.
+      The operation buttons may be disabled if the operation is not possible (for example if the output directory is not specified). You can use the button \e{Check validity} if the reason why an operation is not possible is not obvious, it will list the possible errors.
 
-      When an operation is completed, the script will ask you if you want to remove the files from the input section of FITSFileManager (this does not remove the files from the disk!).
+      When an operation is completed, the script will ask you if you want to remove the files from the input section of FITSFileManager (this does not remove the files from the disk!) or if you want to continue processing them (for example to copy other files in the same set).
 
    }
 
@@ -170,30 +177,31 @@
 
       \center \image FITSFileManagerConfiguration.png
 
-      The configuration window allows to copy, edit or delete configurations to define a set of synthetic variables.
+      The configuration window allows to copy, edit or delete configurations to define a set of synthetic variables that you can use to form the template of the target file name or group.
 
-      You select the configuration to work on in the \e{configuration section}, where you can also delete a configuration, duplicated it or change its name and description.
+      You select the configuration to work on in the \e{configuration section}, where you can also delete a configuration, duplicated it or change its name and description. To create a new configuration, duplicate and existing one and change its name.
 
-      You can save the current configuration or all configuration to a file, and load a configuration file in your environment.  When you load a configuration file, the loaded configuration(s) will replace the current configurations having a matching name.  A default configuration is located in the same directory as the scripts and can be reloaded if desired. Note that currently the configuration files do not include the output template, group template or file name RegExp, those are only part of the settings (this may change in a future release).
-      The configuration file are in a JSON format (a commonly used text format), but are not designed for editing with a text editor.
+      You can save the current configuration or all configuration to a file, and load a configuration file in your environment.  When you load a configuration file, the loaded configuration(s) will replace the current configurations having a matching name or will be added the the current list of configurations if it has a new name.  A default configuration is located in the same directory as the scripts and can be reloaded if desired. Note that currently the configuration files do not include the output template, group template or file name RegExp, those are only part of the settings (this may change in a future release).
+      The configuration files are in a JSON format (a commonly used text format) but are not designed for editing with a text editor.
 
-      In the area \e{select variable} you can add, remove or move snythetic variables.  If a variable reference other variables the order may be important. The parameters of the currently selected variables are defined in the right part of the window.
+      In the area \e{select variable} you can add, remove or move synthetic variables.  If the definition of a variable references other variables the order may be important. The parameters of the currently selected variables are defined in the right part of the window.
 
-      The area \e{paramters of the variables} specifies or the value of the variable is calculated. The \e{resolver} specifies the rule to use. It is one of:
+      The area \e{parameters of the variables} specifies how the value of the variable is calculated. The \e{resolver} specifies the rule to use. It is one of:
          \definition {
-            {Text}{The value of a FITS key used as text, but with characters not allowed in file names filtered.}
+            {Text}{The trimmed value of a FITS key used as text, but with characters not allowed in file names filtered. If the trimmed value is empty, the key is considered missing (this can be handled with the \e {&var?missing;} form)}
             {Integer}{The value of a FITS key interpreted as an integer.}
             {IntegerPair}{The value of two FITS key interpreted as a pair of integer (for example size or binning).}
-            {DateTime}{The value of a FITS key interpreted as a date or time.}
+            {DateTime}{The value of a FITS key interpreted as a date or time, see the section \lref date_format {date format}.}
             {RegExpList}{The value of a FITS key is tested agains list of regexp, the first match defines the value. This is typically used to normalize the name of a filter or image type.}
-            {Constant}{A fixed value value.}
+            {Constant}{A fixed text value.}
             {FileName}{The original file name.}
             {FileExtension}{The original file extension.}
          }
       You can change the name, description and its default presence in the file tables for all parameters. Additional parameters are presented depending of the \e{resolver}. Most resolvers have a field to define the \e{format} of the variable.
 
-      The area \e{built-in variable formats} is used to specify the format of the built-in synthethic variables \c{&rank;} and \c{&code;}.
+      The area \e{built-in variable formats} is used to specify the format of the built-in synthethic variables \c{&rank;} and \c{&count;}.
 
+      \label date_format
       \subsection { Date format } {
          The DateTime fields can be formatted using a format string. The format string consists of zero or more conversion specifications and ordinary characters. A conversion specification consists of a \% character and a terminating conversion character that determines the conversion specification's behaviour. All ordinary characters are copied unchanged into the array. If copying takes place between objects that overlap, the behaviour is undefined. Each conversion specification is replaced by appropriate characters as described in the following list.
          \definition { 
@@ -211,14 +219,16 @@
 
          If a conversion specification does not correspond to any of the above, the format character itself is output.
 
-         A common format is \%Y\%m\%d which result in a string as 20150227.
+         A common format is 
+         \code {\%Y\%m\%d}
+          which result in a string as \e {20190227}.
       }
    }
 
 
 }
 
-\related { https:\/\/developer.mozilla.org\/en-US\/docs\/JavaScript\/Guide\/Regular_Expressions} { Regular_Expressions }
+\related { https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions } { Regular_Expressions }
 
 \related { http:\/\/fits.gsfc.nasa.gov\/fits_home.html} {FITS standard }
 
