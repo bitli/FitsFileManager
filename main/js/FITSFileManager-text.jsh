@@ -97,7 +97,7 @@ without the extension. The 'match' array resulting from the regular expression m
 in the target file name template as numbered variables. '&0;' represent the whole matched expression, '&1' the first group, and so on \
 In case of error the field turns red. \
 You can enter the regexp or select one of the predefined one and optionally modify it. \
-<br/>See https:\/\/developer.mozilla.org\/en-US\/docs\/JavaScript\/Guide\/Regular_Expressions for more informations on regular expresssions. \
+<br/>See https:\/\/developer.mozilla.org\/en-US\/docs\/Web\/JavaScript\/Guide\/Regular_Expressions for more informations on regular expresssions. \
 <p>\
 ";
 
