@@ -916,8 +916,9 @@ var ffM_variables = (function() {
             } else {
                var cleanedValue = filterFITSValue(valueString);
                if (cleanedValue === null) {
-                  mutableErrorList.push("Value of key " + ruleParameters.key +
-                  " is empty afer trimming/removing illegal characters, was '" + valueString + "'");
+                  // ERROR should be optional, otherwise it is considered missing a vlue, which is OK
+                  //mutableErrorList.push("Value of key " + ruleParameters.key +
+                  //" is empty afer trimming/removing illegal characters, was '" + valueString + "'");
                   return null;
                }
                if (ruleParameters.case === 'UP') {

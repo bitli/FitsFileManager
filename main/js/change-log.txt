@@ -2,6 +2,10 @@
 FITSFileManager Script Changelog
 ===============================================================================
 
+2020.01.15 - v1.5
+- Regression: text values resulting in an empty string are allowed but considered
+  as missing value.
+
 2020.01.09 - v1.4
 - Corrected error regarding the initialization of RegExp in the regexp list, 
   thanks to 'wfcashwell'.
