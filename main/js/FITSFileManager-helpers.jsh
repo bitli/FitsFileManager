@@ -374,8 +374,8 @@ function outputHints ()
 {
    // Output format hints:
    // * XISF: properties fits-keywords no-compress-data block-alignment 4096 max-inline-block-size 3072 no-embedded-data no-resolution
-   // * FITS: up-bottom|bottom-up
-   return "" ; // (this.upBottomFITS ? "up-bottom" : "bottom-up");
+   // * FITS: up-bottom|bottom-up (see https://github.com/PixInsight/PCL/blob/master/src/modules/file-formats/FITS/FITSInstance.cpp)
+   return  "" // "thumbnail" // + (this.upBottomFITS ? "up-bottom" : "bottom-up");
 };
 
 

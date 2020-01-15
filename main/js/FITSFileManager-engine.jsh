@@ -127,7 +127,7 @@ function FFM_Engine(guiParameters) {
 
 
 
-   // -- Add a list of input files, parse their keywordsa and generate the value of their synthetic variables
+   // -- Add a list of input files, parse their keywords and generate the value of their synthetic variables
    this.addFiles = function (fileNames) {
 
 #ifdef DEBUG

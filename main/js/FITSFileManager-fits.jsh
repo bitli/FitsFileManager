@@ -7,17 +7,24 @@
 
 
 // ------------------------------------------------------------------------------------------------------------------------
-// Read the FITS keywords of an image file, supports the HIERARCH convention
+// Read the FITS keywords of the first HDU of an image file, supports the HIERARCH convention
 // ------------------------------------------------------------------------------------------------------------------------
 // Input:  The opened file
-// Return: An array FITSKeyword, identical to what would be returned by ImageWindow.open().keywords.
-//         at least for correct keywords (errors and border line cases may be handled differently)
-// Throws: Error if bad format
+// Return: An array of FITSKeyword objects, identical to what would be returned by ImageWindow.open().keywords,
+//         at least for correct keywords (errors and border line cases may be handled differently).
+// Throws: Error if bad format, update the mutableErrorList if non fatal error
 // The value of a FITSKeyword value is the empty string if the keyword had no value
 // Code adapted from FitsKey and other scripts
+// See https://fits.gsfc.nasa.gov/standard40/fits_standard40aa-le.pdf for FITS standard and
+// https://heasarc.gsfc.nasa.gov/fitsio/c/f_user/node28.html for HIERARCH convention.
 // TODO - Support CONTINUE ?
 // TODO - Support blank comment as a continuation of a previous coomment ?
+// DEBUG support: DEBUG_SHOW_FITS - List the FITS keyword loaded
+//                DEBUG_FITS - More detailled on the operations
+// TESTING: See test/js/FITSFileNamanger-fits-test.js
 // ------------------------------------------------------------------------------------------------------------------------
+
+// Method used for testing (read the first HDU)
 var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath, mutableErrorList) {
    var f = new File;
    f.openForReading( fitsFilePath );
@@ -29,9 +36,12 @@ var ffM_loadFITSKeywordsList =  function loadFITSKeywordsList(fitsFilePath, muta
 }
 
 
-// TODO Move to module
-var local_loadFITSKeywordsList =  function loadFITSKeywordsList(f, mutableErrorList) {
+// ------------------------------------------------------------------------------------
 
+// TODO Move to module
+
+// Internal method to read the FITS keywords of an opened file from current location
+var local_loadFITSKeywordsList =  function loadFITSKeywordsList(f, mutableErrorList) {
 
    function searchCommentSeparator( b ) {
       var inString = false;
@@ -50,6 +60,7 @@ var local_loadFITSKeywordsList =  function loadFITSKeywordsList(f, mutableErrorL
    }
 
    // in HIERARCH the = sign is after the real keyword name
+   // Example: HIERARCH LongKeyword = 47.5 / Keyword has > 8 characters, and mixed case
    function searchHierarchValueIndicator( b ) {
       for ( var i = 9; i < 80; ++i )
          switch ( b.at( i ) )
@@ -75,6 +86,7 @@ var local_loadFITSKeywordsList =  function loadFITSKeywordsList(f, mutableErrorL
       debug("ffM_loadFITSKeywordsList: line - '" + rawData.toString() + "'");
 #endif
 
+      // Parse name part
       var name = rawData.toString( 0, 8 );
       if ( name.toUpperCase() === "END     " ) { // end of HDU keyword list?
          break;
@@ -83,6 +95,7 @@ var local_loadFITSKeywordsList =  function loadFITSKeywordsList(f, mutableErrorL
          throw new Error( "Unexpected end of file reading FITS keywords, file: " + f.path );
       }
 
+      // Parse value / comment parts , handle HIERARCH
       var value = "";
       var comment = "";
       var hasValue = false;
@@ -136,7 +149,7 @@ var local_loadFITSKeywordsList =  function loadFITSKeywordsList(f, mutableErrorL
          }
       }
 
-      // Add new keyword.
+      // Create the PJSR FITS keyword and add it to the array.
       var fitsKeyWord = new FITSKeyword( name, value, comment);
       fitsKeyWord.trim();
       keywords.push(fitsKeyWord);
@@ -161,6 +174,7 @@ var local_loadFITSKeywordsList =  function loadFITSKeywordsList(f, mutableErrorL
 
 // ====================================================================================================================
 // FITS Keywords support module
+// Define imageKeywordsPrototype for handling FITSkeyword from the other modules.
 // ====================================================================================================================
 
 var ffM_FITS_Keywords = (function() {
@@ -193,13 +207,15 @@ var ffM_FITS_Keywords = (function() {
 
    // ------------------------------------------------------------------------------------------------------------------------
    // ImageKeywords support - An 'ImageKeywords' keeps track of the FITS keywords of a file, both as an array ordered
-   // as in the file PDU and as a map of name to FITSKeyword for the value keywords (keywords that are not null).
-   // It also keep track of some key characteristics of the file - especially if it is a single HDU image file
+   // as in the file PDU and as a map of name to FITSKeyword for the value keywords (the keywords that are not null).
+   // It also keep track of some key characteristics of the file - especially if it is a single HDU image file and
+   // if it has a thumbnail extension.
+   // This class loads the FITS keywords and also provide various accessor methods.
    // ------------------------------------------------------------------------------------------------------------------------
    // Prototype for methods operating on ImageKeywords
    var imageKeywordsPrototype = {
 
-      // -- Load the FITS keywords from the file, adding them to the value map too
+      // -- Load the FITS keywords of the first HDU of a file, creating a new fitsKeywordsMap
       loadFitsKeywords:  function loadFitsKeywords(fitsFilePath, mutableErrorList) {
          var imageKeywords = this;
          var name, fitsKeyFromList, i;
@@ -226,7 +242,7 @@ var ffM_FITS_Keywords = (function() {
             }
          }
 
-         // Complet info on HDU
+         // Complete info on HDU
          hdu.numberOfCards = imageKeywords.fitsKeywordsList.length;
          hdu.blockNumber = Math.floor((hdu.numberOfCards + 35 ) / 36);       
 
@@ -252,13 +268,26 @@ var ffM_FITS_Keywords = (function() {
 
          hdu.paddedDataSize = Math.floor((hdu.dataSize+2880-1)/2880) * 2880;
 
-         // Estimate size of header 
+         // See if there is an known extension often used by PixInsight (this is not normally the case
+         // for images from cameras)
+         hdu.mayExtend = imageKeywords.getValueKeyword('EXTEND').value == 'T';
+         hdu.hasThumbnail = hdu.mayExtend &&  imageKeywords.getValueKeyword('THUMBIMG') != null && imageKeywords.getStrippedValue('THUMBIMG') == 'Thumbnail';
+#ifdef DEBUG_FITS
+            debug("HDU extension: " + hdu.mayExtend + ", thumbnail: " +  hdu.hasThumbnail);
+#endif        
+
+         // Calculate the size of the header (use the list of all keywords)
          hdu.headerSize =  Math.floor((imageKeywords.fitsKeywordsList.length*80+2880-1)/2880) * 2880;
          hdu.totalSize = hdu.paddedDataSize + hdu.headerSize;   
 
-         //Console.writeln("**** HDU " + Object.keys(hdu).map(function (k) {return k + "->" + hdu[k]}));
-         if (hdu.totalSize < hdu.fileSize) {
-            mutableErrorList.push("Likely multiple HDU in file - primary HDU size " + hdu.totalSize +", file size " + hdu.fileSize);
+         hdu.multiple = hdu.totalSize < hdu.fileSize;
+
+#ifdef DEBUG_FITS
+         debug("Loaded HDU properties: " + Object.keys(hdu).map(function (k) {return k + "->" + hdu[k]}));
+#endif
+
+         if (hdu.multiple) {
+            // mutableErrorList.push("Likely multiple HDU in file - primary HDU size " + hdu.totalSize +", file size " + hdu.fileSize);
          }
 
          f.close();
@@ -308,7 +337,7 @@ var ffM_FITS_Keywords = (function() {
       },
 
 
-      // -- return the name of all value key words
+      // -- return the name of all value keywords
       getNamesOfValueKeywords: function getNamesOfValueKeywords() {
          var imageKeywords = this;
          return Object.keys(imageKeywords.fitsKeywordsMap);
@@ -318,7 +347,7 @@ var ffM_FITS_Keywords = (function() {
 
 
 
-   // Factory method for an empty ImageKeywords (seems not used)
+   // Factory method for an empty ImageKeywords (seems not to be used)
    var makeImageKeywords = function makeNew() {
       var imageKeywords = Object.create(imageKeywordsPrototype);
       imageKeywords.fitsKeywordsMap = {};
