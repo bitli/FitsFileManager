@@ -57,6 +57,8 @@ function FFM_Engine(guiParameters) {
       this.nmbFilesTransformed = 0;
       this.nmbFilesInError = 0;
       this.nmbFilesSkipped = 0;
+      this.someFilesHaveMultipleHDU = false;
+      this.someFilesAreConverted = false;
     };
 
 
@@ -400,6 +402,8 @@ function FFM_Engine(guiParameters) {
             }
 
             //Console.writeln("** buildTargetFiles " + inputOrderIndex + " " + inputFileIndex + " "  + " " + targetString);
+            // Build target fles, errors and counters,
+            // Check for conversion
             this.targetFilesIndices.push(inputFileIndex);
             if (errorList.length>0) {
                this.targetFiles.push(null);
@@ -409,10 +413,19 @@ function FFM_Engine(guiParameters) {
                this.targetFiles.push(targetString);
                this.errorPerFile.push(null);
                this.nmbFilesTransformed += 1;
+               // debug("TG " + targetString + " ENDS "  + targetString.endsWith('.xisf') + " BEFORE " + this.someFilesAreConverted );
+               if (targetString.endsWith('.xisf'))
+               {
+                  this.someFilesAreConverted = true;
+               }
             }
          }
+
+       
+      
+
 #ifdef DEBUG
-         debug("buildTargetFiles: Total files: " + this.targetFiles.length);
+         debug("buildTargetFiles: Total files: " + this.targetFiles.length + ",  someFilesAreConverted=" + this.someFilesAreConverted);
 #endif
 
     }
@@ -420,6 +433,7 @@ function FFM_Engine(guiParameters) {
 
     // --- Check that the operations can be executed for a list of files ------------------------------
     //     This assumes that the files are still in the same order and when they were created
+    //     Return a list of errors, empty if there is no error and the operation is possible
     this.checkValidTargets = function(listOfFiles) {
 
       var errors = [];

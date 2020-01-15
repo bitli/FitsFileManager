@@ -7,7 +7,8 @@ FITSFileManager Script Changelog
   as missing value.
 - Multi HDU files are accepted, as the second HDU may be the thumbnail generated
   by PI or other programs. 
-- Document tha twe can convert to xisf file format
+- Document that we can convert to xisf file format, disable move / copy if a 
+  conversion is required, log the reason of disable in the Verify action.
 2020.01.09 - v1.4
 - Corrected error regarding the initialization of RegExp in the regexp list, 
   thanks to 'wfcashwell'.

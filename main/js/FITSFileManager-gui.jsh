@@ -308,6 +308,7 @@ function MainDialog(engine, guiParameters) {
       // Check box was likely changed
       this.dialog.updateTotal();
       this.dialog.refreshTargetFiles();
+      this.dialog.updateButtonState();
    };
 
 
@@ -386,6 +387,7 @@ function MainDialog(engine, guiParameters) {
       }
       this.dialog.updateTotal();
       this.dialog.refreshTargetFiles();
+      this.dialog.updateButtonState();
    }
 
    // -- uncheck selected files
@@ -401,6 +403,7 @@ function MainDialog(engine, guiParameters) {
       }
       this.dialog.updateTotal();
       this.dialog.refreshTargetFiles();
+      this.dialog.updateButtonState();
    }
 
    // -- Remove selected files
@@ -422,10 +425,10 @@ function MainDialog(engine, guiParameters) {
          }
       }
       this.dialog.updateTotal();
-      this.dialog.updateButtonState();
-      // Refresh the generated files
+       // Refresh the generated files
       this.dialog.refreshTargetFiles();
-   }
+      this.dialog.updateButtonState();
+  }
 
 
    // -- Remove all files
@@ -451,9 +454,9 @@ function MainDialog(engine, guiParameters) {
       }
       this.dialog.engine.reset();
       this.dialog.updateTotal();
-      this.dialog.updateButtonState();
       // Refresh the generated files
       this.dialog.refreshTargetFiles();
+      this.dialog.updateButtonState();
 
    }
 
@@ -533,9 +536,9 @@ function MainDialog(engine, guiParameters) {
 
          // TODO - Merge with action on add files and manage configurations
          that.rebuildFilesTreeBox();
-         that.updateButtonState();
          that.updateTotal();
          that.refreshTargetFiles();
+         that.updateButtonState();
       } finally {
          that.dialog.cursor = new Cursor( StdCursor_Arrow );
       }
@@ -584,10 +587,10 @@ function MainDialog(engine, guiParameters) {
 
             // TODO - Merge with action on add files and select configuration
             this.dialog.rebuildFilesTreeBox();
-            this.dialog.updateButtonState();
-            this.dialog.updateTotal();
+             this.dialog.updateTotal();
             this.dialog.refreshTargetFiles();
-         } finally {
+            this.dialog.updateButtonState();
+        } finally {
             this.dialog.cursor = new Cursor( StdCursor_Arrow );
          }
 
@@ -622,6 +625,7 @@ function MainDialog(engine, guiParameters) {
          this.textColor = 0x000000;
          guiParameters.targetFileNameCompiledTemplate  = t;
          this.dialog.refreshTargetFiles();
+         this.dialog.updateButtonState();
       } else {
          this.textColor = 0xFF0000;
       }
@@ -642,6 +646,7 @@ function MainDialog(engine, guiParameters) {
          this.textColor = 0x000000;
          guiParameters.targetFileNameCompiledTemplate  = t;
          this.dialog.refreshTargetFiles();
+         this.dialog.updateButtonState();
       } else {
          this.textColor = 0xFF0000;
       }
@@ -703,6 +708,7 @@ function MainDialog(engine, guiParameters) {
       }
       if (needRefresh) {
          this.dialog.refreshTargetFiles();
+         this.dialog.updateButtonState();
       }
    }
 
@@ -729,6 +735,7 @@ function MainDialog(engine, guiParameters) {
             debug("sourceTemplate_Edit: onTextUpdated: regexp: " + guiParameters.sourceFileNameRegExp);
 #endif
             this.dialog.refreshTargetFiles();
+            this.dialog.updateButtonState();
 
          } catch (err) {
             guiParameters.sourceFileNameRegExp = null;
@@ -1198,7 +1205,11 @@ function MainDialog(engine, guiParameters) {
       } else {
          var text = "" + this.parent.engine.targetFiles.length + " files checked" ;
             if (this.parent.engine.nmbFilesTransformed >0) {
-               text += ", " + this.parent.engine.nmbFilesTransformed + " to copy/move";
+               if (this.parent.engine.someFilesAreConverted) {
+                  text += ", " + this.parent.engine.nmbFilesTransformed + " to load/save (for conversion)";
+               } else {
+                  text += ", " + this.parent.engine.nmbFilesTransformed + " to copy, move or load/save";
+               }
             }
 
          //      this.engine.nmbFilesSkipped;
@@ -1224,6 +1235,7 @@ function MainDialog(engine, guiParameters) {
    this.refresh_Button.onClick = function() {
       this.parent.removeDeletedFiles();
       this.parent.refreshTargetFiles();
+      this.dialog.updateButtonState();
    }
 
 
@@ -1250,6 +1262,7 @@ function MainDialog(engine, guiParameters) {
          var resultText = this.parent.engine.executeFileOperations(0);
          this.parent.removeDeletedFiles();
          this.parent.refreshTargetFiles();
+         this.parent.updateButtonState();
       } finally {
          this.dialog.cursor = new Cursor( StdCursor_Arrow );
          //console.hide();
@@ -1313,8 +1326,8 @@ function MainDialog(engine, guiParameters) {
             }
          }
          this.dialog.updateTotal();
-         this.dialog.updateButtonState();
          this.dialog.refreshTargetFiles();
+         this.dialog.updateButtonState();
          break;
          case CompletionDialog_doneLeave:
             this.dialog.ok();
@@ -1367,9 +1380,9 @@ function MainDialog(engine, guiParameters) {
             }
          }
          this.dialog.updateTotal();
-         this.dialog.updateButtonState();
          this.dialog.refreshTargetFiles();
-
+         this.dialog.updateButtonState();
+ 
          break;
          case CompletionDialog_doneLeave:
             this.dialog.ok();
@@ -1618,9 +1631,10 @@ function MainDialog(engine, guiParameters) {
    // -- enable/disable operation buttons depending on context
    this.updateButtonState = function()
    {
-      var enabled = this.dialog.engine.canDoOperation();
-      this.dialog.move_Button.enabled = enabled;
-      this.dialog.copy_Button.enabled = enabled;
+      let enabled = this.dialog.engine.canDoOperation();
+      let canMoveOrCopy = enabled && !this.dialog.engine.someFilesAreConverted;
+      this.dialog.move_Button.enabled = canMoveOrCopy;
+      this.dialog.copy_Button.enabled = canMoveOrCopy;
       this.dialog.loadSave_Button.enabled = enabled;
 #ifdef IMPLEMENTS_FITS_EXPORT
       this.dialog.txt_Button.enabled = enabled;
@@ -1641,10 +1655,9 @@ function MainDialog(engine, guiParameters) {
 
          this.rebuildFilesTreeBox();
          //this.adjustToContents();
-         this.dialog.updateButtonState();
          this.dialog.updateTotal();
-
          this.refreshTargetFiles();
+         this.dialog.updateButtonState();
 #ifdef DEBUG
          debug("addFilesAction - added " + fileNames.length + " files");
 #endif
