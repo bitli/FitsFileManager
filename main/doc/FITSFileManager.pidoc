@@ -25,6 +25,7 @@
    \center \image FITSFileManager.png
 
    The script FITSFileManager allows you to rename FITS image files by copying or moving them to new locations selected by a set of rule. The new location path is build from a template where \lref variables {variables} are replaced with values extracted from FITS keys, from the original file name or from a \lref counter counter of copied files.
+   Alternatively to copying/moving the file, the script can load/save the images, which allow adding keywords about the original file and/or converting them to the XISF file format.
 
    \subsection { Operations } {
 
@@ -85,12 +86,12 @@
 
    \label target_template
    \subsection { Target template } { 
-      Define how the target file path will be generated. The text of this field is used as the output path, except that the variables are replaced by their values according to the current \e configuration. The \lref variables {variables} include the FITS keywords and the synthetic variables defined in the configuration. A typical configuration contains the following keywords (your actual configuration may be different):
+      Define how the target file path will be generated. It may contain slashes as directory separators. The text of this field is used as the output path (after the output base directory), except that the variables are replaced by their values according to the current \e configuration. The \lref variables {variables} include the FITS keywords and the synthetic variables defined in the configuration. The generated file name must include the extension (as \e {.fits} or \e {.xisf} to specify the file format. A typical configuration contains the following keywords (your actual configuration may be different):
 
       \definition {
          {&binning;} { Binning from XBINNING and YBINNING as integers, like 2x2. }
          {&exposure;} { The exposure from EXPOSURE, but as an integer (assume seconds). }
-         {&extension;} { The extension of the source file (with the dot.), will use input extension if not specified }
+         {&extension;} { The extension of the source file (with the dot.), will use input extension if not specified. }
          {&filename;} { The file name part of the source file. }
          {&filter;} { The filter name from FILTER as lower case trimmed normalized name. }
          {&night;} { An integer identifying the night, requires JD and LONG-OBS - EXPERIMENTAL. }
@@ -162,7 +163,7 @@
    \subsection { Operations } { 
       The operations \e {Copy{} and \e {Move} copy or move the files directly without adding any FITS keywords.  
       
-      The operation \e {Load/SaveAs} loads each image temporarily in the workspace and save it to the new location. An ORIGFILE keyword with the original file name is added if it is not already present.
+      The operation \e {Load/SaveAs} loads each image temporarily in the workspace and save it to the new location. An ORIGFILE keyword with the original file name is added if it is not already present. The \e {Load/Save} must be used if the extension of the target template implies a format conversion. This feature is supported only to convert to the \e {XISF} file format (extension \e {.xisf}).
 
       The operation buttons may be disabled if the operation is not possible (for example if the output directory is not specified). You can use the button \e{Check validity} if the reason why an operation is not possible is not obvious, it will list the possible errors.
 

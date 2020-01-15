@@ -57,9 +57,12 @@ The values are cleaned up of special characters, so that they form legal file na
 
 
 var TARGET_TEMPLATE_TOOLTIP_A = "\
-Define how the target file path will be generated. The text of this field is used \
-as the output path, except that the variables are replaced by their value according to \
-the current 'configuration'.<br/>\
+Define how the target file path will be generated. It may contain slashes as directory separators. \
+The text of this field is used as the output path (after the output base directory), except that  \
+the variables are replaced by their values according to the current configuration. \
+The variables include the FITS keywords and the synthetic variables defined \
+in the configuration. The generated file name must include the extension (as .fits or .xisf \
+to specify the file format.<br/>\
 ";
 
 // Part used only in tooltip
