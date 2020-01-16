@@ -270,7 +270,8 @@ var ffM_FITS_Keywords = (function() {
 
          // See if there is an known extension often used by PixInsight (this is not normally the case
          // for images from cameras)
-         hdu.mayExtend = imageKeywords.getValueKeyword('EXTEND').value == 'T';
+         // Make sure to accept of there is not EXTEND keyword ! PI seems to always add it.
+         hdu.mayExtend = imageKeywords.getValueKeyword('EXTEND')!= null &&  imageKeywords.getValueKeyword('EXTEND').value == 'T';
          hdu.hasThumbnail = hdu.mayExtend &&  imageKeywords.getValueKeyword('THUMBIMG') != null && imageKeywords.getStrippedValue('THUMBIMG') == 'Thumbnail';
 #ifdef DEBUG_FITS
             debug("HDU extension: " + hdu.mayExtend + ", thumbnail: " +  hdu.hasThumbnail);
