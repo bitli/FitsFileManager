@@ -49,6 +49,12 @@ var ffM_rv = function(obj) {
    });
 }
 
+// Create a lookup converter from an array of array of regexp, result pairs,
+// the replacement may include back reference
+// var c = makeLookupConverter([
+//    [ /first/, "match1"],
+//    [ /second/, "match2" ],
+// ]);
 function makeLookupConverter(aa) {
    var oa = [];
    for (var i=0; i<aa.length; i++) {
@@ -125,7 +131,10 @@ var ffM_allTests = {
       pT_assertEquals(3, count);
    },
 
-   // Test helper functions
+
+   // ---------------------------------------------------------------------------------------------------------
+   // Test helper functions FITSFileManager-helper.jsh
+   // ---------------------------------------------------------------------------------------------------------
 
    test_RegExpToString: function() {
       var r = /[a-z]+/i;
@@ -136,6 +145,7 @@ var ffM_allTests = {
       var s = regExpToString(null);
       pT_assertEquals('', s);
    },
+
 
    test_RegExpFromString_null: function() {
       var s = regExpFromString(null);
@@ -153,6 +163,7 @@ var ffM_allTests = {
       var s = regExpFromString('/[a-z]+/i');
       pT_assertEquals('/[a-z]+/i', s.toString());
    },
+
 
    test_RegExpFromUserString_withSlash: function() {
       var s = regExpFromUserString('/[a-z]+/i');
@@ -262,10 +273,12 @@ var ffM_allTests = {
    // Convert array of array of regexp,replacement to the object format and submit to real converter
 
    testConverter_empty: function () {
+      // Test empty table
       var c = makeLookupConverter([]);
       pT_assertNull(c.convert("thereIsNoConversionDefined"));
    },
    testConverter_single_conversion: function () {
+      // Test no match and simple match
       var c = makeLookupConverter([
             [ /abc/, "matched"]
          ]);
@@ -575,8 +588,12 @@ var ffM_allTests = {
       pT_assertEquals("No value for the variable 'required'", errors.join(""));
    },
 
+
+
    // ---------------------------------------------------------------------------------------------------------
-   // Test of gui parameters and settings
+   //  FITSFileManager-parameters.jsh
+   // ---------------------------------------------------------------------------------------------------------
+   // Test of gui parameters and settings 
    // ---------------------------------------------------------------------------------------------------------
    testSettings: function () {
       var guiParameters = new FFM_GUIParameters();
@@ -586,7 +603,7 @@ var ffM_allTests = {
       guiParameters.saveSettings();
 
       guiParameters.loadSettings();
-      // Test soem values
+      // Test some values in the default settings
       pT_assertEquals('&1;_&binning;_&temp;C_&type;_&exposure;s_&filter;_&count;&extension;',guiParameters.targetFileNameTemplate);
       pT_assertEquals('/([^-_.]+)(?:[._-]|$)/',guiParameters.sourceFileNameRegExp.toString());
       pT_assertEquals('&rank;',guiParameters.orderBy);

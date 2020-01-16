@@ -9,7 +9,7 @@
 
 #include <pjsr/DataType.jsh>
 
-#define VERSION "1.5-test"
+#define VERSION "1.5-test-2"
 #define MAIN_FILE_NAME "FITSFileManager.js"
 
 // This should be identical for all my projects
