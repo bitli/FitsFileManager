@@ -1,4 +1,4 @@
-This file is part of FITSFileManager script version 1.4
+This file is part of FITSFileManager script version 1.5
 
 The complete source code with test scripts is hosted at:
    https://github.com/bitli/FitsFileManager
