@@ -1,5 +1,11 @@
 # README #
 
+---------------------------------------------------------------------------
+IMPORTANT - This repository is no more active, the script is now named ImageFileManager and is part of PixInsight and is located at  its source is integrated in the PixInsight sources, at https://gitlab.com/pixinsight/PJSR/-/tree/master/src/scripts/ImageFileManager.
+---------------------------------------------------------------------------
+
+It is accessible by the menu Scripts/Utilities/ImageFileManager
+
 This is the source of of a PJSR script for PixInsight version 1.8 (see [ PixInsight ](http://www.pixinsight.com)). 
 
 ### Purpose ###
